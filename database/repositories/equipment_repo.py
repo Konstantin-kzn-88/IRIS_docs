@@ -143,14 +143,23 @@ class EquipmentRepository:
         }
 
         table_name = type_to_table[equipment_type]
-        query = f"SELECT * FROM {table_name} WHERE id = ?"
 
-        result = self.db.execute_query(query, (equipment_id,))
-        if result:
-            specific_data = dict(result[0])
-            return {**base_equipment, **specific_data}
+        # Добавляем проверку на пустой результат
+        result = self.db.execute_query(f"SELECT * FROM {table_name} WHERE id = ?", (equipment_id,))
+        if not result:
+            # Если данные не найдены, возвращаем базовые данные с пустыми специфичными полями
+            if equipment_type == EquipmentType.PUMP:
+                return {
+                    **base_equipment,
+                    'pump_type': 'Центробежные герметичные',  # значение по умолчанию
+                    'volume': None,
+                    'flow': None,
+                    'time_out': None
+                }
+            return base_equipment
 
-        return base_equipment
+        specific_data = dict(result[0])
+        return {**base_equipment, **specific_data}
 
     def _get_equipment_from_row(self, row: Dict[str, Any]) -> BaseEquipment:
         """Создание объекта оборудования из строки БД"""
