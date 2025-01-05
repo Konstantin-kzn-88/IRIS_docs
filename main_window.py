@@ -1,13 +1,17 @@
 # main_window.py
 from PySide6.QtWidgets import (QMainWindow, QWidget, QTreeWidget,
                              QTreeWidgetItem, QHBoxLayout, QVBoxLayout,
-                             QStackedWidget, QMenuBar, QMenu, QStatusBar)
-from PySide6.QtCore import Qt
+                             QStackedWidget, QMenuBar, QMenu, QStatusBar,
+                             QToolBar, QStyle)
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QAction
 from database.db_connection import DatabaseConnection
 from widgets.organizations_widget import OrganizationsWidget
 from widgets.dangerous_objects_widget import DangerousObjectsWidget
 from widgets.projects_widget import ProjectsWidget
-from widgets.substances_widget import SubstancesWidget  # Добавляем импорт
+from widgets.substances_widget import SubstancesWidget
+from widgets.pipelines_widget import PipelinesWidget
+from widgets.pumps_widget import PumpsWidget
 
 
 class MainWindow(QMainWindow):
@@ -48,6 +52,9 @@ class MainWindow(QMainWindow):
         # Создаем меню
         self.create_menu()
 
+        # Создаем панель инструментов
+        self.create_toolbar()
+
         # Создаем статус бар
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
@@ -70,8 +77,16 @@ class MainWindow(QMainWindow):
         self.substances_widget = SubstancesWidget(self.db)
         self.content.addWidget(self.substances_widget)
 
+        # Виджет трубопроводов
+        self.pipelines_widget = PipelinesWidget(self.db)
+        self.content.addWidget(self.pipelines_widget)
+
+        # Виджет насосов
+        self.pumps_widget = PumpsWidget(self.db)
+        self.content.addWidget(self.pumps_widget)
+
         # Placeholder для остальных разделов
-        for _ in range(3):  # Уменьшаем количество заглушек, так как добавили виджет веществ
+        for _ in range(2):
             placeholder = QWidget()
             placeholder.setLayout(QVBoxLayout())
             self.content.addWidget(placeholder)
@@ -125,7 +140,10 @@ class MainWindow(QMainWindow):
         ref_menu.addAction("Организации", self.show_organizations)
         ref_menu.addAction("Опасные производственные объекты", self.show_dangerous_objects)
         ref_menu.addAction("Проекты", self.show_projects)
-        ref_menu.addAction("Вещества", self.show_substances)  # Добавляем пункт меню
+        ref_menu.addAction("Вещества", self.show_substances)
+        ref_menu.addSeparator()
+        ref_menu.addAction("Трубопроводы", self.show_pipelines)
+        ref_menu.addAction("Насосы", self.show_pumps)
         menubar.addMenu(ref_menu)
 
         # Меню Отчеты
@@ -138,6 +156,28 @@ class MainWindow(QMainWindow):
         help_menu = QMenu("&Помощь", self)
         help_menu.addAction("О программе", self.show_about)
         menubar.addMenu(help_menu)
+
+    def create_toolbar(self):
+        """Создание панели инструментов"""
+        toolbar = QToolBar()
+        toolbar.setMovable(False)
+        toolbar.setIconSize(QSize(32, 32))
+        self.addToolBar(toolbar)
+
+        # Добавляем кнопки на панель инструментов
+        toolbar.addAction(QAction("Организации", self,
+                                triggered=self.show_organizations))
+        toolbar.addAction(QAction("ОПО", self,
+                                triggered=self.show_dangerous_objects))
+        toolbar.addAction(QAction("Проекты", self,
+                                triggered=self.show_projects))
+        toolbar.addAction(QAction("Вещества", self,
+                                triggered=self.show_substances))
+        toolbar.addSeparator()
+        toolbar.addAction(QAction("Трубопроводы", self,
+                                triggered=self.show_pipelines))
+        toolbar.addAction(QAction("Насосы", self,
+                                triggered=self.show_pumps))
 
     def on_tree_item_changed(self, current, previous):
         """Обработчик смены элемента в дереве навигации"""
@@ -153,9 +193,12 @@ class MainWindow(QMainWindow):
             self.content.setCurrentWidget(self.dangerous_objects_widget)
         elif item_text == "Проекты":
             self.content.setCurrentWidget(self.projects_widget)
-        elif item_text == "Вещества":  # Добавляем обработку вкладки веществ
+        elif item_text == "Вещества":
             self.content.setCurrentWidget(self.substances_widget)
-        # TODO: Добавить обработку остальных разделов
+        elif item_text == "Трубопроводы":
+            self.content.setCurrentWidget(self.pipelines_widget)
+        elif item_text == "Насосы":
+            self.content.setCurrentWidget(self.pumps_widget)
 
         self.statusBar.showMessage(f"Выбран раздел: {item_text}")
 
@@ -174,10 +217,34 @@ class MainWindow(QMainWindow):
         self.tree.setCurrentItem(self.project_item)
         self.content.setCurrentWidget(self.projects_widget)
 
-    def show_substances(self):  # Добавляем метод для показа веществ
+    def show_substances(self):
         """Показать раздел веществ"""
         self.tree.setCurrentItem(self.substance_item)
         self.content.setCurrentWidget(self.substances_widget)
+
+    def show_pipelines(self):
+        """Показать раздел трубопроводов"""
+        pipeline_item = None
+        for i in range(self.equipment_item.childCount()):
+            child = self.equipment_item.child(i)
+            if child.text(0) == "Трубопроводы":
+                pipeline_item = child
+                break
+        if pipeline_item:
+            self.tree.setCurrentItem(pipeline_item)
+            self.content.setCurrentWidget(self.pipelines_widget)
+
+    def show_pumps(self):
+        """Показать раздел насосов"""
+        pump_item = None
+        for i in range(self.equipment_item.childCount()):
+            child = self.equipment_item.child(i)
+            if child.text(0) == "Насосы":
+                pump_item = child
+                break
+        if pump_item:
+            self.tree.setCurrentItem(pump_item)
+            self.content.setCurrentWidget(self.pumps_widget)
 
     def show_about(self):
         """Показать информацию о программе"""

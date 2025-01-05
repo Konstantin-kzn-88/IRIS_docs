@@ -84,6 +84,7 @@ class BaseEquipment:
         if self.substance_id <= 0:
             raise ValueError("Некорректный ID вещества")
 
+
 @dataclass
 class Pipeline(BaseEquipment):
     """Модель трубопровода"""
@@ -93,29 +94,31 @@ class Pipeline(BaseEquipment):
     flow: Optional[float]
     time_out: Optional[float]
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Преобразование в словарь для БД"""
-        base_dict = super().to_dict()
-        pipeline_dict = {
-            'diameter_category': self.diameter_category,
-            'length_meters': self.length_meters,
-            'diameter_pipeline': self.diameter_pipeline,
-            'flow': self.flow,
-            'time_out': self.time_out
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Pipeline':
+        """Создание объекта из словаря"""
+        base_data = {
+            'id': data.get('id'),
+            'project_id': data['project_id'],
+            'substance_id': data['substance_id'],
+            'name': data['name'],
+            'equipment_type': EquipmentType(data['equipment_type']),
+            'component_enterprise': data.get('component_enterprise'),
+            'sub_id': data.get('sub_id'),
+            'pressure': data['pressure'],
+            'temperature': data['temperature'],
+            'expected_casualties': data.get('expected_casualties')
         }
-        return {**base_dict, **pipeline_dict}
 
-    def to_display_dict(self) -> Dict[str, str]:
-        """Получение словаря для отображения в UI"""
-        base_display = super().to_display_dict()
-        pipeline_display = {
-            'Категория диаметра': self.diameter_category,
-            'Длина (м)': f"{self.length_meters:.2f}",
-            'Диаметр': f"{self.diameter_pipeline:.2f}",
-            'Расход': f"{self.flow:.2f}" if self.flow is not None else "-",
-            'Время выброса': f"{self.time_out:.2f}" if self.time_out is not None else "-"
+        pipeline_data = {
+            'diameter_category': data['diameter_category'],
+            'length_meters': data['length_meters'],
+            'diameter_pipeline': data['diameter_pipeline'],
+            'flow': data.get('flow'),
+            'time_out': data.get('time_out')
         }
-        return {**base_display, **pipeline_display}
+
+        return cls(**base_data, **pipeline_data)
 
 @dataclass
 class Pump(BaseEquipment):
@@ -161,6 +164,31 @@ class Pump(BaseEquipment):
     def __post_init__(self):
         """Валидация после инициализации"""
         self.validate()
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Pump':
+        """Создание объекта из словаря"""
+        base_data = {
+            'id': data.get('id'),
+            'project_id': data['project_id'],
+            'substance_id': data['substance_id'],
+            'name': data['name'],
+            'equipment_type': EquipmentType(data['equipment_type']),
+            'component_enterprise': data.get('component_enterprise'),
+            'sub_id': data.get('sub_id'),
+            'pressure': data['pressure'],
+            'temperature': data['temperature'],
+            'expected_casualties': data.get('expected_casualties')
+        }
+
+        pump_data = {
+            'pump_type': data.get('pump_type', 'Центробежные герметичные'),  # значение по умолчанию
+            'volume': data.get('volume'),
+            'flow': data.get('flow'),
+            'time_out': data.get('time_out')
+        }
+
+        return cls(**base_data, **pump_data)
 
 @dataclass
 class TechnologicalDevice(BaseEquipment):
