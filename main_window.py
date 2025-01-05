@@ -12,6 +12,7 @@ from widgets.projects_widget import ProjectsWidget
 from widgets.substances_widget import SubstancesWidget
 from widgets.pipelines_widget import PipelinesWidget
 from widgets.pumps_widget import PumpsWidget
+from widgets.technological_devices_widget import TechnologicalDevicesWidget
 
 
 class MainWindow(QMainWindow):
@@ -85,8 +86,12 @@ class MainWindow(QMainWindow):
         self.pumps_widget = PumpsWidget(self.db)
         self.content.addWidget(self.pumps_widget)
 
+        # Виджет технологических устройств
+        self.tech_devices_widget = TechnologicalDevicesWidget(self.db)
+        self.content.addWidget(self.tech_devices_widget)
+
         # Placeholder для остальных разделов
-        for _ in range(2):
+        for _ in range(1):
             placeholder = QWidget()
             placeholder.setLayout(QVBoxLayout())
             self.content.addWidget(placeholder)
@@ -144,6 +149,7 @@ class MainWindow(QMainWindow):
         ref_menu.addSeparator()
         ref_menu.addAction("Трубопроводы", self.show_pipelines)
         ref_menu.addAction("Насосы", self.show_pumps)
+        ref_menu.addAction("Технологические устройства", self.show_tech_devices)
         menubar.addMenu(ref_menu)
 
         # Меню Отчеты
@@ -178,6 +184,8 @@ class MainWindow(QMainWindow):
                                 triggered=self.show_pipelines))
         toolbar.addAction(QAction("Насосы", self,
                                 triggered=self.show_pumps))
+        toolbar.addAction(QAction("Технологические устройства", self,
+                                triggered=self.show_tech_devices))
 
     def on_tree_item_changed(self, current, previous):
         """Обработчик смены элемента в дереве навигации"""
@@ -199,6 +207,8 @@ class MainWindow(QMainWindow):
             self.content.setCurrentWidget(self.pipelines_widget)
         elif item_text == "Насосы":
             self.content.setCurrentWidget(self.pumps_widget)
+        elif item_text == "Технологические устройства":
+            self.content.setCurrentWidget(self.tech_devices_widget)
 
         self.statusBar.showMessage(f"Выбран раздел: {item_text}")
 
@@ -245,6 +255,18 @@ class MainWindow(QMainWindow):
         if pump_item:
             self.tree.setCurrentItem(pump_item)
             self.content.setCurrentWidget(self.pumps_widget)
+
+    def show_tech_devices(self):
+        """Показать раздел технологических устройств"""
+        tech_item = None
+        for i in range(self.equipment_item.childCount()):
+            child = self.equipment_item.child(i)
+            if child.text(0) == "Технологические устройства":
+                tech_item = child
+                break
+        if tech_item:
+            self.tree.setCurrentItem(tech_item)
+            self.content.setCurrentWidget(self.tech_devices_widget)
 
     def show_about(self):
         """Показать информацию о программе"""

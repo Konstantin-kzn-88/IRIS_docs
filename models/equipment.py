@@ -240,6 +240,31 @@ class TechnologicalDevice(BaseEquipment):
         """Валидация после инициализации"""
         self.validate()
 
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'TechnologicalDevice':
+        """Создание объекта из словаря"""
+        base_data = {
+            'id': data.get('id'),
+            'project_id': data['project_id'],
+            'substance_id': data['substance_id'],
+            'name': data['name'],
+            'equipment_type': EquipmentType(data['equipment_type']),
+            'component_enterprise': data.get('component_enterprise'),
+            'sub_id': data.get('sub_id'),
+            'pressure': data['pressure'],
+            'temperature': data['temperature'],
+            'expected_casualties': data.get('expected_casualties')
+        }
+
+        device_data = {
+            'device_type': data.get('device_type', 'Технологические аппараты'),  # значение по умолчанию
+            'volume': data.get('volume'),
+            'degree_filling': data.get('degree_filling'),
+            'spill_square': data.get('spill_square')
+        }
+
+        return cls(**base_data, **device_data)
+
 @dataclass
 class Tank(BaseEquipment):
     """Модель стационарного резервуара"""
