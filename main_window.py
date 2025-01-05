@@ -15,6 +15,7 @@ from widgets.pumps_widget import PumpsWidget
 from widgets.tanks_widget import TanksWidget
 from widgets.technological_devices_widget import TechnologicalDevicesWidget
 from widgets.truck_tanks_widget import TruckTanksWidget
+from widgets.compressors_widget import CompressorsWidget
 
 
 class MainWindow(QMainWindow):
@@ -100,6 +101,10 @@ class MainWindow(QMainWindow):
         self.truck_tanks_widget = TruckTanksWidget(self.db)
         self.content.addWidget(self.truck_tanks_widget)
 
+        # Виджет компрессоров
+        self.compressors_widget = CompressorsWidget(self.db)
+        self.content.addWidget(self.compressors_widget)
+
     def create_tree_items(self):
         """Создание элементов дерева навигации"""
         # Организации
@@ -156,6 +161,7 @@ class MainWindow(QMainWindow):
         ref_menu.addAction("Резервуары", self.show_tanks)
         ref_menu.addAction("Технологические устройства", self.show_tech_devices)
         ref_menu.addAction("Автоцистерны", self.show_truck_tanks)
+        ref_menu.addAction("Компрессоры", self.show_compressors)
         menubar.addMenu(ref_menu)
 
         # Меню Отчеты
@@ -196,6 +202,8 @@ class MainWindow(QMainWindow):
                                 triggered=self.show_tech_devices))
         toolbar.addAction(QAction("Автоцистерны", self,
                                 triggered=self.show_truck_tanks))
+        toolbar.addAction(QAction("Компрессоры", self,
+                                  triggered=self.show_compressors))
 
     def on_tree_item_changed(self, current, previous):
         """Обработчик смены элемента в дереве навигации"""
@@ -223,6 +231,8 @@ class MainWindow(QMainWindow):
             self.content.setCurrentWidget(self.tech_devices_widget)
         elif item_text == "Автоцистерны":
             self.content.setCurrentWidget(self.truck_tanks_widget)
+        elif item_text == "Компрессоры":
+            self.content.setCurrentWidget(self.compressors_widget)
 
         self.statusBar.showMessage(f"Выбран раздел: {item_text}")
 
@@ -305,6 +315,18 @@ class MainWindow(QMainWindow):
         if truck_item:
             self.tree.setCurrentItem(truck_item)
             self.content.setCurrentWidget(self.truck_tanks_widget)
+
+    def show_compressors(self):
+        """Показать раздел компрессоров"""
+        compressor_item = None
+        for i in range(self.equipment_item.childCount()):
+            child = self.equipment_item.child(i)
+            if child.text(0) == "Компрессоры":
+                compressor_item = child
+                break
+        if compressor_item:
+            self.tree.setCurrentItem(compressor_item)
+            self.content.setCurrentWidget(self.compressors_widget)
 
     def show_about(self):
         """Показать информацию о программе"""

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Dict, Any
 
+
 class EquipmentType(Enum):
     """Типы оборудования"""
     PIPELINE = "Pipeline"
@@ -120,6 +121,7 @@ class Pipeline(BaseEquipment):
 
         return cls(**base_data, **pipeline_data)
 
+
 @dataclass
 class Pump(BaseEquipment):
     """Модель насоса"""
@@ -190,13 +192,14 @@ class Pump(BaseEquipment):
 
         return cls(**base_data, **pump_data)
 
+
 @dataclass
 class TechnologicalDevice(BaseEquipment):
     """Модель технологического устройства"""
     device_type: str  # "Сосуды хранения под давлением", "Технологические аппараты", "Химические реакторы"
     volume: Optional[float]
     degree_filling: Optional[float]  # степень заполнения
-    spill_square: Optional[float]    # площадь пролива
+    spill_square: Optional[float]  # площадь пролива
 
     def to_dict(self) -> Dict[str, Any]:
         """Преобразование в словарь для БД"""
@@ -264,6 +267,7 @@ class TechnologicalDevice(BaseEquipment):
         }
 
         return cls(**base_data, **device_data)
+
 
 @dataclass
 class Tank(BaseEquipment):
@@ -342,121 +346,148 @@ class Tank(BaseEquipment):
 
         return cls(**base_data, **tank_data)
 
+
 @dataclass
 class TruckTank(BaseEquipment):
-   """Модель автоцистерны"""
-   pressure_type: str  # "Под избыточным давлением", "При атмосферном давлении"
-   volume: Optional[float]
-   degree_filling: Optional[float]
-   spill_square: Optional[float]
+    """Модель автоцистерны"""
+    pressure_type: str  # "Под избыточным давлением", "При атмосферном давлении"
+    volume: Optional[float]
+    degree_filling: Optional[float]
+    spill_square: Optional[float]
 
-   def to_dict(self) -> Dict[str, Any]:
-       """Преобразование в словарь для БД"""
-       base_dict = super().to_dict()
-       truck_dict = {
-           'pressure_type': self.pressure_type,
-           'volume': self.volume,
-           'degree_filling': self.degree_filling,
-           'spill_square': self.spill_square
-       }
-       return {**base_dict, **truck_dict}
+    def to_dict(self) -> Dict[str, Any]:
+        """Преобразование в словарь для БД"""
+        base_dict = super().to_dict()
+        truck_dict = {
+            'pressure_type': self.pressure_type,
+            'volume': self.volume,
+            'degree_filling': self.degree_filling,
+            'spill_square': self.spill_square
+        }
+        return {**base_dict, **truck_dict}
 
-   def to_display_dict(self) -> Dict[str, str]:
-       """Получение словаря для отображения в UI"""
-       base_display = super().to_display_dict()
-       truck_display = {
-           'Тип давления': self.pressure_type,
-           'Объем': f"{self.volume:.2f}" if self.volume is not None else "-",
-           'Степень заполнения': f"{self.degree_filling:.2f}" if self.degree_filling is not None else "-",
-           'Площадь пролива': f"{self.spill_square:.2f}" if self.spill_square is not None else "-"
-       }
-       return {**base_display, **truck_display}
+    def to_display_dict(self) -> Dict[str, str]:
+        """Получение словаря для отображения в UI"""
+        base_display = super().to_display_dict()
+        truck_display = {
+            'Тип давления': self.pressure_type,
+            'Объем': f"{self.volume:.2f}" if self.volume is not None else "-",
+            'Степень заполнения': f"{self.degree_filling:.2f}" if self.degree_filling is not None else "-",
+            'Площадь пролива': f"{self.spill_square:.2f}" if self.spill_square is not None else "-"
+        }
+        return {**base_display, **truck_display}
 
-   def validate(self) -> None:
-       """Валидация автоцистерны"""
-       valid_types = [
-           "Под избыточным давлением",
-           "При атмосферном давлении"
-       ]
-       if self.pressure_type not in valid_types:
-           raise ValueError("Неверный тип давления")
-       if self.volume is not None and self.volume <= 0:
-           raise ValueError("Объем должен быть положительным")
-       if self.degree_filling is not None and not 0 <= self.degree_filling <= 1:
-           raise ValueError("Степень заполнения должна быть от 0 до 1")
-       if self.spill_square is not None and self.spill_square <= 0:
-           raise ValueError("Площадь пролива должна быть положительной")
+    def validate(self) -> None:
+        """Валидация автоцистерны"""
+        valid_types = [
+            "Под избыточным давлением",
+            "При атмосферном давлении"
+        ]
+        if self.pressure_type not in valid_types:
+            raise ValueError("Неверный тип давления")
+        if self.volume is not None and self.volume <= 0:
+            raise ValueError("Объем должен быть положительным")
+        if self.degree_filling is not None and not 0 <= self.degree_filling <= 1:
+            raise ValueError("Степень заполнения должна быть от 0 до 1")
+        if self.spill_square is not None and self.spill_square <= 0:
+            raise ValueError("Площадь пролива должна быть положительной")
 
-   def __post_init__(self):
-       """Валидация после инициализации"""
-       self.validate()
+    def __post_init__(self):
+        """Валидация после инициализации"""
+        self.validate()
 
-   @classmethod
-   def from_dict(cls, data: Dict[str, Any]) -> 'TruckTank':
-       """Создание объекта из словаря"""
-       base_data = {
-           'id': data.get('id'),
-           'project_id': data['project_id'],
-           'substance_id': data['substance_id'],
-           'name': data['name'],
-           'equipment_type': EquipmentType(data['equipment_type']),
-           'component_enterprise': data.get('component_enterprise'),
-           'sub_id': data.get('sub_id'),
-           'pressure': data['pressure'],
-           'temperature': data['temperature'],
-           'expected_casualties': data.get('expected_casualties')
-       }
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'TruckTank':
+        """Создание объекта из словаря"""
+        base_data = {
+            'id': data.get('id'),
+            'project_id': data['project_id'],
+            'substance_id': data['substance_id'],
+            'name': data['name'],
+            'equipment_type': EquipmentType(data['equipment_type']),
+            'component_enterprise': data.get('component_enterprise'),
+            'sub_id': data.get('sub_id'),
+            'pressure': data['pressure'],
+            'temperature': data['temperature'],
+            'expected_casualties': data.get('expected_casualties')
+        }
 
-       truck_data = {
-           'pressure_type': data.get('pressure_type', 'При атмосферном давлении'),  # значение по умолчанию
-           'volume': data.get('volume'),
-           'degree_filling': data.get('degree_filling'),
-           'spill_square': data.get('spill_square')
-       }
+        truck_data = {
+            'pressure_type': data.get('pressure_type', 'При атмосферном давлении'),  # значение по умолчанию
+            'volume': data.get('volume'),
+            'degree_filling': data.get('degree_filling'),
+            'spill_square': data.get('spill_square')
+        }
 
-       return cls(**base_data, **truck_data)
+        return cls(**base_data, **truck_data)
+
 
 @dataclass
 class Compressor(BaseEquipment):
-   """Модель компрессора"""
-   comp_type: str
-   volume: Optional[float]
-   flow: Optional[float]
-   time_out: Optional[float]
+    """Модель компрессора"""
+    comp_type: str
+    volume: Optional[float]
+    flow: Optional[float]
+    time_out: Optional[float]
 
-   def to_dict(self) -> Dict[str, Any]:
-       """Преобразование в словарь для БД"""
-       base_dict = super().to_dict()
-       comp_dict = {
-           'comp_type': self.comp_type,
-           'volume': self.volume,
-           'flow': self.flow,
-           'time_out': self.time_out
-       }
-       return {**base_dict, **comp_dict}
+    def to_dict(self) -> Dict[str, Any]:
+        """Преобразование в словарь для БД"""
+        base_dict = super().to_dict()
+        comp_dict = {
+            'comp_type': self.comp_type,
+            'volume': self.volume,
+            'flow': self.flow,
+            'time_out': self.time_out
+        }
+        return {**base_dict, **comp_dict}
 
-   def to_display_dict(self) -> Dict[str, str]:
-       """Получение словаря для отображения в UI"""
-       base_display = super().to_display_dict()
-       comp_display = {
-           'Тип компрессора': self.comp_type,
-           'Объем': f"{self.volume:.2f}" if self.volume is not None else "-",
-           'Расход': f"{self.flow:.2f}" if self.flow is not None else "-",
-           'Время выброса': f"{self.time_out:.2f}" if self.time_out is not None else "-"
-       }
-       return {**base_display, **comp_display}
+    def to_display_dict(self) -> Dict[str, str]:
+        """Получение словаря для отображения в UI"""
+        base_display = super().to_display_dict()
+        comp_display = {
+            'Тип компрессора': self.comp_type,
+            'Объем': f"{self.volume:.2f}" if self.volume is not None else "-",
+            'Расход': f"{self.flow:.2f}" if self.flow is not None else "-",
+            'Время выброса': f"{self.time_out:.2f}" if self.time_out is not None else "-"
+        }
+        return {**base_display, **comp_display}
 
-   def validate(self) -> None:
-       """Валидация компрессора"""
-       if not self.comp_type:
-           raise ValueError("Тип компрессора не может быть пустым")
-       if self.volume is not None and self.volume <= 0:
-           raise ValueError("Объем должен быть положительным")
-       if self.flow is not None and self.flow <= 0:
-           raise ValueError("Расход должен быть положительным")
-       if self.time_out is not None and self.time_out <= 0:
-           raise ValueError("Время выброса должно быть положительным")
+    def validate(self) -> None:
+        """Валидация компрессора"""
+        if not self.comp_type:
+            raise ValueError("Тип компрессора не может быть пустым")
+        if self.volume is not None and self.volume <= 0:
+            raise ValueError("Объем должен быть положительным")
+        if self.flow is not None and self.flow <= 0:
+            raise ValueError("Расход должен быть положительным")
+        if self.time_out is not None and self.time_out <= 0:
+            raise ValueError("Время выброса должно быть положительным")
 
-   def __post_init__(self):
-       """Валидация после инициализации"""
-       self.validate()
+    def __post_init__(self):
+        """Валидация после инициализации"""
+        self.validate()
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Compressor':
+        """Создание объекта из словаря"""
+        base_data = {
+            'id': data.get('id'),
+            'project_id': data['project_id'],
+            'substance_id': data['substance_id'],
+            'name': data['name'],
+            'equipment_type': EquipmentType(data['equipment_type']),
+            'component_enterprise': data.get('component_enterprise'),
+            'sub_id': data.get('sub_id'),
+            'pressure': data['pressure'],
+            'temperature': data['temperature'],
+            'expected_casualties': data.get('expected_casualties')
+        }
+
+        compressor_data = {
+            'comp_type': data.get('comp_type', 'Поршневой компрессор'),  # значение по умолчанию
+            'volume': data.get('volume'),
+            'flow': data.get('flow'),
+            'time_out': data.get('time_out')
+        }
+
+        return cls(**base_data, **compressor_data)
