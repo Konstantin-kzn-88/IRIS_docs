@@ -290,13 +290,14 @@ class Tank(BaseEquipment):
         tank_display = {
             'Тип резервуара': self.tank_type,
             'Объем': f"{self.volume:.2f}" if self.volume is not None else "-",
-            'Степень заполнения': f"{self.degree_filling:.2f}" if self.degree_filling is not None else "-",
+            'Степень заполнения': f"{self.degree_filling:.2%}" if self.degree_filling is not None else "-",
             'Площадь пролива': f"{self.spill_square:.2f}" if self.spill_square is not None else "-"
         }
         return {**base_display, **tank_display}
 
     def validate(self) -> None:
         """Валидация резервуара"""
+        super().validate()
         valid_types = [
             "Одностенный",
             "С внешней защитной оболочкой",
@@ -315,6 +316,31 @@ class Tank(BaseEquipment):
     def __post_init__(self):
         """Валидация после инициализации"""
         self.validate()
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Tank':
+        """Создание объекта из словаря"""
+        base_data = {
+            'id': data.get('id'),
+            'project_id': data['project_id'],
+            'substance_id': data['substance_id'],
+            'name': data['name'],
+            'equipment_type': EquipmentType(data['equipment_type']),
+            'component_enterprise': data.get('component_enterprise'),
+            'sub_id': data.get('sub_id'),
+            'pressure': data['pressure'],
+            'temperature': data['temperature'],
+            'expected_casualties': data.get('expected_casualties')
+        }
+
+        tank_data = {
+            'tank_type': data.get('tank_type', 'Одностенный'),  # значение по умолчанию
+            'volume': data.get('volume'),
+            'degree_filling': data.get('degree_filling'),
+            'spill_square': data.get('spill_square')
+        }
+
+        return cls(**base_data, **tank_data)
 
 @dataclass
 class TruckTank(BaseEquipment):
@@ -364,6 +390,31 @@ class TruckTank(BaseEquipment):
    def __post_init__(self):
        """Валидация после инициализации"""
        self.validate()
+
+   @classmethod
+   def from_dict(cls, data: Dict[str, Any]) -> 'TruckTank':
+       """Создание объекта из словаря"""
+       base_data = {
+           'id': data.get('id'),
+           'project_id': data['project_id'],
+           'substance_id': data['substance_id'],
+           'name': data['name'],
+           'equipment_type': EquipmentType(data['equipment_type']),
+           'component_enterprise': data.get('component_enterprise'),
+           'sub_id': data.get('sub_id'),
+           'pressure': data['pressure'],
+           'temperature': data['temperature'],
+           'expected_casualties': data.get('expected_casualties')
+       }
+
+       truck_data = {
+           'pressure_type': data.get('pressure_type', 'При атмосферном давлении'),  # значение по умолчанию
+           'volume': data.get('volume'),
+           'degree_filling': data.get('degree_filling'),
+           'spill_square': data.get('spill_square')
+       }
+
+       return cls(**base_data, **truck_data)
 
 @dataclass
 class Compressor(BaseEquipment):
