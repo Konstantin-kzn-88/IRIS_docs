@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QTreeWidget,
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction
 from database.db_connection import DatabaseConnection
+from widgets.calculation_results_widget import CalculationResultsWidget
 from widgets.organizations_widget import OrganizationsWidget
 from widgets.dangerous_objects_widget import DangerousObjectsWidget
 from widgets.projects_widget import ProjectsWidget
@@ -62,6 +63,10 @@ class MainWindow(QMainWindow):
         # Создаем статус бар
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
+
+        # Виджет результатов расчетов
+        self.calculation_results_widget = CalculationResultsWidget(self.db)
+        self.content.addWidget(self.calculation_results_widget)
 
     def init_widgets(self):
         """Инициализация виджетов"""
@@ -140,6 +145,13 @@ class MainWindow(QMainWindow):
         self.calc_item.addChild(QTreeWidgetItem(["Статистика"]))
         self.tree.addTopLevelItem(self.calc_item)
 
+
+    def show_calculation_results(self):
+        """Показать раздел результатов расчетов"""
+        calc_item = self.calc_item.child(0)  # Первый дочерний элемент
+        self.tree.setCurrentItem(calc_item)
+        self.content.setCurrentWidget(self.calculation_results_widget)
+
     def create_menu(self):
         """Создание главного меню"""
         menubar = self.menuBar()
@@ -175,6 +187,10 @@ class MainWindow(QMainWindow):
         help_menu.addAction("О программе", self.show_about)
         menubar.addMenu(help_menu)
 
+        # Добавить в меню Отчеты:
+        report_menu.addSeparator()
+        report_menu.addAction("Расчет сценария С1", self.show_calculation_dialog)
+
     def create_toolbar(self):
         """Создание панели инструментов"""
         toolbar = QToolBar()
@@ -204,6 +220,16 @@ class MainWindow(QMainWindow):
                                 triggered=self.show_truck_tanks))
         toolbar.addAction(QAction("Компрессоры", self,
                                   triggered=self.show_compressors))
+        # Добавить кнопку после разделителя:
+        toolbar.addSeparator()
+        toolbar.addAction(QAction("Расчет С1", self,
+                                  triggered=self.show_calculation_dialog))
+
+    def show_calculation_dialog(self):
+        """Показать диалог расчета"""
+        from calculation_dialog import CalculationDialog
+        dialog = CalculationDialog(self.db, self)
+        dialog.exec()
 
     def on_tree_item_changed(self, current, previous):
         """Обработчик смены элемента в дереве навигации"""
@@ -233,6 +259,9 @@ class MainWindow(QMainWindow):
             self.content.setCurrentWidget(self.truck_tanks_widget)
         elif item_text == "Компрессоры":
             self.content.setCurrentWidget(self.compressors_widget)
+        # В методе on_tree_item_changed добавить:
+        elif item_text == "Результаты расчетов":
+            self.content.setCurrentWidget(self.calculation_results_widget)
 
         self.statusBar.showMessage(f"Выбран раздел: {item_text}")
 

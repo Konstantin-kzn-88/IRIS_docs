@@ -28,9 +28,10 @@ class CalculationResultRepository:
                 social_losses, indirect_damage,
                 environmental_damage, total_damage,
                 casualty_risk, injury_risk, expected_damage
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
+
         params = (
             result.project_code,
             result.scenario_number,
@@ -76,6 +77,12 @@ class CalculationResultRepository:
 
         return result
 
+    def get_all(self) -> List[CalculationResult]:
+        """Получение всех результатов расчетов"""
+        query = "SELECT * FROM calculation_results ORDER BY project_code, scenario_number"
+        result = self.db.execute_query(query)
+        return [CalculationResult.from_dict(dict(row)) for row in result]
+
     def get_by_id(self, result_id: int) -> Optional[CalculationResult]:
         """Получение результата расчета по id"""
         query = "SELECT * FROM calculation_results WHERE id = ?"
@@ -92,8 +99,8 @@ class CalculationResultRepository:
             WHERE project_code = ?
             ORDER BY scenario_number
         """
-        results = self.db.execute_query(query, (project_code,))
-        return [CalculationResult.from_dict(dict(row)) for row in results]
+        result = self.db.execute_query(query, (project_code,))
+        return [CalculationResult.from_dict(dict(row)) for row in result]
 
     def get_by_scenario(self, project_code: str, scenario_number: int) -> List[CalculationResult]:
         """Получение результатов расчета для конкретного сценария"""
@@ -219,6 +226,30 @@ class CalculationResultRepository:
         query = "DELETE FROM calculation_results WHERE id = ?"
         self.db.execute_query(query, (result_id,))
         return True
+
+    def delete_by_project(self, project_code: str) -> bool:
+        """Удаление всех результатов расчета для проекта"""
+        query = "DELETE FROM calculation_results WHERE project_code = ?"
+        self.db.execute_query(query, (project_code,))
+        return True
+
+    def get_project_summary(self, project_code: str) -> dict:
+        """Получение сводной информации по проекту"""
+        query = """
+            SELECT 
+                COUNT(*) as scenario_count,
+                SUM(casualties) as total_casualties,
+                SUM(injured) as total_injured,
+                MAX(total_damage) as max_damage,
+                AVG(total_damage) as avg_damage,
+                SUM(total_damage) as sum_damage
+            FROM calculation_results 
+            WHERE project_code = ?
+        """
+        result = self.db.execute_query(query, (project_code,))
+        if result:
+            return dict(result[0])
+        return {}
 
 
 # Пример использования:
