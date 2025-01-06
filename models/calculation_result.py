@@ -10,7 +10,7 @@ class CalculationResult:
     """Доменная модель результатов расчетов"""
     id: Optional[int]
     project_code: str
-    scenario_number: int
+    scenario_number: str
     equipment_name: str
     equipment_type: EquipmentType
     substance_type: SubstanceType
@@ -59,6 +59,7 @@ class CalculationResult:
     casualty_risk: float  # Количественный риск погибших (чел/год)
     injury_risk: float  # Количественный риск пострадавших (чел/год)
     expected_damage: float  # Математическое ожидание ущерба (млн.руб/год)
+    probability: float # Вероятность
 
     def to_dict(self) -> Dict[str, Any]:
         """Преобразование в словарь для БД"""
@@ -99,7 +100,8 @@ class CalculationResult:
             'total_damage': self.total_damage,
             'casualty_risk': self.casualty_risk,
             'injury_risk': self.injury_risk,
-            'expected_damage': self.expected_damage
+            'expected_damage': self.expected_damage,
+            'probability': self.probability
         }
 
     @classmethod
@@ -142,7 +144,8 @@ class CalculationResult:
             total_damage=data['total_damage'],
             casualty_risk=data['casualty_risk'],
             injury_risk=data['injury_risk'],
-            expected_damage=data['expected_damage']
+            expected_damage=data['expected_damage'],
+            probability=data['probability']
         )
 
     def to_display_dict(self) -> Dict[str, str]:
@@ -189,7 +192,8 @@ class CalculationResult:
 
             'Риск гибели': f"{self.casualty_risk:.2e}",
             'Риск травмирования': f"{self.injury_risk:.2e}",
-            'Ожидаемый ущерб': f"{self.expected_damage:.2f}"
+            'Ожидаемый ущерб': f"{self.expected_damage:.2f}",
+            'Вероятность': f"{self.probability:.2e}"
         }
 
     def validate(self) -> None:
@@ -197,8 +201,8 @@ class CalculationResult:
         if not self.project_code:
             raise ValueError("Код проекта не может быть пустым")
 
-        if self.scenario_number <= 0:
-            raise ValueError("Номер сценария должен быть положительным")
+        if len(self.scenario_number) < 0:
+            raise ValueError("Номер сценария должен быть")
 
         if not self.equipment_name:
             raise ValueError("Наименование оборудования не может быть пустым")

@@ -10,6 +10,7 @@ from models.calculation_result import CalculationResult
 from database.repositories.equipment_repo import EquipmentRepository
 from database.repositories.project_repo import ProjectRepository
 from database.repositories.substance_repo import SubstanceRepository
+from calc_method import calc_pipe_0
 
 
 class CalculationManager:
@@ -55,61 +56,33 @@ class CalculationManager:
             raise ValueError(f"Проект с кодом {project_code} не найден")
 
         # Получаем оборудование проекта
-        equipment = self.get_project_equipment(project.id)
-        if not equipment:
+        equipments = self.get_project_equipment(project.id)
+        if not equipments:
             raise ValueError(f"Для проекта {project_code} не найдено оборудование")
 
-        # Берем первое оборудование для начального расчета
-        eq = equipment[0]
 
-        # Получаем вещество
-        substance = self.substance_repo.get_by_id(eq.substance_id)
-        if not substance:
-            raise ValueError(f"Вещество не найдено для оборудования {eq.name}")
 
-        # Создаем запись расчета
-        calculation = CalculationResult(
-            id=None,
-            project_code=project_code,
-            scenario_number=1,  # С1
-            equipment_name=eq.name,
-            equipment_type=eq.equipment_type,
-            substance_type=substance.sub_type,
-            q_10_5=0.0,
-            q_7_0=0.0,
-            q_4_2=0.0,
-            q_1_4=0.0,
-            p_53=0.0,
-            p_28=0.0,
-            p_12=0.0,
-            p_5=0.0,
-            p_2=0.0,
-            l_f=0.0,
-            d_f=0.0,
-            r_nkpr=0.0,
-            r_flash=0.0,
-            l_pt=0.0,
-            p_pt=0.0,
-            q_600=0.0,
-            q_320=0.0,
-            q_220=0.0,
-            q_120=0.0,
-            s_spill=0.0,
-            casualties=0,
-            injured=0,
-            direct_losses=0.0,
-            liquidation_costs=0.0,
-            social_losses=0.0,
-            indirect_damage=0.0,
-            environmental_damage=0.0,
-            total_damage=0.0,
-            casualty_risk=0.0,
-            injury_risk=0.0,
-            expected_damage=0.0
-        )
 
-        # Сохраняем в БД
-        self._save_calculation(calculation)
+        # Генерация расчетов
+        init_num_scenario =1
+
+        for equipment in equipments:
+
+            # Получаем вещество
+            substance = self.substance_repo.get_by_id(equipment.substance_id)
+            if not substance:
+                raise ValueError(f"Вещество не найдено для оборудования {equipment.name}")
+
+            # print(type(equipment.equipment_type.value), substance.sub_type.value)
+            if equipment.equipment_type.value == 'Pipeline':
+                if substance.sub_type.value ==0: #ЛВЖ
+                    result = calc_pipe_0.Calc(project_code, init_num_scenario, substance, equipment).get_zone()
+                    for item in result[0]:
+                        # Сохраняем в БД
+                        self._save_calculation(item)
+                    init_num_scenario = result[1]
+
+
 
     def clear_project_calculations(self, project_code: str) -> None:
         """Очистка всех расчетов для проекта"""
@@ -130,9 +103,10 @@ class CalculationManager:
                 direct_losses, liquidation_costs,
                 social_losses, indirect_damage,
                 environmental_damage, total_damage,
-                casualty_risk, injury_risk, expected_damage
+                casualty_risk, injury_risk, expected_damage,
+                probability                          
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  
         """
 
         params = (
@@ -171,7 +145,8 @@ class CalculationManager:
             calculation.total_damage,
             calculation.casualty_risk,
             calculation.injury_risk,
-            calculation.expected_damage
+            calculation.expected_damage,
+            calculation.probability  # Добавляем параметр
         )
 
         self.db.execute_query(query, params)

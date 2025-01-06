@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS compressors (
 CREATE TABLE IF NOT EXISTS calculation_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_code TEXT NOT NULL,
-    scenario_number INTEGER NOT NULL,
+    scenario_number TEXT NOT NULL,
     equipment_name TEXT NOT NULL,
     equipment_type TEXT NOT NULL,
     substance_type INTEGER NOT NULL,
@@ -190,6 +190,7 @@ CREATE TABLE IF NOT EXISTS calculation_results (
     casualty_risk REAL NOT NULL,
     injury_risk REAL NOT NULL,
     expected_damage REAL NOT NULL,
+    probability REAL NOT NULL,
     FOREIGN KEY (project_code) REFERENCES projects(project_code) ON DELETE CASCADE
 );
 

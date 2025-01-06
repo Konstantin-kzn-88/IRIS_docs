@@ -177,7 +177,22 @@ class CalculationResultDialog(QDialog):
         content = QWidget()
         scroll_layout = QVBoxLayout(content)
 
-        # Группа потерь
+        # Группа статистических показателей (добавим новую группу)
+        stats_group = QGroupBox("Статистические показатели")
+        form = QFormLayout()
+
+        # Добавляем вероятность в начало группы статистических показателей
+        form.addRow("Вероятность:", QLabel(f"{self.result.probability:.2e}"))
+
+        # Существующие показатели риска
+        form.addRow("Риск гибели:", QLabel(f"{self.result.casualty_risk:.2e}"))
+        form.addRow("Риск травмирования:", QLabel(f"{self.result.injury_risk:.2e}"))
+        form.addRow("Ожидаемый ущерб:", QLabel(f"{self.result.expected_damage:.2f} млн.руб/год"))
+
+        stats_group.setLayout(form)
+        scroll_layout.addWidget(stats_group)
+
+        # Существующая группа потерь
         loss_group = QGroupBox("Параметры ущерба")
         form = QFormLayout()
 
@@ -193,8 +208,6 @@ class CalculationResultDialog(QDialog):
                     QLabel(f"{self.result.environmental_damage:.2f} млн.руб"))
         form.addRow("Суммарный ущерб:",
                     QLabel(f"{self.result.total_damage:.2f} млн.руб"))
-        form.addRow("Ожидаемый ущерб:",
-                    QLabel(f"{self.result.expected_damage:.2f} млн.руб/год"))
 
         loss_group.setLayout(form)
         scroll_layout.addWidget(loss_group)

@@ -27,9 +27,11 @@ class CalculationResultRepository:
                 direct_losses, liquidation_costs,
                 social_losses, indirect_damage,
                 environmental_damage, total_damage,
-                casualty_risk, injury_risk, expected_damage
+                casualty_risk, injury_risk, expected_damage,
+                probability                          # Добавляем поле
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                     ?)                              # Добавляем параметр
         """
 
         params = (
@@ -68,7 +70,8 @@ class CalculationResultRepository:
             result.total_damage,
             result.casualty_risk,
             result.injury_risk,
-            result.expected_damage
+            result.expected_damage,
+            result.probability  # Добавляем параметр
         )
 
         with self.db.get_cursor() as cursor:
@@ -196,7 +199,7 @@ class CalculationResultRepository:
                 liquidation_costs = ?, social_losses = ?,
                 indirect_damage = ?, environmental_damage = ?,
                 total_damage = ?, casualty_risk = ?,
-                injury_risk = ?, expected_damage = ?
+                injury_risk = ?, expected_damage = ?, probability = ?
             WHERE id = ?
         """
         params = (
@@ -215,6 +218,7 @@ class CalculationResultRepository:
             result.indirect_damage, result.environmental_damage,
             result.total_damage, result.casualty_risk,
             result.injury_risk, result.expected_damage,
+            result.probability,
             result.id
         )
 
@@ -296,7 +300,8 @@ if __name__ == "__main__":
             total_damage=4.0,
             casualty_risk=0.0001,
             injury_risk=0.0005,
-            expected_damage=0.004
+            expected_damage=0.004,
+            probability=1e-6  # Добавляем новое поле
         )
 
         # Сохраняем в БД
