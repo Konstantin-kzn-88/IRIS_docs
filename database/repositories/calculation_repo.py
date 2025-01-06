@@ -28,10 +28,11 @@ class CalculationResultRepository:
                 social_losses, indirect_damage,
                 environmental_damage, total_damage,
                 casualty_risk, injury_risk, expected_damage,
-                probability                          # Добавляем поле
+                probability, mass_risk, mass_in_accident,
+                mass_in_factor, mass_in_equipment                        
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                     ?)                              # Добавляем параметр
+                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                     ?)                              
         """
 
         params = (
@@ -71,7 +72,11 @@ class CalculationResultRepository:
             result.casualty_risk,
             result.injury_risk,
             result.expected_damage,
-            result.probability  # Добавляем параметр
+            result.probability,
+            result.mass_risk,
+            result.mass_in_accident,
+            result.mass_in_factor,
+            result.mass_in_equipment
         )
 
         with self.db.get_cursor() as cursor:
@@ -199,7 +204,9 @@ class CalculationResultRepository:
                 liquidation_costs = ?, social_losses = ?,
                 indirect_damage = ?, environmental_damage = ?,
                 total_damage = ?, casualty_risk = ?,
-                injury_risk = ?, expected_damage = ?, probability = ?
+                injury_risk = ?, expected_damage = ?, probability = ?,
+                mass_risk = ?, mass_in_accident = ?,
+                mass_in_factor = ?, mass_in_equipment = ?  
             WHERE id = ?
         """
         params = (
@@ -219,6 +226,10 @@ class CalculationResultRepository:
             result.total_damage, result.casualty_risk,
             result.injury_risk, result.expected_damage,
             result.probability,
+            result.mass_risk,
+            result.mass_in_accident,
+            result.mass_in_factor,
+            result.mass_in_equipment,
             result.id
         )
 
@@ -301,7 +312,11 @@ if __name__ == "__main__":
             casualty_risk=0.0001,
             injury_risk=0.0005,
             expected_damage=0.004,
-            probability=1e-6  # Добавляем новое поле
+            probability=1e-6,  # Добавляем новое поле
+            mass_risk=1e-6,
+            mass_in_accident=1,
+            mass_in_factor=1,
+            mass_in_equipment=1
         )
 
         # Сохраняем в БД

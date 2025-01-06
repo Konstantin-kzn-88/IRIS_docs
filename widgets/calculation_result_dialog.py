@@ -85,6 +85,7 @@ class CalculationResultDialog(QDialog):
         form.addRow("Количество пострадавших:", QLabel(str(self.result.injured)))
         form.addRow("Риск гибели:", QLabel(f"{self.result.casualty_risk:.2e}"))
         form.addRow("Риск травмирования:", QLabel(f"{self.result.injury_risk:.2e}"))
+        form.addRow("Риск потерь:", QLabel(f"{self.result.mass_risk:.2e}"))
 
         risk_group.setLayout(form)
         scroll_layout.addWidget(risk_group)
@@ -187,8 +188,8 @@ class CalculationResultDialog(QDialog):
         # Существующие показатели риска
         form.addRow("Риск гибели:", QLabel(f"{self.result.casualty_risk:.2e}"))
         form.addRow("Риск травмирования:", QLabel(f"{self.result.injury_risk:.2e}"))
-        form.addRow("Ожидаемый ущерб:", QLabel(f"{self.result.expected_damage:.2f} млн.руб/год"))
-
+        form.addRow("Ожидаемый ущерб:", QLabel(f"{self.result.expected_damage:.2e} млн.руб/год"))
+        form.addRow("Ожидаемый ущерб потерь:", QLabel(f"{self.result.mass_risk:.2e} т/год"))
         stats_group.setLayout(form)
         scroll_layout.addWidget(stats_group)
 
@@ -208,6 +209,12 @@ class CalculationResultDialog(QDialog):
                     QLabel(f"{self.result.environmental_damage:.2f} млн.руб"))
         form.addRow("Суммарный ущерб:",
                     QLabel(f"{self.result.total_damage:.2f} млн.руб"))
+        form.addRow("Масса в аварии:",
+                    QLabel(f"{self.result.mass_in_accident:.2f} т"))
+        form.addRow("Масса в поража.щем факторе:",
+                    QLabel(f"{self.result.mass_in_factor:.2f} т"))
+        form.addRow("Масса в оборудовании:",
+                    QLabel(f"{self.result.mass_in_equipment:.2f} т"))
 
         loss_group.setLayout(form)
         scroll_layout.addWidget(loss_group)

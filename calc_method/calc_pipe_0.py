@@ -1,5 +1,6 @@
 from models.calculation_result import CalculationResult
 
+
 class Calc:
     def __init__(self, project_code, init_num_scenario, substance, equipment):
         self.project_code = project_code
@@ -8,7 +9,7 @@ class Calc:
         self.equipment = equipment
 
     def get_zone(self):
-        result=[]
+        result = []
 
         for _ in range(6):
             # Создаем запись расчета
@@ -50,9 +51,13 @@ class Calc:
                 casualty_risk=0.0,
                 injury_risk=0.0,
                 expected_damage=0.0,
-                probability=1.0e-6  # Добавляем начальное значение вероятности
+                probability=1.0e-6,  # Добавляем новое поле
+                mass_risk=1e-6,
+                mass_in_accident=1,
+                mass_in_factor=1,
+                mass_in_equipment=1  # Добавляем начальное значение вероятности
             )
             result.append(calculation)
-            self.init_num_scenario+=1
+            self.init_num_scenario += 1
         # Возвращаем список сценариев result и номер последнего сценария
-        return (result,self.init_num_scenario)
+        return (result, self.init_num_scenario)

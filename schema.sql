@@ -191,6 +191,10 @@ CREATE TABLE IF NOT EXISTS calculation_results (
     injury_risk REAL NOT NULL,
     expected_damage REAL NOT NULL,
     probability REAL NOT NULL,
+    mass_risk REAL NOT NULL,
+    mass_in_accident REAL NOT NULL,
+    mass_in_factor REAL NOT NULL,
+    mass_in_equipment REAL NOT NULL,
     FOREIGN KEY (project_code) REFERENCES projects(project_code) ON DELETE CASCADE
 );
 

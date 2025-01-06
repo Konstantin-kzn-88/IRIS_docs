@@ -104,9 +104,10 @@ class CalculationManager:
                 social_losses, indirect_damage,
                 environmental_damage, total_damage,
                 casualty_risk, injury_risk, expected_damage,
-                probability                          
+                probability, mass_risk, mass_in_accident,
+                mass_in_factor, mass_in_equipment                          
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  
+                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  
         """
 
         params = (
@@ -146,7 +147,11 @@ class CalculationManager:
             calculation.casualty_risk,
             calculation.injury_risk,
             calculation.expected_damage,
-            calculation.probability  # Добавляем параметр
+            calculation.probability,
+            calculation.mass_risk,
+            calculation.mass_in_accident,
+            calculation.mass_in_factor,
+            calculation.mass_in_equipment
         )
 
         self.db.execute_query(query, params)

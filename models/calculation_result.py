@@ -59,7 +59,12 @@ class CalculationResult:
     casualty_risk: float  # Количественный риск погибших (чел/год)
     injury_risk: float  # Количественный риск пострадавших (чел/год)
     expected_damage: float  # Математическое ожидание ущерба (млн.руб/год)
-    probability: float # Вероятность
+    probability: float
+    mass_risk: float  # Математическое ожидание потерь (т/год)
+    mass_in_accident: float  # Масса в аварии (т)
+    mass_in_factor: float # Масса в поражающем факторе (т)
+    mass_in_equipment: float # Масса в оборудовании (т)
+
 
     def to_dict(self) -> Dict[str, Any]:
         """Преобразование в словарь для БД"""
@@ -101,7 +106,11 @@ class CalculationResult:
             'casualty_risk': self.casualty_risk,
             'injury_risk': self.injury_risk,
             'expected_damage': self.expected_damage,
-            'probability': self.probability
+            'probability': self.probability,
+            'mass_risk': self.mass_risk,
+            'mass_in_accident': self.mass_in_accident,
+            'mass_in_factor': self.mass_in_factor,
+            'mass_in_equipment': self.mass_in_equipment,
         }
 
     @classmethod
@@ -145,7 +154,11 @@ class CalculationResult:
             casualty_risk=data['casualty_risk'],
             injury_risk=data['injury_risk'],
             expected_damage=data['expected_damage'],
-            probability=data['probability']
+            probability=data['probability'],
+            mass_risk=data['mass_risk'],
+            mass_in_accident=data['mass_in_accident'],
+            mass_in_factor=data['mass_in_factor'],
+            mass_in_equipment=data['mass_in_equipment'],
         )
 
     def to_display_dict(self) -> Dict[str, str]:
@@ -192,8 +205,12 @@ class CalculationResult:
 
             'Риск гибели': f"{self.casualty_risk:.2e}",
             'Риск травмирования': f"{self.injury_risk:.2e}",
-            'Ожидаемый ущерб': f"{self.expected_damage:.2f}",
-            'Вероятность': f"{self.probability:.2e}"
+            'Ожидаемый ущерб': f"{self.expected_damage:.2e}",
+            'Вероятность': f"{self.probability:.2e}",
+            'Риск потерь': f"{self.mass_risk:.2e}",
+            'Масса ОВ в аварии': f"{self.mass_in_accident:.2f}",
+            'Масса ОВ в ПФ': f"{self.mass_in_factor:.2f}",
+            'Масса ОВ в оборудовании': f"{self.mass_in_equipment:.2f}"
         }
 
     def validate(self) -> None:
@@ -222,9 +239,15 @@ class CalculationResult:
 
         if any(value < 0 for value in [
             self.casualty_risk, self.injury_risk,
-            self.expected_damage
+            self.expected_damage, self.mass_risk
         ]):
             raise ValueError("Значения риска не могут быть отрицательными")
+
+        if any(value < 0 for value in [
+            self.mass_in_factor, self.mass_in_equipment,
+            self.mass_in_accident
+        ]):
+            raise ValueError("Значения массы не могут быть отрицательными")
 
     def __post_init__(self):
         """Валидация после инициализации"""
