@@ -2,6 +2,7 @@
 
 from typing import List
 from database.db_connection import DatabaseConnection
+from models.dangerous_object import DangerousObject
 from models.equipment import (
     BaseEquipment, EquipmentType, Pipeline, Pump,
     TechnologicalDevice, Tank, TruckTank, Compressor
@@ -55,6 +56,17 @@ class CalculationManager:
         if not project:
             raise ValueError(f"Проект с кодом {project_code} не найден")
 
+        # Получаем ОПО для проекта
+        dangerous_object = self.db.execute_query(
+            "SELECT * FROM dangerous_objects WHERE id = ?",
+            (project.opo_id,)
+        )
+        if not dangerous_object:
+            raise ValueError(f"ОПО для проекта {project_code} не найден")
+
+        # Преобразуем результат запроса в объект
+        dangerous_object = DangerousObject.from_dict(dict(dangerous_object[0]))
+
         # Получаем оборудование проекта
         equipments = self.get_project_equipment(project.id)
         if not equipments:
@@ -76,7 +88,7 @@ class CalculationManager:
             # print(type(equipment.equipment_type.value), substance.sub_type.value)
             if equipment.equipment_type.value == 'Pipeline':
                 if substance.sub_type.value ==0: #ЛВЖ
-                    result = calc_pipe_0.Calc(project_code, init_num_scenario, substance, equipment).get_zone()
+                    result = calc_pipe_0.Calc(project_code, init_num_scenario, substance, equipment, dangerous_object).get_zone()
                     for item in result[0]:
                         # Сохраняем в БД
                         self._save_calculation(item)

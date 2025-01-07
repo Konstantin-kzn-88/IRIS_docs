@@ -58,6 +58,16 @@ class DangerousObjectDialog(QDialog):
         ])
         form_layout.addRow("Класс опасности *:", self.hazard_class_combo)
 
+        # Добавляем новый комбобокс для класса загроможденности
+        self.view_space_combo = QComboBox()
+        self.view_space_combo.addItems([
+            "Класс 1 (наиболее загроможденное)",
+            "Класс 2 (сильно загроможденное)",
+            "Класс 3 (средне загроможденное)",
+            "Класс 4 (слабо загроможденное)"
+        ])
+        form_layout.addRow("Класс загроможденности *:", self.view_space_combo)
+
         self.location_edit = QLineEdit()
         self.location_edit.setPlaceholderText("Адрес местонахождения ОПО")
         form_layout.addRow("Местоположение *:", self.location_edit)
@@ -143,6 +153,8 @@ class DangerousObjectDialog(QDialog):
 
         self.location_edit.setText(self.dangerous_object.location)
         self.employee_count_spin.setValue(self.dangerous_object.employee_count)
+        # Добавляем установку значения view_space
+        self.view_space_combo.setCurrentIndex(self.dangerous_object.view_space - 1)
 
     def get_object_data(self) -> DangerousObject:
         """Получение данных ОПО из формы"""
@@ -158,5 +170,7 @@ class DangerousObjectDialog(QDialog):
             reg_number=self.reg_number_edit.text().strip(),
             hazard_class=hazard_class,
             location=self.location_edit.text().strip(),
-            employee_count=self.employee_count_spin.value()
+            employee_count=self.employee_count_spin.value(),
+            view_space=self.view_space_combo.currentIndex() + 1  # Получаем значение view_space
+
         )

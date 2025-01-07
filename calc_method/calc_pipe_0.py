@@ -12,11 +12,12 @@ M_TO_KM = 0.001
 
 
 class Calc:
-    def __init__(self, project_code, init_num_scenario, substance, equipment):
+    def __init__(self, project_code, init_num_scenario, substance, equipment, dangerous_object):
         self.project_code = project_code
         self.init_num_scenario = init_num_scenario
         self.substance = substance
         self.equipment = equipment
+        self.dangerous_object = dangerous_object
 
     def get_zone(self):
         result = []
@@ -87,7 +88,7 @@ class Calc:
                                                               heat_capacity_liquid=self.substance.heat_capacity_liquid).calculation() * KG_TO_T
 
                 p_53, p_28, p_12, p_5, p_3 = calc_tvs_explosion.Explosion().explosion_class_zone(
-                    class_substance=self.substance.class_substance, view_space=4,
+                    class_substance=self.substance.class_substance, view_space=self.dangerous_object.view_space,
                     mass=mass_in_factor * PART_GAS_IN_EXPLOSION * T_TO_KG,
                     heat_of_combustion=self.substance.heat_of_combustion, sigma=self.substance.sigma,
                     energy_level=self.substance.energy_level)

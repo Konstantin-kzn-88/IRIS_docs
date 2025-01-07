@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS dangerous_objects (
     hazard_class TEXT NOT NULL,
     location TEXT NOT NULL,
     employee_count INTEGER NOT NULL,
+    view_space INTEGER NOT NULL DEFAULT 4 CHECK(view_space BETWEEN 1 AND 4),
     FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
 );
 
