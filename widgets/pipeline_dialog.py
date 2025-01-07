@@ -120,6 +120,14 @@ class PipelineDialog(QDialog):
         self.casualties_spin.setRange(0, 1000)
         form_layout.addRow("Ожидаемые пострадавшие:", self.casualties_spin)
 
+        # Доля аварийного участка
+        self.accident_rate_spin = QDoubleSpinBox()
+        self.accident_rate_spin.setRange(0.01, 1.00)
+        self.accident_rate_spin.setDecimals(2)
+        self.accident_rate_spin.setSingleStep(0.01)
+        self.accident_rate_spin.setValue(1.00)
+        form_layout.addRow("Доля аварийного участка:", self.accident_rate_spin)
+
         layout.addLayout(form_layout)
 
         # Добавляем подсказку о обязательных полях
@@ -238,6 +246,9 @@ class PipelineDialog(QDialog):
         if self.pipeline.expected_casualties is not None:
             self.casualties_spin.setValue(self.pipeline.expected_casualties)
 
+        self.accident_rate_spin.setValue(
+            self.pipeline.accident_rate if self.pipeline.accident_rate is not None else 1.00)
+
     def get_pipeline_data(self) -> Pipeline:
         """Получение данных трубопровода из формы"""
         return Pipeline(
@@ -255,5 +266,6 @@ class PipelineDialog(QDialog):
             length_meters=self.length_spin.value(),
             diameter_pipeline=self.diameter_spin.value(),
             flow=self.flow_spin.value() if self.flow_spin.value() > 0 else None,
-            time_out=self.time_out_spin.value() if self.time_out_spin.value() > 0 else None
+            time_out=self.time_out_spin.value() if self.time_out_spin.value() > 0 else None,
+            accident_rate=self.accident_rate_spin.value()
         )

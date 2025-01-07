@@ -35,7 +35,7 @@ class Calc:
 
         mass_in_equipment = self.__calculate_pipeline_volume(self.equipment.length_meters,
                                                              self.equipment.diameter_pipeline) * self.substance.density_liquid * KG_TO_T
-        mass_in_accident = mass_in_equipment + (self.equipment.flow * self.equipment.time_out) * KG_TO_T
+        mass_in_accident = mass_in_equipment*self.equipment.accident_rate + (self.equipment.flow * self.equipment.time_out) * KG_TO_T
 
         for type_accident in tree['full'][1]:
             if type_accident == 'strait_fire':

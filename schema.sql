@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS pipelines (
     diameter_pipeline REAL NOT NULL,
     flow REAL,
     time_out REAL,
+    accident_rate REAL CHECK(accident_rate BETWEEN 0.01 AND 1.00) DEFAULT 1.00, -- новое поле
     FOREIGN KEY (id) REFERENCES base_equipment(id) ON DELETE CASCADE
 );
 

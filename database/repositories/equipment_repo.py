@@ -31,13 +31,13 @@ class EquipmentRepository:
             query = """
                 INSERT INTO pipelines (
                     id, diameter_category, length_meters,
-                    diameter_pipeline, flow, time_out
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    diameter_pipeline, flow, time_out, accident_rate
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """
             params = (
                 base_id, equipment.diameter_category,
                 equipment.length_meters, equipment.diameter_pipeline,
-                equipment.flow, equipment.time_out
+                equipment.flow, equipment.time_out, equipment.accident_rate
             )
         elif isinstance(equipment, Pump):
             query = """

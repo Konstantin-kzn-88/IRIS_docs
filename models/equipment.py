@@ -94,6 +94,19 @@ class Pipeline(BaseEquipment):
     diameter_pipeline: float
     flow: Optional[float]
     time_out: Optional[float]
+    accident_rate: float = 1.00  # новое поле с значением по умолчанию
+
+    def to_dict(self) -> Dict[str, Any]:
+        base_dict = super().to_dict()
+        pipeline_dict = {
+            'diameter_category': self.diameter_category,
+            'length_meters': self.length_meters,
+            'diameter_pipeline': self.diameter_pipeline,
+            'flow': self.flow,
+            'time_out': self.time_out,
+            'accident_rate': self.accident_rate  # добавить в словарь
+        }
+        return {**base_dict, **pipeline_dict}
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Pipeline':
@@ -116,11 +129,11 @@ class Pipeline(BaseEquipment):
             'length_meters': data['length_meters'],
             'diameter_pipeline': data['diameter_pipeline'],
             'flow': data.get('flow'),
-            'time_out': data.get('time_out')
+            'time_out': data.get('time_out'),
+            'accident_rate': data.get('accident_rate', 1.00)  # Добавляем это поле
         }
 
         return cls(**base_data, **pipeline_data)
-
 
 @dataclass
 class Pump(BaseEquipment):

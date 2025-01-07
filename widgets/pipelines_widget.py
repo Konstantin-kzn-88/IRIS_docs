@@ -50,11 +50,11 @@ class PipelinesWidget(QWidget):
 
         # Создаем таблицу
         self.table = QTableWidget()
-        self.table.setColumnCount(8)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
             "ID", "Код проекта", "Название",
             "Проект", "Длина (м)",
-            "Диаметр (мм)", "Расход (кг/с)", "Давление (МПа)"
+            "Диаметр (мм)", "Расход (кг/с)", "Давление (МПа)", "Доля авар.уч-ка."
         ])
 
         # Растягиваем заголовки
@@ -177,6 +177,11 @@ class PipelinesWidget(QWidget):
             item = QTableWidgetItem(f"{pipeline.pressure:.2f}")
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(i, 7, item)
+
+            # Доля участка:
+            item = QTableWidgetItem(f"{pipeline.accident_rate:.2f}")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(i, 8, item)
 
     def on_search(self, text: str):
         """Обработчик поиска"""
