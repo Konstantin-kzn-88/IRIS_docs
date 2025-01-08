@@ -132,7 +132,7 @@ class Explosion:
             impulse_arr.append(impulse)
             probit_arr.append(probit)
             probability_arr.append(probability)
-            radius += 0.001
+            radius += 0.1
 
         result = (radius_arr, delta_p_arr, impulse_arr, probit_arr, probability_arr)
 

@@ -17,10 +17,8 @@ class Calc:
         result = []
 
         # Оперделение массы вещества в оборудовании и аварии
-        mass_in_equipment = self.__calculate_pipeline_volume(self.equipment.length_meters,
-                                                             self.equipment.diameter_pipeline) * self.substance.density_liquid * self.constants.KG_TO_T
-        mass_in_accident = mass_in_equipment * self.equipment.accident_rate + (
-                self.equipment.flow * self.equipment.time_out) * self.constants.KG_TO_T
+        mass_in_equipment = self.equipment.volume * self.equipment.degree_filling * self.substance.density_liquid * self.constants.KG_TO_T
+        mass_in_accident = mass_in_equipment
 
         # Пожар пролива (полный)
         calc = strait_fire_calc.Calculation().get_zone_and_risk_param(
@@ -28,17 +26,17 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.diameter_category,
+            model_type=self.equipment.tank_type,
             substance_type=self.substance.sub_type,
-            S_spill=mass_in_accident * self.constants.SPILL,
+            S_spill=self.equipment.spill_square,
             molecular_weight=self.substance.molecular_weight,
             boiling_temperature_liquid=self.substance.boiling_temperature_liquid,
             type_accident='full',
             dead_man=0,
             injured_man=self.equipment.expected_casualties,
-            volume_equipment=0,
-            diametr_pipe=self.equipment.diameter_pipeline,
-            lenght_pipe=self.equipment.length_meters * self.constants.M_TO_KM,
+            volume_equipment=self.equipment.volume,
+            diametr_pipe=0,
+            lenght_pipe=0,
             degree_damage=0.5,
             mass_in_accident=mass_in_accident,
             mass_in_factor=mass_in_accident,
@@ -46,19 +44,20 @@ class Calc:
         result.append(calc)
         self.init_num_scenario += 1
 
+
         # Взрыв (полный)
 
         mass_evaporation = calc_evaporation.Evaporation(volume_equipment=mass_in_equipment,
-                                                        degree_filling=1,
-                                                        spill_square=mass_in_equipment * self.constants.SPILL,
+                                                        degree_filling=self.equipment.degree_filling,
+                                                        spill_square=self.equipment.spill_square,
                                                         pressure_equipment=self.equipment.pressure,
                                                         temperature_equipment=self.equipment.temperature,
                                                         density_liquid=self.substance.density_liquid,
                                                         molecular_weight=self.substance.molecular_weight * self.constants.MOLE_TO_KMOLE,
                                                         boiling_temperature_liquid=self.substance.boiling_temperature_liquid,
-                                                        heat_evaporation_liquid=self.substance.heat_evaporation_liquid * self.constants.KJ_TO_J,
+                                                        heat_evaporation_liquid=self.substance.heat_evaporation_liquid*self.constants.KJ_TO_J,
                                                         adiabatic=self.substance.adiabatic,
-                                                        heat_capacity_liquid=self.substance.heat_capacity_liquid * self.constants.KJ_TO_J).calculation()
+                                                        heat_capacity_liquid=self.substance.heat_capacity_liquid*self.constants.KJ_TO_J).calculation()
 
         print(self.equipment.name, 'mass_evaporation', mass_evaporation)
 
@@ -67,9 +66,9 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.diameter_category,
+            model_type=self.equipment.tank_type,
             substance_type=self.substance.sub_type,
-            S_spill=mass_in_accident * self.constants.SPILL,
+            S_spill=self.equipment.spill_square,
             class_substance=self.substance.class_substance,
             view_space=self.dangerous_object.view_space,
             heat_of_combustion=self.substance.heat_of_combustion,
@@ -78,9 +77,9 @@ class Calc:
             type_accident='full',
             dead_man=self.equipment.expected_casualties,
             injured_man=0,
-            volume_equipment=0,
-            diametr_pipe=self.equipment.diameter_pipeline,
-            lenght_pipe=self.equipment.length_meters * self.constants.M_TO_KM,
+            volume_equipment=self.equipment.volume,
+            diametr_pipe=0,
+            lenght_pipe=0,
             degree_damage=0.6,
             mass_in_accident=mass_in_accident,
             mass_in_factor=mass_evaporation,
@@ -94,15 +93,15 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.diameter_category,
+            model_type=self.equipment.tank_type,
             substance_type=self.substance.sub_type,
-            S_spill=mass_in_accident * self.constants.SPILL,
+            S_spill=self.equipment.spill_square,
             type_accident='full',
             dead_man=0,
             injured_man=0,
-            volume_equipment=0,
-            diametr_pipe=self.equipment.diameter_pipeline,
-            lenght_pipe=self.equipment.length_meters * self.constants.M_TO_KM,
+            volume_equipment=self.equipment.volume,
+            diametr_pipe=0,
+            lenght_pipe=0,
             degree_damage=0.3,
             mass_in_accident=mass_in_accident,
             mass_in_factor=0,
@@ -116,17 +115,17 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.diameter_category,
+            model_type=self.equipment.tank_type,
             substance_type=self.substance.sub_type,
-            S_spill=mass_in_accident * self.constants.SPILL * self.constants.PART,
+            S_spill=self.equipment.spill_square * self.constants.PART,
             molecular_weight=self.substance.molecular_weight,
             boiling_temperature_liquid=self.substance.boiling_temperature_liquid,
             type_accident='partial',
             dead_man=0,
             injured_man=1,
-            volume_equipment=0,
-            diametr_pipe=self.equipment.diameter_pipeline,
-            lenght_pipe=self.equipment.length_meters * self.constants.M_TO_KM,
+            volume_equipment=self.equipment.volume,
+            diametr_pipe=0,
+            lenght_pipe=0,
             degree_damage=0.5 * self.constants.PART,
             mass_in_accident=mass_in_accident * self.constants.PART,
             mass_in_factor=mass_in_accident * self.constants.PART,
@@ -137,34 +136,34 @@ class Calc:
 
         # Вспышка (частичный)
         mass_evaporation = calc_evaporation.Evaporation(volume_equipment=mass_in_equipment,
-                                                        degree_filling=1,
-                                                        spill_square=mass_in_equipment * self.constants.SPILL * self.constants.PART,
+                                                        degree_filling=self.equipment.degree_filling,
+                                                        spill_square=self.equipment.spill_square,
                                                         pressure_equipment=self.equipment.pressure,
                                                         temperature_equipment=self.equipment.temperature,
                                                         density_liquid=self.substance.density_liquid,
                                                         molecular_weight=self.substance.molecular_weight * self.constants.MOLE_TO_KMOLE,
                                                         boiling_temperature_liquid=self.substance.boiling_temperature_liquid,
-                                                        heat_evaporation_liquid=self.substance.heat_evaporation_liquid * self.constants.KJ_TO_J,
+                                                        heat_evaporation_liquid=self.substance.heat_evaporation_liquid*self.constants.KJ_TO_J,
                                                         adiabatic=self.substance.adiabatic,
-                                                        heat_capacity_liquid=self.substance.heat_capacity_liquid * self.constants.KJ_TO_J).calculation()
+                                                        heat_capacity_liquid=self.substance.heat_capacity_liquid*self.constants.KJ_TO_J).calculation()
 
         calc = flash_calc.Calculation().get_zone_and_risk_param(
             project_code=self.project_code,
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.diameter_category,
+            model_type=self.equipment.tank_type,
             substance_type=self.substance.sub_type,
-            S_spill=mass_in_accident * self.constants.SPILL * self.constants.PART,
+            S_spill=self.equipment.spill_square * self.constants.PART,
             molecular_weight=self.substance.molecular_weight,
             boiling_temperature_liquid=self.substance.boiling_temperature_liquid,
             lower_concentration_limit=self.substance.lower_concentration_limit,
             type_accident='partial',
             dead_man=0,
             injured_man=1,
-            volume_equipment=0,
-            diametr_pipe=self.equipment.diameter_pipeline,
-            lenght_pipe=self.equipment.length_meters * self.constants.M_TO_KM,
+            volume_equipment=self.equipment.volume,
+            diametr_pipe=0,
+            lenght_pipe=0,
             degree_damage=0.6 * self.constants.PART,
             mass_in_accident=mass_in_accident * self.constants.PART,
             mass_in_factor=mass_evaporation,
@@ -179,15 +178,15 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.diameter_category,
+            model_type=self.equipment.tank_type,
             substance_type=self.substance.sub_type,
-            S_spill=mass_in_accident * self.constants.SPILL * self.constants.PART,
+            S_spill=self.equipment.spill_square * self.constants.PART,
             type_accident='partial',
             dead_man=0,
             injured_man=0,
-            volume_equipment=0,
-            diametr_pipe=self.equipment.diameter_pipeline,
-            lenght_pipe=self.equipment.length_meters * self.constants.M_TO_KM,
+            volume_equipment=self.equipment.volume,
+            diametr_pipe=0,
+            lenght_pipe=0,
             degree_damage=0.3 * self.constants.PART,
             mass_in_accident=mass_in_accident * self.constants.PART,
             mass_in_factor=0,
@@ -198,33 +197,3 @@ class Calc:
 
         return (result, self.init_num_scenario)
 
-    def __calculate_pipeline_volume(self, length_m: float, diameter_mm: float) -> float:
-        """
-        Рассчитывает объем цилиндрического трубопровода в кубических метрах
-
-        Args:
-            length_m (float): Длина трубопровода в метрах
-            diameter_mm (float): Диаметр трубопровода в миллиметрах
-
-        Returns:
-            float: Объем трубопровода в кубических метрах
-
-        Raises:
-            ValueError: Если длина или диаметр меньше или равны 0
-        """
-        import math
-
-        # Проверка входных данных
-        if length_m <= 0 or diameter_mm <= 0:
-            raise ValueError("Длина и диаметр должны быть положительными числами")
-
-        # Переводим диаметр из мм в метры
-        diameter_m = diameter_mm / 1000
-
-        # Рассчитываем радиус в метрах
-        radius_m = diameter_m / 2
-
-        # Рассчитываем объем по формуле V = π * r² * h
-        volume = math.pi * (radius_m ** 2) * length_m
-
-        return volume

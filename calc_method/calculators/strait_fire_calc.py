@@ -39,6 +39,7 @@ class Calculation():
         :return:
         """
 
+        print('in fire module' , volume_equipment)
         # расчитываем зоны (пожар пролива)
         q_10_5, q_7_0, q_4_2, q_1_4 = calc_strait_fire.Strait_fire().termal_class_zone(
             S_spill=S_spill, m_sg=self.constants.M_SG, mol_mass=molecular_weight,

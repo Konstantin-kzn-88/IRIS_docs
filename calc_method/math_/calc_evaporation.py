@@ -175,10 +175,10 @@ class Evaporation:
 
 
 if __name__ == '__main__':
-    Evaporation(volume_equipment=8.6, degree_filling=1, spill_square=172,
-                 pressure_equipment=1, temperature_equipment=10, density_liquid=750,
-                 molecular_weight=0.1, boiling_temperature_liquid=150, heat_evaporation_liquid=356000,
-                 adiabatic=1.02, heat_capacity_liquid=1200).report()
+    Evaporation(volume_equipment=3000, degree_filling=0.75, spill_square=3000,
+                 pressure_equipment=0.07, temperature_equipment=20, density_liquid=750,
+                 molecular_weight=0.1, boiling_temperature_liquid=35, heat_evaporation_liquid=295000,
+                 adiabatic=1.23, heat_capacity_liquid=2100).report()
 
     print(Evaporation(volume_equipment=200, degree_filling=0.8, spill_square=500,
                  pressure_equipment=0.3, temperature_equipment=45, density_liquid=840,

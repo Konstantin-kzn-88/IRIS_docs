@@ -44,9 +44,10 @@ class Calculation():
         """
 
         # расчитываем зоны (взрыв)
+
         p_53, p_28, p_12, p_5, p_2 = calc_tvs_explosion.Explosion().explosion_class_zone(
             class_substance=class_substance, view_space=view_space,
-            mass=mass_in_factor * self.constants.PART_GAS_IN_EXPLOSION * self.constants.T_TO_KG,
+            mass=mass_in_factor * self.constants.PART_GAS_IN_EXPLOSION,
             heat_of_combustion=heat_of_combustion, sigma=sigma,
             energy_level=energy_level)
 
@@ -116,7 +117,7 @@ class Calculation():
             probability=probability,
             mass_risk=probability * round(mass_in_accident, 2),
             mass_in_accident=round(mass_in_accident, 2),
-            mass_in_factor=round(mass_in_factor * self.constants.PART_GAS_IN_EXPLOSION, 2),
+            mass_in_factor=round(mass_in_factor * self.constants.PART_GAS_IN_EXPLOSION*self.constants.KG_TO_T, 2),
             mass_in_equipment=round(mass_in_equipment, 2)
         )
 
