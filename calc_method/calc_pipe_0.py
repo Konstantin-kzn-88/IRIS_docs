@@ -1,4 +1,3 @@
-from models.calculation_result import CalculationResult
 from .config import calc_constants
 from .calculators import strait_fire_calc, explosion_calc, flash_calc, no_factors_calc
 from .math_ import calc_evaporation
@@ -16,8 +15,6 @@ class Calc:
 
     def get_zone(self):
         result = []
-
-        print('init_calc')
 
         # Оперделение массы вещества в оборудовании и аварии
         mass_in_equipment = self.__calculate_pipeline_volume(self.equipment.length_meters,

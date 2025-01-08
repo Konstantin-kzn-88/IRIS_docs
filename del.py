@@ -1,9 +1,16 @@
 
-score = [
-    ('Alice', 100),
-    ('Bob', 90),
-    ('Eva', 95),
-    ('Dima', 85),
-]
-score.sort(key=lambda x: x[1],reverse=True)
-print(score)
+score = {
+    'Alice': 'Алиса',
+    'Bob': 'Боб',
+    'Eva': 'Ева',
+    'Dima': 'Дима',
+}
+
+phrase = input('Get phrase: ')
+
+for i in phrase.split(' '):
+    if i in score.keys():
+        phrase = phrase.replace(i,score[i])
+
+print(phrase)
+
