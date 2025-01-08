@@ -4,12 +4,25 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                              QHeaderView, QMessageBox, QLineEdit,
                              QComboBox, QLabel)
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt, QCollator
 from database.db_connection import DatabaseConnection
 from database.repositories.calculation_repo import CalculationResultRepository
 from database.repositories.project_repo import ProjectRepository
 from models.equipment import EquipmentType
 from models.substance import SubstanceType
 
+
+class ScenarioNumberItem(QTableWidgetItem):
+    """Специальный класс для сортировки номеров сценариев"""
+    def __init__(self, text):
+        super().__init__(text)
+        # Извлекаем числовое значение из строки (убираем 'C' и преобразуем в число)
+        self.number = int(text.replace('C', ''))
+
+    def __lt__(self, other):
+        """Переопределяем метод сравнения для правильной сортировки"""
+        return self.number < other.number
 
 class CalculationResultsWidget(QWidget):
     """Виджет для отображения результатов расчетов"""
@@ -60,13 +73,14 @@ class CalculationResultsWidget(QWidget):
 
         # Создаем таблицу
         self.table = QTableWidget()
-        self.table.setColumnCount(12)
+        self.table.setColumnCount(16)
         self.table.setHorizontalHeaderLabels([
             "ID", "Код проекта", "№ сценария",
             "Оборудование", "Тип оборудования",
             "Тип вещества", "Погибшие", "Пострадавшие",
-            "Прямые потери", "Косвенный ущерб",
-            "Экологический ущерб", "Суммарный ущерб"
+            "Суммарный ущерб", "dP=2кПа",
+            "q=1.4", "Кол.риск(погиб.)", "Частота,1/год",
+            "Мав,т", "Моб,т", "Мпф, т"
         ])
 
         # Растягиваем заголовки
@@ -83,6 +97,10 @@ class CalculationResultsWidget(QWidget):
         header.setSectionResizeMode(9, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(10, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(11, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(12, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(13, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(14, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(15, QHeaderView.ResizeMode.ResizeToContents)
 
         self.table.setSortingEnabled(True)
         layout.addWidget(self.table)
@@ -136,6 +154,12 @@ class CalculationResultsWidget(QWidget):
 
             filtered_results.append(result)
 
+        # Находим максимальные значения
+        max_total_damage = max((r.total_damage for r in filtered_results), default=0)
+        max_p_2 = max((r.p_2 for r in filtered_results), default=0)
+        max_q_1_4 = max((r.q_1_4 for r in filtered_results), default=0)
+        max_casualties = max((r.casualties for r in filtered_results), default=0)
+
         # Заполняем таблицу
         self.table.setRowCount(len(filtered_results))
 
@@ -150,8 +174,9 @@ class CalculationResultsWidget(QWidget):
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(i, 1, item)
 
-            # Номер сценария
-            item = QTableWidgetItem(f"C{result.scenario_number}")
+            # Номер сценария - используем специальный класс
+            scenario_number = f"C{result.scenario_number}"
+            item = ScenarioNumberItem(scenario_number)
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(i, 2, item)
 
@@ -173,6 +198,8 @@ class CalculationResultsWidget(QWidget):
             # Погибшие
             item = QTableWidgetItem(str(result.casualties))
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            if result.casualties == max_casualties and max_casualties > 0:
+                item.setBackground(QColor(255, 200, 200))  # Красный
             self.table.setItem(i, 6, item)
 
             # Пострадавшие
@@ -180,25 +207,54 @@ class CalculationResultsWidget(QWidget):
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(i, 7, item)
 
-            # Прямые потери
-            item = QTableWidgetItem(f"{result.direct_losses:.2f}")
-            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.table.setItem(i, 8, item)
-
-            # Косвенный ущерб
-            item = QTableWidgetItem(f"{result.indirect_damage:.2f}")
-            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.table.setItem(i, 9, item)
-
-            # Экологический ущерб
-            item = QTableWidgetItem(f"{result.environmental_damage:.2f}")
-            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.table.setItem(i, 10, item)
-
             # Суммарный ущерб
             item = QTableWidgetItem(f"{result.total_damage:.2f}")
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            if result.total_damage == max_total_damage and max_total_damage > 0:
+                item.setBackground(QColor(255, 255, 200))  # Желтый
+            self.table.setItem(i, 8, item)
+
+            # dP=2
+            item = QTableWidgetItem(f"{result.p_2:.2f}")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            if result.p_2 == max_p_2 and max_p_2 > 0:
+                item.setBackground(QColor(200, 255, 200))  # Зеленый
+            self.table.setItem(i, 9, item)
+
+            # q=1.4
+            item = QTableWidgetItem(f"{result.q_1_4:.2f}")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            if result.q_1_4 == max_q_1_4 and max_q_1_4 > 0:
+                item.setBackground(QColor(200, 200, 255))  # Синий
+            self.table.setItem(i, 10, item)
+
+            # Коллективный риск погибшие
+            item = QTableWidgetItem(f"{result.casualty_risk:.2e}")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(i, 11, item)
+            # Коллективный риск погибшие
+            item = QTableWidgetItem(f"{result.probability:.2e}")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(i, 12, item)
+
+            # Мав,т
+            item = QTableWidgetItem(f"{result.mass_in_accident:.2f}")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(i, 13, item)
+
+            # Моб,т
+            item = QTableWidgetItem(f"{result.mass_in_equipment:.2f}")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(i, 14, item)
+
+            # Мпф,т
+            item = QTableWidgetItem(f"{result.mass_in_factor:.2f}")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(i, 15, item)
+
+        # Включаем сортировку и сортируем по номеру сценария по умолчанию
+        self.table.setSortingEnabled(True)
+        self.table.sortItems(2)  # 2 - индекс колонки с номером сценария
 
     def on_search(self, text: str):
         """Обработчик поиска"""

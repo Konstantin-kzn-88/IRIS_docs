@@ -124,9 +124,9 @@ class CalculationResultDialog(QDialog):
         pressure_group = QGroupBox("Избыточное давление")
         form = QFormLayout()
 
-        form.addRow("53 кПа:", QLabel(f"{self.result.p_53:.2f}"))
+        form.addRow("70 кПа:", QLabel(f"{self.result.p_53:.2f}"))
         form.addRow("28 кПа:", QLabel(f"{self.result.p_28:.2f}"))
-        form.addRow("12 кПа:", QLabel(f"{self.result.p_12:.2f}"))
+        form.addRow("14 кПа:", QLabel(f"{self.result.p_12:.2f}"))
         form.addRow("5 кПа:", QLabel(f"{self.result.p_5:.2f}"))
         form.addRow("2 кПа:", QLabel(f"{self.result.p_2:.2f}"))
 
@@ -149,13 +149,13 @@ class CalculationResultDialog(QDialog):
         scroll_layout.addWidget(other_group)
 
         # Группа тротилового эквивалента
-        tnt_group = QGroupBox("Тротиловый эквивалент")
+        tnt_group = QGroupBox("Огненный шар")
         form = QFormLayout()
 
-        form.addRow("600 кПа:", QLabel(f"{self.result.q_600:.2f}"))
-        form.addRow("320 кПа:", QLabel(f"{self.result.q_320:.2f}"))
-        form.addRow("220 кПа:", QLabel(f"{self.result.q_220:.2f}"))
-        form.addRow("120 кПа:", QLabel(f"{self.result.q_120:.2f}"))
+        form.addRow("600 кДж/м2:", QLabel(f"{self.result.q_600:.2f}"))
+        form.addRow("320 кДж/м2:", QLabel(f"{self.result.q_320:.2f}"))
+        form.addRow("220 кДж/м2:", QLabel(f"{self.result.q_220:.2f}"))
+        form.addRow("120 кДж/м2:", QLabel(f"{self.result.q_120:.2f}"))
 
         tnt_group.setLayout(form)
         scroll_layout.addWidget(tnt_group)
