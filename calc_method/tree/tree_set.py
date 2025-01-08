@@ -22,7 +22,7 @@
 # Где partial_depressurization и full_depressurization - кортежи ((...вероятность событий...)(...методы расчета...))
 
 equipment_substance_mapping = {
-    'Technological_devices': {
+    'Technological_device': {
         0: {  # ЛВЖ
             'partial': (
                 (0.04, 0.16, 0.04, 0.152, 0.608), ('liguid_jet', 'no_factors', 'gas_jet', 'flash', 'no_factors')),
@@ -34,7 +34,7 @@ equipment_substance_mapping = {
         },
         2: {  # СУГ
             'partial': (
-                (0.04, 0.16, 0.04, 0.152, 0.608), ('liguid_jet', 'no_factors', 'gas_jet', 'flash', 'no_factors')),
+                (0.04, 0.16, 0.04, 0.152, 0.608), ('liguid_jet', 'no_factors', 'no_factors_gas', 'flash', 'no_factors')),
             'full': ((0.05, 0.19, 0.76), ('fire_ball', 'explosion', 'no_factors')),
         },
         3: {  # СУГ токсичный

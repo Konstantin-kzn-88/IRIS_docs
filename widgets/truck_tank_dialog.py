@@ -68,7 +68,7 @@ class TruckTankDialog(QDialog):
         self.pressure_type_combo = QComboBox()
         self.pressure_type_combo.addItems([
             "Под избыточным давлением",
-            "При атмосферном давлении"
+            # "При атмосферном давлении"
         ])
         form_layout.addRow("Тип давления *:", self.pressure_type_combo)
 

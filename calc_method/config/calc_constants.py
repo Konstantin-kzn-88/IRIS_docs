@@ -12,3 +12,4 @@ class CalculationConstants:
     M_SG = 0.06 # удельная массовая скорость выгорания
     WIND_VELOCITY = 1 # скорость ветра
     KJ_TO_J = 1000 # коэффициент перевода кДж в Дж
+    TIME_OUT_DIVICE = 300

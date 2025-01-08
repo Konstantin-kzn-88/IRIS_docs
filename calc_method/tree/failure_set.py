@@ -42,7 +42,7 @@ equipment_failure_rates = {
             }
         }
     },
-    'Device': {
+    'Technological_device': {
         'categories': {
             'Сосуды хранения под давлением': {
                 'partial': 1.0E-4,

@@ -52,7 +52,7 @@ class TruckTanksWidget(QWidget):
         self.pressure_type_filter.addItem("Все")
         self.pressure_type_filter.addItems([
             "Под избыточным давлением",
-            "При атмосферном давлении"
+            # "При атмосферном давлении"
         ])
         self.pressure_type_filter.currentIndexChanged.connect(self.on_filter_changed)
         filter_layout.addWidget(self.pressure_type_filter)

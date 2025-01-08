@@ -1,6 +1,6 @@
 from typing import Any
 
-from calc_method.math_ import calc_strait_fire, calc_damage
+from calc_method.math_ import calc_jet_fire, calc_damage
 from calc_method.config import calc_constants
 from calc_method.tree import failure_set, tree_set
 from models.calculation_result import CalculationResult
@@ -14,7 +14,7 @@ class Calculation():
 
     def get_zone_and_risk_param(self, project_code: str, scenario_number: str, equipment_name: str, equipment_type: Any,
                                 model_type: str, substance_type: Any,
-                                S_spill: int, molecular_weight: float, boiling_temperature_liquid: float,
+                                S_spill: int,
                                 type_accident: str, dead_man: int, injured_man: int, volume_equipment: int,
                                 diametr_pipe: int, lenght_pipe: float, degree_damage: float, mass_in_accident: float,
                                 mass_in_factor: float, mass_in_equipment: float):
@@ -40,22 +40,18 @@ class Calculation():
         """
 
         # расчитываем зоны (пожар пролива)
-        q_10_5, q_7_0, q_4_2, q_1_4 = calc_strait_fire.Strait_fire().termal_class_zone(
-            S_spill=S_spill, m_sg=self.constants.M_SG, mol_mass=molecular_weight,
-            t_boiling=boiling_temperature_liquid, wind_velocity=self.constants.WIND_VELOCITY)
 
+        r_nkpr, r_flash = calc_jet_fire.Torch().jetfire_size(
+            consumption=mass_in_accident / self.constants.TIME_OUT_DIVICE, type=1 if S_spill > 0 else 2)
 
         # набор дерева событий
         tree = tree_set.equipment_substance_mapping[equipment_type.value][
             substance_type.value]
 
-
         # вероятность сценария
         probability = failure_set.equipment_failure_rates[equipment_type.value]['categories'][model_type][
                           type_accident] * \
-                      tree[type_accident][0][tree[type_accident][1].index('strait_fire')]
-
-
+                      tree[type_accident][0][tree[type_accident][1].index('liguid_jet')]
 
         # Опасного вещества в поражающем факторе
         mass_in_factor = mass_in_factor
@@ -82,10 +78,10 @@ class Calculation():
             equipment_name=equipment_name,
             equipment_type=equipment_type,
             substance_type=substance_type,
-            q_10_5=q_10_5,
-            q_7_0=q_7_0,
-            q_4_2=q_4_2,
-            q_1_4=q_1_4,
+            q_10_5=0,
+            q_7_0=0,
+            q_4_2=0,
+            q_1_4=0,
             p_53=0,
             p_28=0,
             p_12=0,
@@ -93,8 +89,8 @@ class Calculation():
             p_2=0,
             l_f=0.0,
             d_f=0.0,
-            r_nkpr=0.0,
-            r_flash=0.0,
+            r_nkpr=r_nkpr,
+            r_flash=r_flash,
             l_pt=0.0,
             p_pt=0.0,
             q_600=0.0,
