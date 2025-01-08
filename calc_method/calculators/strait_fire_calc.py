@@ -12,6 +12,7 @@ class Calculation():
         # Инициализация констант
         self.constants = calc_constants.CalculationConstants()
 
+
     def get_zone_and_risk_param(self, project_code: str, scenario_number: str, equipment_name: str, equipment_type: Any,
                                 model_type: str, substance_type: Any,
                                 S_spill: int, molecular_weight: float, boiling_temperature_liquid: float,
@@ -39,16 +40,19 @@ class Calculation():
         :return:
         """
 
-        print('in fire module' , volume_equipment)
+        print(equipment_name, equipment_type)
         # расчитываем зоны (пожар пролива)
         q_10_5, q_7_0, q_4_2, q_1_4 = calc_strait_fire.Strait_fire().termal_class_zone(
             S_spill=S_spill, m_sg=self.constants.M_SG, mol_mass=molecular_weight,
             t_boiling=boiling_temperature_liquid, wind_velocity=self.constants.WIND_VELOCITY)
 
+        print(equipment_name, equipment_type, 'zone fire')
+
         # набор дерева событий
 
         tree = tree_set.equipment_substance_mapping[equipment_type.value][
             substance_type.value]
+        print(equipment_name, equipment_type, 'tree')
         # вероятность сценария
         probability = failure_set.equipment_failure_rates[equipment_type.value]['categories'][model_type][type_accident] * \
                       tree[type_accident][0][tree[type_accident][1].index('strait_fire')]

@@ -59,7 +59,6 @@ class Calc:
                                                         adiabatic=self.substance.adiabatic,
                                                         heat_capacity_liquid=self.substance.heat_capacity_liquid*self.constants.KJ_TO_J).calculation()
 
-        print(self.equipment.name, 'mass_evaporation', mass_evaporation)
 
         calc = explosion_calc.Calculation().get_zone_and_risk_param(
             project_code=self.project_code,

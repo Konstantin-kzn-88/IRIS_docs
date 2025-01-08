@@ -126,7 +126,8 @@ equipment_substance_mapping = {
             'full': ((1.0,), ('toxi_spill',))
         }
     },
-    'Truck_tank_without_pressure': {
+
+    'Truck_tank': {
         0: {  # ЛВЖ
             'partial': ((0.1, 0.0450, 0.8550), ('strait_fire', 'flash', 'no_factors')),
             'full': ((0.1, 0.18, 0.72), ('strait_fire', 'explosion', 'no_factors')),
@@ -134,41 +135,6 @@ equipment_substance_mapping = {
         1: {  # ЛВЖ токсичная
             'partial': ((0.1, 0.0450, 0.8550), ('strait_fire', 'flash', 'toxi')),
             'full': ((0.1, 0.18, 0.72), ('strait_fire', 'explosion', 'toxi')),
-        },
-        2: {  # СУГ (не может хранится в резервуаре без давления)
-            'partial': None,
-            'full': None
-        },
-        3: {  # СУГ токсичный
-            'partial': None,
-            'full': None
-        },
-        4: {  # ГЖ
-            'partial': ((0.05, 0.0475, 0.9025), ('strait_fire', 'strait_fire', 'no_factors')),
-            'full': ((0.05, 0.0475, 0.9025), ('strait_fire', 'strait_fire', 'no_factors')),
-        },
-        5: {  # ГГ
-            'partial': None,
-            'full': None
-        },
-        6: {  # ГГ токсичный
-            'partial': None,
-            'full': None
-        },
-        7: {  # ХОВ
-            'partial': ((1.0,), ('toxi_spill',)),
-            'full': ((1.0,), ('toxi_spill',))
-        }
-    },
-    'Truck_tank_with_pressure': {
-        0: {  # ЛВЖ
-            'partial': (
-                (0.04, 0.16, 0.04, 0.152, 0.608), ('liguid_jet', 'no_factors', 'gas_jet', 'flash', 'no_factors')),
-            'full': ((0.05, 0.19, 0.76), ('strait_fire', 'explosion', 'no_factors')),
-        },
-        1: {  # ЛВЖ токсичная
-            'partial': ((0.04, 0.16, 0.04, 0.152, 0.608), ('liguid_jet', 'toxi', 'gas_jet', 'flash', 'toxi')),
-            'full': ((0.05, 0.19, 0.76), ('strait_fire', 'explosion', 'toxi')),
         },
         2: {  # СУГ
             'partial': (
