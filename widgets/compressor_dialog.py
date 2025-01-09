@@ -8,6 +8,7 @@ from models.equipment import Compressor, EquipmentType
 from database.db_connection import DatabaseConnection
 from database.repositories.project_repo import ProjectRepository
 from database.repositories.substance_repo import SubstanceRepository
+from utilities.equipment_name_validator import validate_equipment_name
 
 
 class CompressorDialog(QDialog):
@@ -51,7 +52,7 @@ class CompressorDialog(QDialog):
 
         # Основные поля
         self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText("Введите наименование компрессора")
+        self.name_edit.setPlaceholderText("Введите наименование в формате: Название (составляющая)")
         form_layout.addRow("Наименование *:", self.name_edit)
 
         # Компонент предприятия
@@ -158,6 +159,12 @@ class CompressorDialog(QDialog):
 
     def validate_and_accept(self):
         """Проверка данных перед принятием"""
+        equipment_name = self.name_edit.text().strip()
+        is_valid, error_message = validate_equipment_name(equipment_name)
+        if not is_valid:
+            QMessageBox.warning(self, "Предупреждение", error_message)
+            self.name_edit.setFocus()
+            return
         if self.project_combo.currentData() is None:
             QMessageBox.warning(self, "Предупреждение",
                               "Выберите проект")
