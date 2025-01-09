@@ -63,15 +63,6 @@ class RiskAnalysisWidget(QWidget):
         # Добавляем таблицу в layout
         layout.addWidget(self.table)
 
-        # Панель с кнопками
-        btn_layout = QHBoxLayout()
-
-        self.refresh_btn = QPushButton("Обновить")
-        self.refresh_btn.clicked.connect(self.load_data)
-        btn_layout.addWidget(self.refresh_btn)
-
-        btn_layout.addStretch()
-        layout.addLayout(btn_layout)
 
     def load_data(self, project_code: str = None, opo_id: Optional[int] = None):
         """Загрузка данных анализа риска"""
