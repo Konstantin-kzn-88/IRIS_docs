@@ -63,7 +63,7 @@ class RiskAnalysisWidget(QWidget):
         # Добавляем таблицу в layout
         layout.addWidget(self.table)
 
-
+    # иии
     def load_data(self, project_code: str = None, opo_id: Optional[int] = None):
         """Загрузка данных анализа риска"""
         if not project_code:
