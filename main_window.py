@@ -17,6 +17,7 @@ from widgets.tanks_widget import TanksWidget
 from widgets.technological_devices_widget import TechnologicalDevicesWidget
 from widgets.truck_tanks_widget import TruckTanksWidget
 from widgets.compressors_widget import CompressorsWidget
+from widgets.risk_analysis_widget import RiskAnalysisWidget
 
 
 class MainWindow(QMainWindow):
@@ -110,6 +111,10 @@ class MainWindow(QMainWindow):
         self.compressors_widget = CompressorsWidget(self.db)
         self.content.addWidget(self.compressors_widget)
 
+        # Добавляем виджет анализа риска
+        self.risk_analysis_widget = RiskAnalysisWidget(self.db)
+        self.content.addWidget(self.risk_analysis_widget)
+
     def create_tree_items(self):
         """Создание элементов дерева навигации"""
         # Организации
@@ -141,7 +146,7 @@ class MainWindow(QMainWindow):
         # Расчеты
         self.calc_item = QTreeWidgetItem(["Расчеты и отчеты"])
         self.calc_item.addChild(QTreeWidgetItem(["Результаты расчетов"]))
-        self.calc_item.addChild(QTreeWidgetItem(["Анализ рисков"]))
+        self.calc_item.addChild(QTreeWidgetItem(["Анализ риска"]))  # Добавляем пункт
         self.calc_item.addChild(QTreeWidgetItem(["Статистика"]))
         self.tree.addTopLevelItem(self.calc_item)
 
@@ -262,6 +267,33 @@ class MainWindow(QMainWindow):
         # В методе on_tree_item_changed добавить:
         elif item_text == "Результаты расчетов":
             self.content.setCurrentWidget(self.calculation_results_widget)
+        elif item_text == "Анализ риска":
+            self.content.setCurrentWidget(self.risk_analysis_widget)
+
+            # Получаем проект из результатов расчетов
+            project_code = None
+            opo_id = None
+
+            # Получаем все результаты расчетов
+            results = self.calculation_results_widget.table.rowCount()
+            if results > 0:
+                # Берем код проекта из первой строки
+                project_code_item = self.calculation_results_widget.table.item(0, 1)  # Колонка с кодом проекта
+                if project_code_item:
+                    project_code = project_code_item.text()
+
+                    # Находим проект по коду
+                    project = next((p for p in self.project_repo.get_all()
+                                    if p.project_code == project_code), None)
+
+                    # Если нашли проект, получаем его ОПО
+                    if project:
+                        opo_id = project.opo_id
+
+            # Загружаем данные в виджет анализа риска
+            self.risk_analysis_widget.load_data(project_code, opo_id)
+
+        self.statusBar.showMessage(f"Выбран раздел: {item_text}")
 
         self.statusBar.showMessage(f"Выбран раздел: {item_text}")
 
