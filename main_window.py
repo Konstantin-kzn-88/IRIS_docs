@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QTreeWidget,
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction
 from database.db_connection import DatabaseConnection
+from database.repositories.project_repo import ProjectRepository
 from widgets.calculation_results_widget import CalculationResultsWidget
 from widgets.organizations_widget import OrganizationsWidget
 from widgets.dangerous_objects_widget import DangerousObjectsWidget
@@ -28,6 +29,9 @@ class MainWindow(QMainWindow):
         self.db = db
         self.setWindowTitle("Промышленная безопасность")
         self.setMinimumSize(1024, 768)
+
+        # Добавляем репозиторий проектов
+        self.project_repo = ProjectRepository(db)
 
         # Создаем центральный виджет
         central_widget = QWidget()
@@ -270,28 +274,39 @@ class MainWindow(QMainWindow):
         elif item_text == "Анализ риска":
             self.content.setCurrentWidget(self.risk_analysis_widget)
 
-            # Получаем проект из результатов расчетов
+            # Получаем данные из таблицы результатов
+            results_table = self.calculation_results_widget.table
             project_code = None
             opo_id = None
 
-            # Получаем все результаты расчетов
-            results = self.calculation_results_widget.table.rowCount()
-            if results > 0:
-                # Берем код проекта из первой строки
-                project_code_item = self.calculation_results_widget.table.item(0, 1)  # Колонка с кодом проекта
-                if project_code_item:
-                    project_code = project_code_item.text()
+            print("Rows in results table:", results_table.rowCount())  # Отладочный вывод
 
+            if results_table and results_table.rowCount() > 0:
+                # Перебираем первые несколько строк для гарантии
+                for row in range(min(5, results_table.rowCount())):
+                    project_code_item = results_table.item(row, 1)  # Столбец с кодом проекта
+                    if project_code_item:
+                        project_code = project_code_item.text().strip()
+                        print(f"Found project code in row {row}: {project_code}")  # Отладочный вывод
+                        if project_code:
+                            break
+
+                if project_code:
                     # Находим проект по коду
                     project = next((p for p in self.project_repo.get_all()
                                     if p.project_code == project_code), None)
 
+                    print(f"Project found: {project is not None}")  # Отладочный вывод
+
                     # Если нашли проект, получаем его ОПО
                     if project:
                         opo_id = project.opo_id
+                        print(f"OPO ID: {opo_id}")  # Отладочный вывод
+
+            print(f"Final project code: {project_code}")  # Отладочный вывод
 
             # Загружаем данные в виджет анализа риска
-            self.risk_analysis_widget.load_data(project_code, opo_id)
+            self.risk_analysis_widget.load_data(project_code=project_code, opo_id=opo_id)
 
         self.statusBar.showMessage(f"Выбран раздел: {item_text}")
 

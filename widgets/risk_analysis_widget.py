@@ -1,7 +1,7 @@
 # widgets/risk_analysis_widget.py
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                                QTableWidget, QTableWidgetItem, QPushButton,
-                               QHeaderView, QMessageBox, QLabel)
+                               QHeaderView, QMessageBox, QLabel, QFrame)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont
 from database.db_connection import DatabaseConnection
@@ -9,7 +9,7 @@ from database.repositories.calculation_repo import CalculationResultRepository
 from database.repositories.dangerous_object_repo import DangerousObjectRepository
 from models.risk_analysis import ComponentRiskAnalysis
 from typing import List, Optional
-from .risk_statistics_widget import RiskStatisticsWidget  # Добавляем импорт
+from .risk_statistics_widget import RiskStatisticsWidget
 
 
 class RiskAnalysisWidget(QWidget):
@@ -20,10 +20,7 @@ class RiskAnalysisWidget(QWidget):
         self.db = db
         self.calc_repo = CalculationResultRepository(db)
         self.opo_repo = DangerousObjectRepository(db)
-
-        # Создаем виджет статистики
         self.statistics_widget = RiskStatisticsWidget()
-
         self.setup_ui()
 
     def setup_ui(self):
@@ -77,14 +74,15 @@ class RiskAnalysisWidget(QWidget):
         layout.addLayout(btn_layout)
 
     def load_data(self, project_code: str = None, opo_id: Optional[int] = None):
-        """
-        Загрузка данных анализа риска
+        """Загрузка данных анализа риска"""
+        if not project_code:
+            QMessageBox.warning(
+                self,
+                "Предупреждение",
+                "Не выполнены расчеты. Сначала выполните расчет сценариев для проекта."
+            )
+            return
 
-        Args:
-            project_code: Код проекта для фильтрации
-            opo_id: ID опасного производственного объекта
-        """
-        # Проверяем наличие расчетов
         if not self.check_calculation_status(project_code):
             return
 
@@ -93,19 +91,31 @@ class RiskAnalysisWidget(QWidget):
         self.table.setRowCount(0)
 
         # Получаем результаты расчетов
-        if project_code:
-            results = self.calc_repo.get_by_project(project_code)
-        else:
-            results = self.calc_repo.get_all()
-
-        # Получаем ОПО
+        results = self.calc_repo.get_by_project(project_code)
         dangerous_object = self.opo_repo.get_by_id(opo_id) if opo_id else None
 
-        # Получаем уникальные компоненты
+        print(f"Got {len(results)} results and dangerous_object: {dangerous_object is not None}")
+
+        # Получаем уникальные компоненты из component_enterprise или equipment_name
         components = set()
         for result in results:
+            component = None
             if hasattr(result, 'component_enterprise') and result.component_enterprise:
-                components.add(result.component_enterprise)
+                # Если есть компонент предприятия, используем его
+                component = result.component_enterprise
+            elif hasattr(result, 'equipment_name') and result.equipment_name:
+                # Извлекаем компонент из текста в скобках
+                import re
+                match = re.search(r'\((.*?)\)', result.equipment_name)
+                if match:
+                    component = match.group(1)
+
+            if component:
+                components.add(component)
+
+        print(f"Found {len(components)} unique components:", components)
+
+        print(f"Found {len(components)} unique components")
 
         # Рассчитываем анализ риска для каждого компонента
         analyses = []
@@ -175,7 +185,10 @@ class RiskAnalysisWidget(QWidget):
             self.table.setItem(i, 10, item)
 
             # Уровень риска, дБR
-            item = QTableWidgetItem(f"{analysis.risk_level_dbr:.2f}")
+            if analysis.risk_level_dbr == float('-inf'):
+                item = QTableWidgetItem("-∞")
+            else:
+                item = QTableWidgetItem(f"{analysis.risk_level_dbr:.2f}")
             item.setTextAlignment(Qt.AlignmentFlag.AlignRight)
             self.table.setItem(i, 11, item)
 
@@ -217,23 +230,14 @@ class RiskAnalysisWidget(QWidget):
     def check_calculation_status(self, project_code: Optional[str]) -> bool:
         """
         Проверка наличия результатов расчета
-
-        Args:
-            project_code: Код проекта
-
-        Returns:
-            bool: True если есть результаты, False если нет
         """
+        # Проверяем наличие кода проекта
         if not project_code:
-            QMessageBox.warning(
-                self,
-                "Предупреждение",
-                "Не выполнены расчеты. Сначала выполните расчет сценариев для проекта."
-            )
             return False
 
         # Проверяем наличие результатов
         results = self.calc_repo.get_by_project(project_code)
+
         if not results:
             QMessageBox.warning(
                 self,
