@@ -5,6 +5,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from typing import List
 from models.calculation_result import CalculationResult
+from PySide6.QtWidgets import QVBoxLayout, QWidget
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+import numpy as np
+from matplotlib.figure import Figure
+from .fn_fg_plots import FNFGPlotsWidget
 
 
 class StatisticBox(QFrame):
@@ -36,6 +42,7 @@ class StatisticBox(QFrame):
         layout.addWidget(value_label)
 
 
+
 class RiskStatisticsWidget(QWidget):
     """Виджет для отображения статистики по рискам"""
 
@@ -45,33 +52,42 @@ class RiskStatisticsWidget(QWidget):
 
     def setup_ui(self):
         """Настройка пользовательского интерфейса"""
-        layout = QGridLayout(self)
-        layout.setSpacing(10)
+        layout = QVBoxLayout(self)
+
+        # Создаем разметку для статистических показателей
+        grid_layout = QGridLayout()
+        grid_layout.setSpacing(10)
 
         # Добавляем статистические показатели
         self.total_scenarios = StatisticBox("Всего сценариев", "0")
-        layout.addWidget(self.total_scenarios, 0, 0)
+        grid_layout.addWidget(self.total_scenarios, 0, 0)
 
         self.max_casualties = StatisticBox("Макс. погибших", "0")
-        layout.addWidget(self.max_casualties, 0, 1)
+        grid_layout.addWidget(self.max_casualties, 0, 1)
 
         self.max_injured = StatisticBox("Макс. пострадавших", "0")
-        layout.addWidget(self.max_injured, 0, 2)
+        grid_layout.addWidget(self.max_injured, 0, 2)
 
         self.max_damage = StatisticBox("Макс. ущерб (млн.руб)", "0.00")
-        layout.addWidget(self.max_damage, 0, 3)
+        grid_layout.addWidget(self.max_damage, 0, 3)
 
         self.total_death_risk = StatisticBox("Суммарный риск гибели (чел/год)", "0.00")
-        layout.addWidget(self.total_death_risk, 1, 0)
+        grid_layout.addWidget(self.total_death_risk, 1, 0)
 
         self.total_injury_risk = StatisticBox("Суммарный риск травмирования (чел/год)", "0.00")
-        layout.addWidget(self.total_injury_risk, 1, 1)
+        grid_layout.addWidget(self.total_injury_risk, 1, 1)
 
         self.max_death_frequency = StatisticBox("Макс. частота аварий с гибелью (1/год)", "0.00")
-        layout.addWidget(self.max_death_frequency, 1, 2)
+        grid_layout.addWidget(self.max_death_frequency, 1, 2)
 
         self.max_eco_damage = StatisticBox("Макс. экол. ущерб (млн.руб)", "0.00")
-        layout.addWidget(self.max_eco_damage, 1, 3)
+        grid_layout.addWidget(self.max_eco_damage, 1, 3)
+
+        layout.addLayout(grid_layout)
+
+        # Добавляем F/N и F/G диаграммы
+        self.fnfg_plots = FNFGPlotsWidget()
+        layout.addWidget(self.fnfg_plots)
 
     def update_statistics(self, results: List[CalculationResult]):
         """Обновление статистики на основе результатов расчета"""
@@ -104,3 +120,6 @@ class RiskStatisticsWidget(QWidget):
 
         max_eco_damage = max(r.environmental_damage for r in results)
         self.max_eco_damage.findChildren(QLabel)[-1].setText(f"{max_eco_damage:.2f}")
+
+        # Обновляем F/N и F/G диаграммы
+        self.fnfg_plots.update_plots(results)

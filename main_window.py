@@ -303,12 +303,12 @@ class MainWindow(QMainWindow):
                         opo_id = project.opo_id
                         print(f"OPO ID: {opo_id}")  # Отладочный вывод
 
-            print(f"Final project code: {project_code}")  # Отладочный вывод
+            # Получаем все результаты расчетов для проекта
+            calculation_results = self.calculation_results_widget.get_all_results()
 
-            # Загружаем данные в виджет анализа риска
+            # Загружаем данные в виджет анализа риска и обновляем статистику и графики
             self.risk_analysis_widget.load_data(project_code=project_code, opo_id=opo_id)
-
-        self.statusBar.showMessage(f"Выбран раздел: {item_text}")
+            self.risk_analysis_widget.statistics_widget.update_statistics(calculation_results)
 
         self.statusBar.showMessage(f"Выбран раздел: {item_text}")
 

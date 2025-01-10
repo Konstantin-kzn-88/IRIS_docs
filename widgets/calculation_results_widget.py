@@ -1,4 +1,6 @@
 # widgets/calculation_results_widget.py
+from typing import List
+
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                              QTableWidget, QTableWidgetItem, QPushButton,
                              QHeaderView, QMessageBox, QLineEdit,
@@ -9,6 +11,7 @@ from PySide6.QtCore import Qt, QCollator
 from database.db_connection import DatabaseConnection
 from database.repositories.calculation_repo import CalculationResultRepository
 from database.repositories.project_repo import ProjectRepository
+from models.calculation_result import CalculationResult
 from models.equipment import EquipmentType
 from models.substance import SubstanceType
 
@@ -292,3 +295,15 @@ class CalculationResultsWidget(QWidget):
         from .calculation_result_dialog import CalculationResultDialog
         dialog = CalculationResultDialog(result, self)
         dialog.exec()
+
+    def get_all_results(self) -> List[CalculationResult]:
+        """Получение всех результатов расчетов из таблицы"""
+        results = []
+
+        for row in range(self.table.rowCount()):
+            result_id = int(self.table.item(row, 0).text())
+            result = self.repo.get_by_id(result_id)
+            if result:
+                results.append(result)
+
+        return results
