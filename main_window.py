@@ -1,8 +1,8 @@
 # main_window.py
 from PySide6.QtWidgets import (QMainWindow, QWidget, QTreeWidget,
-                             QTreeWidgetItem, QHBoxLayout, QVBoxLayout,
-                             QStackedWidget, QMenuBar, QMenu, QStatusBar,
-                             QToolBar, QStyle)
+                               QTreeWidgetItem, QHBoxLayout, QVBoxLayout,
+                               QStackedWidget, QMenuBar, QMenu, QStatusBar,
+                               QToolBar, QStyle, QFileDialog, QMessageBox)
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction
 from database.db_connection import DatabaseConnection
@@ -19,6 +19,15 @@ from widgets.technological_devices_widget import TechnologicalDevicesWidget
 from widgets.truck_tanks_widget import TruckTanksWidget
 from widgets.compressors_widget import CompressorsWidget
 from widgets.risk_analysis_widget import RiskAnalysisWidget
+
+from docx import Document
+from report_generator import ReportGenerator
+
+import os
+import sys
+import subprocess
+from PySide6.QtWidgets import QProgressDialog
+from PySide6.QtCore import Qt
 
 
 class MainWindow(QMainWindow):
@@ -119,6 +128,61 @@ class MainWindow(QMainWindow):
         self.risk_analysis_widget = RiskAnalysisWidget(self.db)
         self.content.addWidget(self.risk_analysis_widget)
 
+    def generate_word_report(self):
+        """Генерация отчета в Word"""
+        try:
+            # Получаем активный проект из текущей вкладки расчетов
+            project_code = None
+            if self.calculation_results_widget:
+                # Берем код проекта из первой строки таблицы результатов
+                if self.calculation_results_widget.table.rowCount() > 0:
+                    project_code = self.calculation_results_widget.table.item(0, 1).text()
+
+            # Открываем диалог сохранения
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Сохранить отчет",
+                "",
+                "Документ Word (*.docx)"
+            )
+
+            if file_path:
+                # Показываем индикатор прогресса
+                progress = QProgressDialog("Формирование отчета...", None, 0, 100, self)
+                progress.setWindowModality(Qt.WindowModal)
+                progress.show()
+                progress.setValue(10)
+
+                # Создаем генератор отчетов
+                report_gen = ReportGenerator(self.db)
+
+                # Генерируем отчет
+                report_gen.generate_full_report(file_path, project_code)
+
+                progress.setValue(100)
+
+                QMessageBox.information(
+                    self,
+                    "Успешно",
+                    f"Отчет сохранен в файл:\n{file_path}"
+                )
+
+                # Открываем файл
+                if sys.platform == 'win32':
+                    os.startfile(file_path)
+                elif sys.platform == 'darwin':  # macOS
+                    subprocess.call(['open', file_path])
+                else:  # linux
+                    subprocess.call(['xdg-open', file_path])
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось сформировать отчет:\n{str(e)}"
+            )
+
+
     def create_tree_items(self):
         """Создание элементов дерева навигации"""
         # Организации
@@ -189,6 +253,7 @@ class MainWindow(QMainWindow):
         report_menu = QMenu("&Отчеты", self)
         report_menu.addAction("Статистика по ОПО")
         report_menu.addAction("Анализ рисков")
+        report_menu.addAction("Отчет в Word", self.generate_word_report)
         menubar.addMenu(report_menu)
 
         # Меню Помощь
@@ -198,7 +263,7 @@ class MainWindow(QMainWindow):
 
         # Добавить в меню Отчеты:
         report_menu.addSeparator()
-        report_menu.addAction("Расчет сценария С1", self.show_calculation_dialog)
+        report_menu.addAction("Результаты расчетов", self.show_calculation_dialog)
 
     def create_toolbar(self):
         """Создание панели инструментов"""
@@ -229,10 +294,7 @@ class MainWindow(QMainWindow):
                                 triggered=self.show_truck_tanks))
         toolbar.addAction(QAction("Компрессоры", self,
                                   triggered=self.show_compressors))
-        # Добавить кнопку после разделителя:
-        toolbar.addSeparator()
-        toolbar.addAction(QAction("Расчет С1", self,
-                                  triggered=self.show_calculation_dialog))
+
 
     def show_calculation_dialog(self):
         """Показать диалог расчета"""

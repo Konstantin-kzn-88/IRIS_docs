@@ -92,22 +92,26 @@ class FNFGPlotsWidget(QWidget):
 
         if casualty_data:
             people, probability = list(sum_data.keys()), list(sum_data.values())
-            # для сплошных линий
+            # для сплошных горизонтальных линий
             chart_line_x = []
             chart_line_y = []
-            for i in people:
-                chart_line_x.extend([i - 1, i, i, i])
-                chart_line_y.extend([probability[people.index(i)], probability[people.index(i)], None, None])
-            # для пунктирных линий
+
+            for i in range(len(people) - 1):
+                # Добавляем две точки для текущего горизонтального отрезка
+                chart_line_x.extend([people[i], people[i + 1], None])
+                chart_line_y.extend([probability[i], probability[i], None])
+
+            print(chart_line_x, chart_line_y)
+            # для вертикальных пунктирных линий
             chart_dot_line_x = []
             chart_dot_line_y = []
-            for i in people:
-                if i == people[-1]:
-                    chart_dot_line_x.extend([i, i])
-                    chart_dot_line_y.extend([probability[people.index(i)], 0])
-                    break
-                chart_dot_line_x.extend([i, i])
-                chart_dot_line_y.extend([probability[people.index(i)], probability[people.index(i) + 1]])
+
+            for i in range(len(people) - 1):
+                # Добавляем две точки для вертикального пунктирного отрезка
+                chart_dot_line_x.extend([people[i + 1], people[i + 1]])
+                chart_dot_line_y.extend([probability[i], probability[i + 1]])
+
+
             # Создание графика
             # Построение основной диаграммы
             self.ax1.semilogy(chart_line_x, chart_line_y, color='b', linestyle='-', marker='.')
@@ -166,9 +170,6 @@ class FNFGPlotsWidget(QWidget):
         self.ax1.set_ylabel('F, Частота возникновения, 1/год')
         self.ax1.set_title('F/N диаграмма')
 
-        self.ax2.set_xlabel('G, Ущерб, млн.руб, млн.руб.')
-        self.ax2.set_ylabel('F, Частота возникновения, 1/год')
-        self.ax2.set_title('F/G диаграмма')
 
         self.figure.tight_layout()
         self.canvas.draw()
