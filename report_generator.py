@@ -57,6 +57,183 @@ class ReportGenerator:
         del result[0]  # удалить суммарную вероятность где ущерб 0
         return result
 
+    def add_critical_scenarios_table(self, project_code: str = None):
+        """Добавление таблицы наиболее опасных и вероятных сценариев"""
+        self.doc.add_heading('Наиболее опасные и наиболее вероятные сценарии', level=2)
+
+        # Получаем результаты расчетов
+        results = self.calc_repo.get_by_project(project_code) if project_code else self.calc_repo.get_all()
+        if not results:
+            self.doc.add_paragraph('Нет данных для отображения')
+            return
+
+        # Получаем уникальные компоненты
+        components = set()
+        for result in results:
+            component = None
+            if hasattr(result, 'component_enterprise') and result.component_enterprise:
+                component = result.component_enterprise
+            elif hasattr(result, 'equipment_name') and result.equipment_name:
+                import re
+                match = re.search(r'\((.*?)\)', result.equipment_name)
+                if match:
+                    component = match.group(1)
+            if component:
+                components.add(component)
+
+        # Создаем таблицу
+        headers = [
+            "Составляющая",
+            "Тип сценария",
+            "№ сценария",
+            "Оборудование",
+            "Погибшие",
+            "Пострадавшие",
+            "Суммарный ущерб",
+            "Частота, 1/год"
+        ]
+
+        table = self.doc.add_table(rows=1, cols=len(headers))
+        table.style = 'Table Grid'
+
+        # Заполняем заголовки
+        header_cells = table.rows[0].cells
+        for i, header in enumerate(headers):
+            header_cells[i].text = header
+            header_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Для каждого компонента находим наиболее опасный и вероятный сценарии
+        for component in sorted(components):
+            # Фильтруем результаты для текущего компонента
+            component_results = []
+            for result in results:
+                if (hasattr(result, 'component_enterprise') and
+                        result.component_enterprise == component):
+                    component_results.append(result)
+                elif hasattr(result, 'equipment_name'):
+                    match = re.search(r'\((.*?)\)', result.equipment_name)
+                    if match and match.group(1) == component:
+                        component_results.append(result)
+
+            if not component_results:
+                continue
+
+            # Находим наиболее опасный сценарий (по суммарному ущербу)
+            most_dangerous = max(component_results, key=lambda x: x.total_damage)
+
+            # Добавляем строку для наиболее опасного сценария
+            row_cells = table.add_row().cells
+            row_cells[0].text = component
+            row_cells[1].text = "Наиболее опасный"
+            row_cells[2].text = str(most_dangerous.scenario_number)
+            row_cells[3].text = most_dangerous.equipment_name
+            row_cells[4].text = str(most_dangerous.casualties)
+            row_cells[5].text = str(most_dangerous.injured)
+            row_cells[6].text = f"{most_dangerous.total_damage:.2f}"
+            row_cells[7].text = f"{most_dangerous.probability:.2e}"
+
+            # Находим наиболее вероятный сценарий
+            most_probable = max(component_results, key=lambda x: x.probability)
+
+            # Добавляем строку для наиболее вероятного сценария
+            row_cells = table.add_row().cells
+            row_cells[0].text = component
+            row_cells[1].text = "Наиболее вероятный"
+            row_cells[2].text = str(most_probable.scenario_number)
+            row_cells[3].text = most_probable.equipment_name
+            row_cells[4].text = str(most_probable.casualties)
+            row_cells[5].text = str(most_probable.injured)
+            row_cells[6].text = f"{most_probable.total_damage:.2f}"
+            row_cells[7].text = f"{most_probable.probability:.2e}"
+
+        # Форматируем таблицу
+        for row in table.rows[1:]:  # Пропускаем заголовок
+            for cell in row.cells[2:]:  # Центрируем все колонки кроме первых двух
+                cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    def add_risk_component_analysis(self, project_code: str = None):
+        """Добавление таблицы анализа риска по компонентам"""
+        self.doc.add_heading('Анализ риска по компонентам', level=2)
+
+        # Получаем результаты расчетов
+        results = self.calc_repo.get_by_project(project_code) if project_code else self.calc_repo.get_all()
+        if not results:
+            self.doc.add_paragraph('Нет данных для отображения')
+            return
+
+        # Создаем таблицу
+        headers = [
+            "№ п/п",
+            "Составляющая",
+            "Макс. ущерб, млн.руб",
+            "Макс. экологический ущерб, млн.руб",
+            "Макс. количество погибших, чел",
+            "Макс. количество пострадавших, чел",
+            "Коллективный риск гибели, чел/год",
+            "Коллективный риск ранения, чел/год",
+            "Индивидуальный риск гибели, чел/год",
+            "Индивидуальный риск ранения, чел/год",
+            "Уровень риска, ppm",
+            "Уровень риска, дБR",
+            "Частота аварии, 1/год"
+        ]
+
+        table = self.doc.add_table(rows=1, cols=len(headers))
+        table.style = 'Table Grid'
+
+        # Заполняем заголовки
+        header_cells = table.rows[0].cells
+        for i, header in enumerate(headers):
+            header_cells[i].text = header
+            header_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Получаем уникальные компоненты
+        components = set()
+        for result in results:
+            component = None
+            if hasattr(result, 'component_enterprise') and result.component_enterprise:
+                component = result.component_enterprise
+            elif hasattr(result, 'equipment_name') and result.equipment_name:
+                import re
+                match = re.search(r'\((.*?)\)', result.equipment_name)
+                if match:
+                    component = match.group(1)
+            if component:
+                components.add(component)
+
+        # Заполняем данные
+        from models.risk_analysis import ComponentRiskAnalysis
+        from models.dangerous_object import DangerousObject
+
+        dangerous_object = None  # здесь можно добавить получение ОПО если нужно
+
+        for i, component in enumerate(sorted(components), 1):
+            # Расчет анализа риска для компонента
+            analysis = ComponentRiskAnalysis.calculate_for_component(
+                component, results, dangerous_object
+            )
+
+            if not analysis:
+                continue
+
+            # Добавляем строку
+            row_cells = table.add_row().cells
+
+            # Заполняем ячейки
+            row_cells[0].text = str(i)
+            row_cells[1].text = analysis.component_name
+            row_cells[2].text = f"{analysis.max_damage:.2f}"
+            row_cells[3].text = f"{analysis.max_eco_damage:.2f}"
+            row_cells[4].text = str(analysis.max_casualties)
+            row_cells[5].text = str(analysis.max_injured)
+            row_cells[6].text = f"{analysis.collective_death_risk:.2e}"
+            row_cells[7].text = f"{analysis.collective_injury_risk:.2e}"
+            row_cells[8].text = f"{analysis.individual_death_risk:.2e}"
+            row_cells[9].text = f"{analysis.individual_injury_risk:.2e}"
+            row_cells[10].text = f"{analysis.risk_level_ppm:.2f}"
+            row_cells[11].text = f"{analysis.risk_level_dbr:.2f}"
+            row_cells[12].text = f"{analysis.max_death_frequency:.2e}"
+
     def setup_page_format(self):
         """Настройка формата страницы А3 горизонтальный"""
         section = self.doc.sections[0]
@@ -84,6 +261,15 @@ class ReportGenerator:
         # Заголовок документа
         self.doc.add_heading('Отчет по результатам расчетов', 0)
 
+        # Добавляем таблицу с описанием оборудования
+        self.add_equipment_table(project_code)
+        # Явно добавляем разрыв страницы
+        self.doc.add_page_break()
+
+        # Добавляем таблицу распределения вещества
+        self.doc.add_page_break()
+        self.add_substance_distribution_table(project_code)
+
         # Таблица результатов расчета
         self.add_calculation_results_table(project_code)
 
@@ -92,6 +278,9 @@ class ReportGenerator:
 
         # Добавляем раздел анализа риска
         self.add_risk_analysis(project_code)
+
+        # Добавляем новую таблицу критических сценариев
+        self.add_critical_scenarios_table(project_code)
 
         # Сохраняем документ
         self.doc.save(file_path)
@@ -103,11 +292,327 @@ class ReportGenerator:
         # Добавляем статистику
         self.add_risk_statistics(project_code)
 
+        # Добавляем таблицу анализа по компонентам
+        self.add_risk_component_analysis(project_code)
+
         # Явно добавляем разрыв страницы перед диаграммами
         self.doc.add_page_break()
 
         # Добавляем F/N и F/G диаграммы
         self.add_fn_fg_diagrams(project_code)
+
+    def add_equipment_table(self, project_code: str = None):
+        """Добавление таблицы с описанием оборудования"""
+        self.doc.add_heading('Характеристика оборудования', level=1)
+
+        # Получаем все оборудование для проекта
+        query = """
+        SELECT 
+            be.id,
+            be.name,
+            be.equipment_type,
+            be.component_enterprise,
+            be.pressure,
+            be.temperature,
+            -- Данные трубопроводов
+            p.diameter_category,
+            p.length_meters,
+            p.diameter_pipeline,
+            p.flow as pipeline_flow,
+            -- Данные насосов
+            pm.pump_type,
+            pm.volume as pump_volume,
+            pm.flow as pump_flow,
+            -- Данные тех. устройств
+            td.device_type,
+            td.volume as device_volume,
+            td.degree_filling as device_filling,
+            -- Данные резервуаров
+            t.tank_type,
+            t.volume as tank_volume,
+            t.degree_filling as tank_filling,
+            -- Данные автоцистерн
+            tt.pressure_type,
+            tt.volume as truck_volume,
+            tt.degree_filling as truck_filling,
+            -- Данные компрессоров
+            c.comp_type,
+            c.volume as comp_volume,
+            c.flow as comp_flow
+        FROM base_equipment be
+        LEFT JOIN pipelines p ON p.id = be.id
+        LEFT JOIN pumps pm ON pm.id = be.id
+        LEFT JOIN technological_devices td ON td.id = be.id
+        LEFT JOIN tanks t ON t.id = be.id
+        LEFT JOIN truck_tanks tt ON tt.id = be.id
+        LEFT JOIN compressors c ON c.id = be.id
+        WHERE be.project_id IN (SELECT id FROM projects WHERE project_code = ?)
+        ORDER BY be.name
+        """
+
+        equipment_data = self.db.execute_query(query, (project_code,)) if project_code else []
+
+        if not equipment_data:
+            self.doc.add_paragraph('Нет данных для отображения')
+            return
+
+        # Создаем таблицу
+        headers = [
+            "Составляющая",
+            "Наименование оборудования",
+            "Расположение",
+            "Кол-во, шт.",
+            "Назначение",
+            "Техническая характеристика"
+        ]
+
+        table = self.doc.add_table(rows=1, cols=len(headers))
+        table.style = 'Table Grid'
+
+        # Заполняем заголовки
+        header_cells = table.rows[0].cells
+        for i, header in enumerate(headers):
+            header_cells[i].text = header
+            header_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Группируем оборудование по составляющим
+        components_dict = {}
+
+        for eq in equipment_data:
+            component = eq['component_enterprise']
+            if component not in components_dict:
+                components_dict[component] = []
+
+            # Формируем технические характеристики в зависимости от типа оборудования
+            tech_specs = []
+            eq_type = eq['equipment_type']
+
+            # Общие характеристики
+            tech_specs.append(f"P={eq['pressure']:.2f} МПа")
+            tech_specs.append(f"T={eq['temperature']:.1f} °C")
+
+            if eq_type == 'Pipeline':
+                tech_specs.append(f"L={eq['length_meters']:.1f} м")
+                tech_specs.append(f"D={eq['diameter_pipeline']:.1f} мм")
+                if eq['pipeline_flow']:
+                    tech_specs.append(f"Q={eq['pipeline_flow']:.2f} кг/с")
+                # tech_specs.append(f"Категория: {eq['diameter_category']}")
+
+            elif eq_type == 'Pump':
+                if eq['pump_volume']:
+                    tech_specs.append(f"V={eq['pump_volume']:.1f} м³")
+                if eq['pump_flow']:
+                    tech_specs.append(f"Q={eq['pump_flow']:.2f} кг/с")
+                # tech_specs.append(f"Тип: {eq['pump_type']}")
+
+            elif eq_type == 'Technological_device':
+                if eq['device_volume']:
+                    tech_specs.append(f"V={eq['device_volume']:.1f} м³")
+                if eq['device_filling']:
+                    tech_specs.append(f"Степень заполнения={eq['device_filling'] * 100:.1f}%")
+                # tech_specs.append(f"Тип: {eq['device_type']}")
+
+            elif eq_type == 'Tank':
+                if eq['tank_volume']:
+                    tech_specs.append(f"V={eq['tank_volume']:.1f} м³")
+                if eq['tank_filling']:
+                    tech_specs.append(f"Степень заполнения={eq['tank_filling'] * 100:.1f}%")
+                # tech_specs.append(f"Тип: {eq['tank_type']}")
+
+            elif eq_type == 'Truck_tank':
+                if eq['truck_volume']:
+                    tech_specs.append(f"V={eq['truck_volume']:.1f} м³")
+                if eq['truck_filling']:
+                    tech_specs.append(f"Степень заполнения={eq['truck_filling'] * 100:.1f}%")
+                # tech_specs.append(f"Тип: {eq['pressure_type']}")
+
+            elif eq_type == 'Compressor':
+                if eq['comp_volume']:
+                    tech_specs.append(f"V={eq['comp_volume']:.1f} м³")
+                if eq['comp_flow']:
+                    tech_specs.append(f"Q={eq['comp_flow']:.2f} кг/с")
+                # tech_specs.append(f"Тип: {eq['comp_type']}")
+
+            components_dict[component].append({
+                'name': eq['name'],
+                'type': eq_type,
+                'tech_specs': "\n ".join(tech_specs)
+            })
+
+        # Заполняем таблицу
+        for component, equipments in components_dict.items():
+            for equipment in sorted(equipments, key=lambda x: x['name']):
+                row_cells = table.add_row().cells
+
+                # Составляющая
+                row_cells[0].text = component
+
+                # Наименование оборудования
+                row_cells[1].text = equipment['name'].split('(')[0].strip()
+
+                # Расположение
+                row_cells[2].text = "Наземное"
+
+                # Количество
+                row_cells[3].text = "1"
+
+                # Назначение
+                if equipment['type'] == 'Pipeline':
+                    row_cells[4].text = "Транспортировка опасного вещества"
+                elif equipment['type'] == 'Pump':
+                    row_cells[4].text = "Перекачивание опасного вещества"
+                elif equipment['type'] in ['Tank', 'Truck_tank']:
+                    row_cells[4].text = "Хранение опасного вещества"
+                elif equipment['type'] == 'Technological_device':
+                    row_cells[4].text = "Проведение технологического процесса"
+                elif equipment['type'] == 'Compressor':
+                    row_cells[4].text = "Компримирование опасного вещества"
+
+                # Техническая характеристика
+                row_cells[5].text = equipment['tech_specs']
+
+        # Применяем форматирование
+        for row in table.rows:
+            for cell in row.cells:
+                if cell != row.cells[0] and cell != row.cells[1] and cell != row.cells[5]:
+                    cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    def add_substance_distribution_table(self, project_code: str = None):
+        """Добавление таблицы распределения опасного вещества по оборудованию"""
+        self.doc.add_heading('Распределение опасного вещества по оборудованию', level=1)
+
+        if not project_code:
+            self.doc.add_paragraph('Не указан код проекта')
+            return
+
+        # Сначала получим все оборудование проекта
+        base_query = """
+        SELECT 
+            be.id,
+            be.name,
+            be.equipment_type,
+            be.component_enterprise,
+            be.temperature,
+            p.diameter_category,
+            p.length_meters,
+            p.diameter_pipeline,
+            p.flow as pipeline_flow,
+            pm.pump_type,
+            pm.volume as pump_volume,
+            pm.flow as pump_flow,
+            td.device_type,
+            td.volume as device_volume,
+            td.degree_filling as device_filling,
+            t.tank_type,
+            t.volume as tank_volume,
+            t.degree_filling as tank_filling,
+            tt.pressure_type,
+            tt.volume as truck_volume,
+            tt.degree_filling as truck_filling,
+            c.comp_type,
+            c.volume as comp_volume,
+            c.flow as comp_flow,
+            (SELECT cr.mass_in_equipment 
+             FROM calculation_results cr 
+             WHERE cr.project_code = ? 
+             AND cr.equipment_name = be.name 
+             ORDER BY cr.scenario_number DESC 
+             LIMIT 1) as mass_in_equipment
+        FROM base_equipment be
+        LEFT JOIN pipelines p ON p.id = be.id
+        LEFT JOIN pumps pm ON pm.id = be.id
+        LEFT JOIN technological_devices td ON td.id = be.id
+        LEFT JOIN tanks t ON t.id = be.id
+        LEFT JOIN truck_tanks tt ON tt.id = be.id
+        LEFT JOIN compressors c ON c.id = be.id
+        WHERE be.project_id IN (SELECT id FROM projects WHERE project_code = ?)
+        ORDER BY be.name
+        """
+
+        equipment_data = self.db.execute_query(base_query, (project_code, project_code))
+
+        if not equipment_data:
+            self.doc.add_paragraph('Нет данных для отображения')
+            return
+
+        # Создаем таблицу
+        headers = [
+            "Составляющая",
+            "Наименование оборудования",
+            "Кол-во единиц",
+            "В единице оборудования, т",
+            "В блоке, т",
+            "Агр. состояние",
+            "Температура, °C"
+        ]
+
+        table = self.doc.add_table(rows=1, cols=len(headers))
+        table.style = 'Table Grid'
+
+        # Заполняем заголовки
+        header_cells = table.rows[0].cells
+        for i, header in enumerate(headers):
+            header_cells[i].text = header
+            header_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Группируем оборудование по составляющим
+        components_dict = {}
+
+        for eq in equipment_data:
+            component = eq['component_enterprise']
+            if not component:  # Пропускаем записи без компонента
+                continue
+
+            if component not in components_dict:
+                components_dict[component] = []
+
+            # Определяем агрегатное состояние
+            if eq['equipment_type'] == 'Compressor':
+                agr_state = "г.ф."
+            else:
+                agr_state = "ж.ф."
+
+            # Используем значение mass_in_equipment из результатов расчета, если оно есть
+            mass = eq['mass_in_equipment'] if eq['mass_in_equipment'] is not None else 0
+
+            components_dict[component].append({
+                'name': eq['name'],
+                'mass': mass,
+                'temperature': eq['temperature'],
+                'agr_state': agr_state
+            })
+
+        # Заполняем таблицу
+        for component, equipments in components_dict.items():
+            for equipment in sorted(equipments, key=lambda x: x['name']):
+                row_cells = table.add_row().cells
+
+                # Составляющая
+                row_cells[0].text = component
+
+                # Наименование оборудования - берем только часть до скобки
+                name_parts = equipment['name'].split('(')
+                equipment_name = name_parts[0].strip()
+                row_cells[1].text = equipment_name
+
+                # Количество единиц
+                row_cells[2].text = "1"
+
+                # В единице оборудования
+                row_cells[3].text = f"{equipment['mass']:.3f}"
+
+                # В блоке
+                row_cells[4].text = f"{equipment['mass']:.3f}"
+
+                # Агрегатное состояние
+                row_cells[5].text = equipment['agr_state']
+
+                # Температура
+                row_cells[6].text = f"{equipment['temperature']:.1f}"
+
+                # Центрируем все ячейки кроме первых двух
+                for cell in row_cells[2:]:
+                    cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     def add_calculation_results_table(self, project_code: str = None):
         """Добавление таблицы результатов расчета"""
