@@ -170,6 +170,10 @@ class FNFGPlotsWidget(QWidget):
         self.ax1.set_ylabel('F, Частота возникновения, 1/год')
         self.ax1.set_title('F/N диаграмма')
 
+        self.ax2.set_xlabel('G, Ущерб, млн.руб.')
+        self.ax2.set_ylabel('F, Частота возникновения, 1/год')
+        self.ax2.set_title('F/G диаграмма')
+
 
         self.figure.tight_layout()
         self.canvas.draw()

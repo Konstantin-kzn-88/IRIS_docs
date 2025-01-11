@@ -260,6 +260,15 @@ class ReportGenerator:
 
         # Заголовок документа
         self.doc.add_heading('Отчет по результатам расчетов', 0)
+        # Добавляем новые таблицы в начало отчета
+        self.add_organization_info(project_code)
+        self.doc.add_page_break()
+
+        self.add_opo_info(project_code)
+        self.doc.add_page_break()
+
+        self.add_project_info(project_code)
+        self.doc.add_page_break()
 
         # Добавляем таблицу с описанием оборудования
         self.add_equipment_table(project_code)
@@ -870,3 +879,157 @@ class ReportGenerator:
 
         # Закрываем графики
         plt.close()
+
+
+    def add_project_info(self, project_code: str = None):
+        """Добавление информации о проекте"""
+        self.doc.add_heading('Информация о проекте', level=1)
+
+        if not project_code:
+            self.doc.add_paragraph('Код проекта не указан')
+            return
+
+        # Получаем данные проекта
+        query = "SELECT * FROM projects WHERE project_code = ?"
+        result = self.db.execute_query(query, (project_code,))
+
+        if not result:
+            self.doc.add_paragraph('Проект не найден')
+            return
+
+        project_data = result[0]
+
+        # Создаем таблицу
+        table = self.doc.add_table(rows=1, cols=2)
+        table.style = 'Table Grid'
+
+        # Заполняем данные
+        rows = [
+            ("Наименование проекта", project_data['name']),
+            ("Код проекта", project_data['project_code']),
+            ("Описание", project_data['description'] or '-'),
+            ("Описание автоматизации", project_data['automation_description'] or '-'),
+            ("Шифр ДПБ", project_data['dpb_code'] or '-'),
+            ("Шифр РПЗ", project_data['rpz_code'] or '-'),
+            ("Шифр ИФЛ", project_data['ifl_code'] or '-'),
+            ("Шифр ГОЧС", project_data['gochs_code'] or '-'),
+            ("Шифр МПБ", project_data['mpb_code'] or '-')
+        ]
+
+        for row_data in rows:
+            cells = table.add_row().cells
+            cells[0].text = row_data[0]
+            cells[1].text = str(row_data[1])
+
+
+    def add_opo_info(self, project_code: str = None):
+        """Добавление информации об ОПО"""
+        self.doc.add_heading('Информация об опасном производственном объекте', level=1)
+
+        if not project_code:
+            return
+
+        # Получаем ОПО через связь с проектом
+        query = """
+            SELECT do.* FROM dangerous_objects do
+            JOIN projects p ON p.opo_id = do.id
+            WHERE p.project_code = ?
+        """
+        result = self.db.execute_query(query, (project_code,))
+
+        if not result:
+            self.doc.add_paragraph('ОПО не найден')
+            return
+
+        opo_data = result[0]
+
+        # Создаем таблицу
+        table = self.doc.add_table(rows=1, cols=2)
+        table.style = 'Table Grid'
+
+        # Заполняем данные
+        from models.dangerous_object import HazardClass
+        rows = [
+            ("Наименование ОПО", opo_data['name']),
+            ("Регистрационный номер", opo_data['reg_number']),
+            ("Класс опасности", HazardClass.get_display_name(HazardClass(opo_data['hazard_class']))),
+            ("Место расположения", opo_data['location']),
+            ("Количество работников", str(opo_data['employee_count'])),
+            ("Класс загроможденности", f"Класс {opo_data['view_space']}")
+        ]
+
+        for row_data in rows:
+            cells = table.add_row().cells
+            cells[0].text = row_data[0]
+            cells[1].text = row_data[1]
+
+    def add_organization_info(self, project_code: str = None):
+        """Добавление информации об организации"""
+        self.doc.add_heading('Информация об организации', level=1)
+
+        if not project_code:
+            return
+
+        # Получаем организацию через связь проект -> ОПО -> организация
+        query = """
+            SELECT org.* FROM organizations org
+            JOIN dangerous_objects do ON do.organization_id = org.id
+            JOIN projects p ON p.opo_id = do.id
+            WHERE p.project_code = ?
+        """
+        result = self.db.execute_query(query, (project_code,))
+
+        if not result:
+            self.doc.add_paragraph('Организация не найдена')
+            return
+
+        org_data = result[0]
+
+        # Создаем таблицу
+        table = self.doc.add_table(rows=1, cols=2)
+        table.style = 'Table Grid'
+
+        # Заполняем данные
+        rows = [
+            ("Наименование", org_data['name']),
+            ("Полное наименование", org_data['full_name']),
+            ("Форма собственности", org_data['org_form']),
+            ("Должность руководителя", org_data['head_position'] or '-'),
+            ("ФИО руководителя", org_data['head_name'] or '-'),
+            ("Юридический адрес", org_data['legal_address'] or '-'),
+            ("Телефон", org_data['phone'] or '-'),
+            ("Факс", org_data['fax'] or '-'),
+            ("Email", org_data['email'] or '-'),
+            ("Номер лицензии", org_data['license_number'] or '-'),
+            ("Дата лицензии", org_data['license_date'] or '-'),
+            ("Система промышленной безопасности", org_data['ind_safety_system'] or '-'),
+            ("Производственный контроль", org_data['prod_control'] or '-'),
+            ("Порядок расследования аварий", org_data['accident_investigation'] or '-'),
+            ("Договор с АСФ", org_data['rescue_contract'] or '-'),
+            ("Свидетельство АСФ", org_data['rescue_certificate'] or '-'),
+            ("Договор с ПСФ", org_data['fire_contract'] or '-'),
+            ("Свидетельство НАСФ", org_data['emergency_certificate'] or '-'),
+            ("Материальные резервы", org_data['material_reserves'] or '-'),
+            ("Финансовые резервы", org_data['financial_reserves'] or '-')
+        ]
+
+        # Заголовок таблицы
+        header_cells = table.rows[0].cells
+        header_cells[0].text = "Параметр"
+        header_cells[1].text = "Значение"
+
+        # Заполняем данные
+        for row_data in rows:
+            cells = table.add_row().cells
+            cells[0].text = row_data[0]
+            cells[1].text = str(row_data[1])
+
+            # Выравнивание в ячейках
+            cells[0].paragraphs[0].alignment = 1  # По левому краю
+            cells[1].paragraphs[0].alignment = 1  # По левому краю
+
+        # Форматируем заголовок
+        for cell in table.rows[0].cells:
+            cell.paragraphs[0].alignment = 1  # По центру
+            run = cell.paragraphs[0].runs[0]
+            run.font.bold = True

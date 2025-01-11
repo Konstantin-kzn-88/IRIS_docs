@@ -1,10 +1,11 @@
 # main_window.py
+from pathlib import Path
+
 from PySide6.QtWidgets import (QMainWindow, QWidget, QTreeWidget,
-                               QTreeWidgetItem, QHBoxLayout, QVBoxLayout,
-                               QStackedWidget, QMenuBar, QMenu, QStatusBar,
-                               QToolBar, QStyle, QFileDialog, QMessageBox)
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QAction
+                               QTreeWidgetItem, QHBoxLayout, QStackedWidget, QMenu, QStatusBar,
+                               QToolBar, QFileDialog, QMessageBox)
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QAction, QIcon
 from database.db_connection import DatabaseConnection
 from database.repositories.project_repo import ProjectRepository
 from widgets.calculation_results_widget import CalculationResultsWidget
@@ -20,14 +21,13 @@ from widgets.truck_tanks_widget import TruckTanksWidget
 from widgets.compressors_widget import CompressorsWidget
 from widgets.risk_analysis_widget import RiskAnalysisWidget
 
-from docx import Document
-from report_generator import ReportGenerator
+from report.report_generator import ReportGenerator
 
 import os
 import sys
 import subprocess
-from PySide6.QtWidgets import QProgressDialog
-from PySide6.QtCore import Qt
+
+
 
 
 class MainWindow(QMainWindow):
@@ -36,8 +36,11 @@ class MainWindow(QMainWindow):
     def __init__(self, db: DatabaseConnection):
         super().__init__()
         self.db = db
-        self.setWindowTitle("Промышленная безопасность")
+        self.setWindowTitle("IRIS_docs")
         self.setMinimumSize(1024, 768)
+
+        self.__set_ico()
+        self.path_ico = str(Path(os.getcwd()))
 
         # Добавляем репозиторий проектов
         self.project_repo = ProjectRepository(db)
@@ -71,9 +74,6 @@ class MainWindow(QMainWindow):
         # Создаем меню
         self.create_menu()
 
-        # Создаем панель инструментов
-        self.create_toolbar()
-
         # Создаем статус бар
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
@@ -81,6 +81,10 @@ class MainWindow(QMainWindow):
         # Виджет результатов расчетов
         self.calculation_results_widget = CalculationResultsWidget(self.db)
         self.content.addWidget(self.calculation_results_widget)
+
+    def __set_ico(self):
+        main_ico = QIcon('main_ico.ico')
+        self.setWindowIcon(main_ico)
 
     def init_widgets(self):
         """Инициализация виджетов"""
@@ -147,19 +151,11 @@ class MainWindow(QMainWindow):
             )
 
             if file_path:
-                # Показываем индикатор прогресса
-                progress = QProgressDialog("Формирование отчета...", None, 0, 100, self)
-                progress.setWindowModality(Qt.WindowModal)
-                progress.show()
-                progress.setValue(10)
-
                 # Создаем генератор отчетов
                 report_gen = ReportGenerator(self.db)
 
                 # Генерируем отчет
                 report_gen.generate_full_report(file_path, project_code)
-
-                progress.setValue(100)
 
                 QMessageBox.information(
                     self,
@@ -187,35 +183,64 @@ class MainWindow(QMainWindow):
         """Создание элементов дерева навигации"""
         # Организации
         self.org_item = QTreeWidgetItem(["Организации"])
+        self.org_item.setIcon(0, QIcon("ico/organization.png"))
         self.tree.addTopLevelItem(self.org_item)
 
         # Опасные производственные объекты
         self.opo_item = QTreeWidgetItem(["Опасные производственные объекты"])
+        self.opo_item.setIcon(0, QIcon("ico/factory.png"))
         self.tree.addTopLevelItem(self.opo_item)
 
         # Проекты
         self.project_item = QTreeWidgetItem(["Проекты"])
+        self.project_item.setIcon(0, QIcon("ico/book.png"))
         self.tree.addTopLevelItem(self.project_item)
 
         # Вещества
         self.substance_item = QTreeWidgetItem(["Вещества"])
+        self.substance_item.setIcon(0, QIcon("ico/subs.png"))
         self.tree.addTopLevelItem(self.substance_item)
 
         # Оборудование
         self.equipment_item = QTreeWidgetItem(["Оборудование"])
-        self.equipment_item.addChild(QTreeWidgetItem(["Трубопроводы"]))
-        self.equipment_item.addChild(QTreeWidgetItem(["Насосы"]))
-        self.equipment_item.addChild(QTreeWidgetItem(["Резервуары"]))
-        self.equipment_item.addChild(QTreeWidgetItem(["Технологические устройства"]))
-        self.equipment_item.addChild(QTreeWidgetItem(["Автоцистерны"]))
-        self.equipment_item.addChild(QTreeWidgetItem(["Компрессоры"]))
+        self.equipment_item.setIcon(0, QIcon("ico/data_base.png"))
+
+        # Создаем дочерние элементы с иконками
+        pipeline_item = QTreeWidgetItem(["Трубопроводы"])
+        pipeline_item.setIcon(0, QIcon("ico/pipeline.png"))
+        self.equipment_item.addChild(pipeline_item)
+
+        pump_item = QTreeWidgetItem(["Насосы"])
+        pump_item.setIcon(0, QIcon("ico/pump.png"))
+        self.equipment_item.addChild(pump_item)
+
+        tank_item = QTreeWidgetItem(["Резервуары"])
+        tank_item.setIcon(0, QIcon("ico/tank.png"))
+        self.equipment_item.addChild(tank_item)
+
+        tech_item = QTreeWidgetItem(["Технологические устройства"])
+        tech_item.setIcon(0, QIcon("ico/tech_device.png"))
+        self.equipment_item.addChild(tech_item)
+
+        truck_item = QTreeWidgetItem(["Автоцистерны"])
+        truck_item.setIcon(0, QIcon("ico/truck.png"))
+        self.equipment_item.addChild(truck_item)
+
+        compressor_item = QTreeWidgetItem(["Компрессоры"])
+        compressor_item.setIcon(0, QIcon("ico/compressor.png"))
+        self.equipment_item.addChild(compressor_item)
+
         self.tree.addTopLevelItem(self.equipment_item)
 
         # Расчеты
         self.calc_item = QTreeWidgetItem(["Расчеты и отчеты"])
-        self.calc_item.addChild(QTreeWidgetItem(["Результаты расчетов"]))
-        self.calc_item.addChild(QTreeWidgetItem(["Анализ риска"]))  # Добавляем пункт
-        self.calc_item.addChild(QTreeWidgetItem(["Статистика"]))
+        self.calc_item.setIcon(0, QIcon("ico/calculator.png"))
+        result_item = QTreeWidgetItem(["Результаты расчетов"])
+        result_item.setIcon(0, QIcon("ico/results.png"))
+        self.calc_item.addChild(result_item)
+        risk_item = QTreeWidgetItem(["Анализ риска"])
+        risk_item.setIcon(0, QIcon("ico/risk.png"))
+        self.calc_item.addChild(risk_item)
         self.tree.addTopLevelItem(self.calc_item)
 
 
@@ -231,69 +256,29 @@ class MainWindow(QMainWindow):
 
         # Меню Файл
         file_menu = QMenu("&Файл", self)
-        file_menu.addAction("Выход", self.close)
+
+        # Создаем действия с иконками
+        calculate_action = QAction(QIcon("ico/calculator.png"), "Расчет", self)
+        calculate_action.triggered.connect(self.show_calculation_dialog)
+
+        report_action = QAction(QIcon("ico/save.png"), "Вывод результатов расчета", self)
+        report_action.triggered.connect(self.generate_word_report)
+
+        exit_action = QAction(QIcon("ico/exit.png"), "Выход", self)
+        exit_action.triggered.connect(self.close)
+
+        # Добавляем действия в меню
+        file_menu.addAction(calculate_action)
+        file_menu.addAction(report_action)
+        file_menu.addSeparator()
+        file_menu.addAction(exit_action)
         menubar.addMenu(file_menu)
-
-        # Меню Справочники
-        ref_menu = QMenu("&Справочники", self)
-        ref_menu.addAction("Организации", self.show_organizations)
-        ref_menu.addAction("Опасные производственные объекты", self.show_dangerous_objects)
-        ref_menu.addAction("Проекты", self.show_projects)
-        ref_menu.addAction("Вещества", self.show_substances)
-        ref_menu.addSeparator()
-        ref_menu.addAction("Трубопроводы", self.show_pipelines)
-        ref_menu.addAction("Насосы", self.show_pumps)
-        ref_menu.addAction("Резервуары", self.show_tanks)
-        ref_menu.addAction("Технологические устройства", self.show_tech_devices)
-        ref_menu.addAction("Автоцистерны", self.show_truck_tanks)
-        ref_menu.addAction("Компрессоры", self.show_compressors)
-        menubar.addMenu(ref_menu)
-
-        # Меню Отчеты
-        report_menu = QMenu("&Отчеты", self)
-        report_menu.addAction("Статистика по ОПО")
-        report_menu.addAction("Анализ рисков")
-        report_menu.addAction("Отчет в Word", self.generate_word_report)
-        menubar.addMenu(report_menu)
 
         # Меню Помощь
         help_menu = QMenu("&Помощь", self)
         help_menu.addAction("О программе", self.show_about)
         menubar.addMenu(help_menu)
 
-        # Добавить в меню Отчеты:
-        report_menu.addSeparator()
-        report_menu.addAction("Результаты расчетов", self.show_calculation_dialog)
-
-    def create_toolbar(self):
-        """Создание панели инструментов"""
-        toolbar = QToolBar()
-        toolbar.setMovable(False)
-        toolbar.setIconSize(QSize(32, 32))
-        self.addToolBar(toolbar)
-
-        # Добавляем кнопки на панель инструментов
-        toolbar.addAction(QAction("Организации", self,
-                                triggered=self.show_organizations))
-        toolbar.addAction(QAction("ОПО", self,
-                                triggered=self.show_dangerous_objects))
-        toolbar.addAction(QAction("Проекты", self,
-                                triggered=self.show_projects))
-        toolbar.addAction(QAction("Вещества", self,
-                                triggered=self.show_substances))
-        toolbar.addSeparator()
-        toolbar.addAction(QAction("Трубопроводы", self,
-                                triggered=self.show_pipelines))
-        toolbar.addAction(QAction("Насосы", self,
-                                triggered=self.show_pumps))
-        toolbar.addAction(QAction("Резервуары", self,
-                                triggered=self.show_tanks))
-        toolbar.addAction(QAction("Технологические устройства", self,
-                                triggered=self.show_tech_devices))
-        toolbar.addAction(QAction("Автоцистерны", self,
-                                triggered=self.show_truck_tanks))
-        toolbar.addAction(QAction("Компрессоры", self,
-                                  triggered=self.show_compressors))
 
 
     def show_calculation_dialog(self):
@@ -470,6 +455,7 @@ class MainWindow(QMainWindow):
         """Показать информацию о программе"""
         from PySide6.QtWidgets import QMessageBox
         QMessageBox.about(self, "О программе",
-                         "Программа учета опасных производственных объектов\n"
+                         "Программа для расчета рисков на опасных производственных объектах\n"
+                         '"IRIS" - Industrial Risk Impact Simulator\n\n'
                          "Версия 1.0\n\n"
                          "© 2024 Все права защищены")
