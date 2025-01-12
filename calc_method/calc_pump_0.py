@@ -17,8 +17,8 @@ class Calc:
         result = []
 
         # Оперделение массы вещества в оборудовании и аварии
-        mass_in_equipment = self.equipment.volume * self.equipment.degree_filling * self.substance.density_liquid * self.constants.KG_TO_T
-        mass_in_accident = mass_in_equipment
+        mass_in_equipment = self.equipment.volume * self.substance.density_liquid * self.constants.KG_TO_T
+        mass_in_accident = mass_in_equipment + (self.equipment.flow * self.equipment.time_out) * self.constants.KG_TO_T
 
         # Пожар пролива (полный)
         calc = strait_fire_calc.Calculation().get_zone_and_risk_param(
@@ -26,9 +26,9 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.device_type,
+            model_type=self.equipment.pump_type,
             substance_type=self.substance.sub_type,
-            S_spill=self.equipment.spill_square,
+            S_spill=mass_in_accident * self.constants.SPILL,
             molecular_weight=self.substance.molecular_weight,
             boiling_temperature_liquid=self.substance.boiling_temperature_liquid,
             type_accident='full',
@@ -46,8 +46,8 @@ class Calc:
 
         # Взрыв (полный)
         mass_evaporation = calc_evaporation.Evaporation(volume_equipment=mass_in_equipment,
-                                                        degree_filling=self.equipment.degree_filling,
-                                                        spill_square=self.equipment.spill_square,
+                                                        degree_filling=1,
+                                                        spill_square=mass_in_accident * self.constants.SPILL,
                                                         pressure_equipment=self.equipment.pressure,
                                                         temperature_equipment=self.equipment.temperature,
                                                         density_liquid=self.substance.density_liquid,
@@ -57,16 +57,14 @@ class Calc:
                                                         adiabatic=self.substance.adiabatic,
                                                         heat_capacity_liquid=self.substance.heat_capacity_liquid * self.constants.KJ_TO_J).calculation()
 
-
-
         calc = explosion_calc.Calculation().get_zone_and_risk_param(
             project_code=self.project_code,
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.device_type,
+            model_type=self.equipment.pump_type,
             substance_type=self.substance.sub_type,
-            S_spill=self.equipment.spill_square,
+            S_spill=mass_in_accident * self.constants.SPILL,
             class_substance=self.substance.class_substance,
             view_space=self.dangerous_object.view_space,
             heat_of_combustion=self.substance.heat_of_combustion,
@@ -91,9 +89,9 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.device_type,
+            model_type=self.equipment.pump_type,
             substance_type=self.substance.sub_type,
-            S_spill=self.equipment.spill_square,
+            S_spill=mass_in_accident * self.constants.SPILL,
             type_accident='full',
             dead_man=0,
             injured_man=0,
@@ -112,7 +110,6 @@ class Calc:
         outflow = calc_outflow.Outflow(pressure_equipment=self.equipment.pressure).outflow_liquid(
             density_liquid=self.substance.density_liquid)
 
-
         mass_in_accident_part = outflow * self.constants.TIME_OUT_DIVICE
 
         calc = jet_fire_calc.Calculation().get_zone_and_risk_param(
@@ -120,9 +117,9 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.device_type,
+            model_type=self.equipment.pump_type,
             substance_type=self.substance.sub_type,
-            S_spill=mass_in_accident * self.constants.PART*self.constants.SPILL,
+            S_spill=mass_in_accident * self.constants.PART * self.constants.SPILL,
             type_accident='partial',
             dead_man=0,
             injured_man=1,
@@ -136,60 +133,6 @@ class Calc:
 
         result.append(calc)
         self.init_num_scenario += 1
-
-
-        # Без ПФ (частичный)
-        calc = no_factors_calc.Calculation().get_zone_and_risk_param(
-            project_code=self.project_code,
-            scenario_number=f'{self.init_num_scenario}',
-            equipment_name=self.equipment.name,
-            equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.device_type,
-            substance_type=self.substance.sub_type,
-            S_spill=self.equipment.spill_square * self.constants.PART,
-            type_accident='partial',
-            dead_man=0,
-            injured_man=0,
-            volume_equipment=self.equipment.volume,
-            diametr_pipe=0,
-            lenght_pipe=0,
-            degree_damage=0.3 * self.constants.PART,
-            mass_in_accident=mass_in_accident_part,
-            mass_in_factor=0,
-            mass_in_equipment=mass_in_equipment)
-
-        result.append(calc)
-        self.init_num_scenario += 1
-
-        # Факел газовый (частичный)
-
-        outflow = calc_outflow.Outflow(pressure_equipment=self.equipment.pressure).outflow_gas()
-
-        mass_in_accident_part = outflow * self.constants.TIME_OUT_DIVICE
-
-
-        calc = jet_fire_calc.Calculation().get_zone_and_risk_param(
-            project_code=self.project_code,
-            scenario_number=f'{self.init_num_scenario}',
-            equipment_name=self.equipment.name,
-            equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.device_type,
-            substance_type=self.substance.sub_type,
-            S_spill=0,
-            type_accident='partial',
-            dead_man=0,
-            injured_man=1,
-            volume_equipment=self.equipment.volume,
-            diametr_pipe=0,
-            lenght_pipe=0,
-            degree_damage=0.5 * self.constants.PART,
-            mass_in_accident=mass_in_accident_part,
-            mass_in_factor=mass_in_accident_part,
-            mass_in_equipment=mass_in_equipment)
-
-        result.append(calc)
-        self.init_num_scenario += 1
-
 
         # Вспышка (частичный)
         calc = flash_calc.Calculation().get_zone_and_risk_param(
@@ -197,9 +140,9 @@ class Calc:
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.device_type,
+            model_type=self.equipment.pump_type,
             substance_type=self.substance.sub_type,
-            S_spill=self.equipment.spill_square * self.constants.PART,
+            S_spill=mass_in_accident * self.constants.PART * self.constants.SPILL,
             molecular_weight=self.substance.molecular_weight,
             boiling_temperature_liquid=self.substance.boiling_temperature_liquid,
             lower_concentration_limit=self.substance.lower_concentration_limit,
@@ -217,16 +160,15 @@ class Calc:
         result.append(calc)
         self.init_num_scenario += 1
 
-
         # Без ПФ (частичный)
         calc = no_factors_calc.Calculation().get_zone_and_risk_param(
             project_code=self.project_code,
             scenario_number=f'{self.init_num_scenario}',
             equipment_name=self.equipment.name,
             equipment_type=self.equipment.equipment_type,
-            model_type=self.equipment.device_type,
+            model_type=self.equipment.pump_type,
             substance_type=self.substance.sub_type,
-            S_spill=self.equipment.spill_square * self.constants.PART,
+            S_spill=mass_in_accident * self.constants.PART * self.constants.SPILL,
             type_accident='partial',
             dead_man=0,
             injured_man=0,
@@ -242,5 +184,3 @@ class Calc:
         self.init_num_scenario += 1
 
         return (result, self.init_num_scenario)
-
-
