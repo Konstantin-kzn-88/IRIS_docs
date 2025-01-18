@@ -15,9 +15,10 @@ class CalculationDialog(QDialog):
         super().__init__(parent)
         self.db = db
         self.project_repo = ProjectRepository(db)
-        self.calculation_manager = CalculationManager(db)
+        # Передаём parent (главное окно) в менеджер расчетов
+        self.calculation_manager = CalculationManager(db, parent)
 
-        self.setWindowTitle("Расчет сценария С1")
+        self.setWindowTitle("Расчет сценарииев")
         self.setup_ui()
 
     def setup_ui(self):

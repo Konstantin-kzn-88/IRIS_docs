@@ -255,9 +255,9 @@ class CalculationResultsWidget(QWidget):
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(i, 15, item)
 
-        # Включаем сортировку и сортируем по номеру сценария по умолчанию
-        self.table.setSortingEnabled(True)
-        self.table.sortItems(2)  # 2 - индекс колонки с номером сценария
+        # # Включаем сортировку и сортируем по номеру сценария по умолчанию
+        # self.table.setSortingEnabled(True)
+        # self.table.sortItems(2)  # 2 - индекс колонки с номером сценария
 
     def on_search(self, text: str):
         """Обработчик поиска"""

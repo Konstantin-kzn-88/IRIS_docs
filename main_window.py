@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QTreeWidget,
                                QToolBar, QFileDialog, QMessageBox)
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction, QIcon
+
+from calculation_manager import CalculationManager
 from database.db_connection import DatabaseConnection
 from database.repositories.project_repo import ProjectRepository
 from widgets.calculation_results_widget import CalculationResultsWidget
@@ -36,6 +38,9 @@ class MainWindow(QMainWindow):
     def __init__(self, db: DatabaseConnection):
         super().__init__()
         self.db = db
+        # Инициализируем менеджер расчетов с ссылкой на главное окно
+        self.calculation_manager = CalculationManager(db, self)
+
         self.setWindowTitle("IRIS_docs")
         self.setMinimumSize(1024, 768)
 
@@ -326,7 +331,7 @@ class MainWindow(QMainWindow):
             project_code = None
             opo_id = None
 
-            print("Rows in results table:", results_table.rowCount())  # Отладочный вывод
+            # print("Rows in results table:", results_table.rowCount())  # Отладочный вывод
 
             if results_table and results_table.rowCount() > 0:
                 # Перебираем первые несколько строк для гарантии
@@ -334,7 +339,7 @@ class MainWindow(QMainWindow):
                     project_code_item = results_table.item(row, 1)  # Столбец с кодом проекта
                     if project_code_item:
                         project_code = project_code_item.text().strip()
-                        print(f"Found project code in row {row}: {project_code}")  # Отладочный вывод
+                        # print(f"Found project code in row {row}: {project_code}")  # Отладочный вывод
                         if project_code:
                             break
 
@@ -343,12 +348,12 @@ class MainWindow(QMainWindow):
                     project = next((p for p in self.project_repo.get_all()
                                     if p.project_code == project_code), None)
 
-                    print(f"Project found: {project is not None}")  # Отладочный вывод
+                    # print(f"Project found: {project is not None}")  # Отладочный вывод
 
                     # Если нашли проект, получаем его ОПО
                     if project:
                         opo_id = project.opo_id
-                        print(f"OPO ID: {opo_id}")  # Отладочный вывод
+                        # print(f"OPO ID: {opo_id}")  # Отладочный вывод
 
             # Получаем все результаты расчетов для проекта
             calculation_results = self.calculation_results_widget.get_all_results()

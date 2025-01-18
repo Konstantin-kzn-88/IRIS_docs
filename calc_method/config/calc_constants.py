@@ -10,6 +10,13 @@ class CalculationConstants:
     T_TO_KG = 1000  # коэффициент перевода тонн в кг
     M_TO_KM = 0.001  # коэффициент перевода метров в километры
     M_SG = 0.06 # удельная массовая скорость выгорания
-    WIND_VELOCITY = 1 # скорость ветра
     KJ_TO_J = 1000 # коэффициент перевода кДж в Дж
     TIME_OUT_DIVICE = 300
+    TIME_EVAPORATION = 3600
+
+    WIND_VELOCITY = 1 # скорость ветра, м/с
+    AMBIENT_TEMPERATURE = 30  # температура воздуха, град.С
+    CLOUD= 0 # облачность (0-8)
+    IS_NIGHT = 0  # ночь/день (0-1)
+    IS_URBAN_AREA = 0 # город/поле (0-1)
+    EJECTION_HEIGHT = 1 # высота выброса, м

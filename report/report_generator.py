@@ -636,32 +636,51 @@ class ReportGenerator:
         if not results:
             self.doc.add_paragraph('Нет данных для отображения')
             return
-        """Добавление подробной таблицы результатов"""
 
-        # Получаем все результаты
-        results = self.calc_repo.get_by_project(project_code) if project_code else self.calc_repo.get_all()
-        # Сортируем результаты по номеру сценария
-        results = sorted(results, key=lambda x: int(x.scenario_number))
-
-        if not results:
-            self.doc.add_paragraph('Нет данных для отображения')
-            return
-
-        # Создаем таблицу
+        # Создаем таблицу со всеми столбцами
         headers = [
-            "№ п/п", "Код проекта", "№ сценария", "Оборудование",
-            "Тип оборудования", "Тип вещества",
-            "q_10.5 (кВт/м2)", "q_7.0 (кВт/м2)", "q_4.2 (кВт/м2)", "q_1.4 (кВт/м2)",
-            "p_53 (кПа)", "p_28 (кПа)", "p_12 (кПа)", "p_5 (кПа)", "p_2 (кПа)",
-            "Длина факела (м)", "Диаметр факела (м)",
-            "Радиус НКПР (м)", "Радиус вспышки (м)",
-            "Погибшие (чел)", "Пострадавшие (чел)",
-            "Прямые потери (млн.руб)", "Затраты на ЛЛА (млн.руб)",
-            "Социальный ущерб (млн.руб)", "Косвенный ущерб (млн.руб)",
-            "Экологический ущерб (млн.руб)", "Суммарный ущерб (млн.руб)",
-            "Риск гибели (чел/год)", "Риск травмирования (чел/год)",
-            "Ожидаемый ущерб (млн.руб/год)", "Вероятность (1/год)",
-            "Масса в аварии (т)", "Масса в ПФ (т)", "Масса в оборудовании (т)"
+            "№ п/п",
+            "Код проекта",
+            "№ сценария",
+            "Оборудование",
+            "Тип оборудования",
+            "Тип вещества",
+            "q_10.5 (кВт/м2)",
+            "q_7.0 (кВт/м2)",
+            "q_4.2 (кВт/м2)",
+            "q_1.4 (кВт/м2)",
+            "p_53 (кПа)",
+            "p_28 (кПа)",
+            "p_12 (кПа)",
+            "p_5 (кПа)",
+            "p_2 (кПа)",
+            "l_f (м)",
+            "d_f (м)",
+            "r_nkpr (м)",
+            "r_flash (м)",
+            "l_pt (м)",
+            "p_pt (кПа)",
+            "q_600 (кДж/м2)",
+            "q_320 (кДж/м2)",
+            "q_220 (кДж/м2)",
+            "q_120 (кДж/м2)",
+            "s_spill (м2)",
+            "Погибшие (чел)",
+            "Пострадавшие (чел)",
+            "Прямые потери (млн.руб)",
+            "Затраты на ЛЛА (млн.руб)",
+            "Социальный ущерб (млн.руб)",
+            "Косвенный ущерб (млн.руб)",
+            "Экологический ущерб (млн.руб)",
+            "Суммарный ущерб (млн.руб)",
+            "Риск гибели (чел/год)",
+            "Риск травмирования (чел/год)",
+            "Ожидаемый ущерб (млн.руб/год)",
+            "Частота (1/год)",
+            "Риск потерь (т/год)",
+            "Масса в аварии (т)",
+            "Масса в ПФ (т)",
+            "Масса в оборудовании (т)"
         ]
 
         table = self.doc.add_table(rows=1, cols=len(headers))
@@ -673,6 +692,8 @@ class ReportGenerator:
             header_cells[i].text = header
             header_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+        # Сортируем результаты по номеру сценария
+        results = sorted(results, key=lambda x: int(x.scenario_number))
 
         # Заполняем данные таблицы
         for i, result in enumerate(results, 1):
@@ -686,51 +707,68 @@ class ReportGenerator:
             row_cells[4].text = EquipmentType.get_display_name(result.equipment_type)
             row_cells[5].text = SubstanceType.get_display_name(result.substance_type)
 
-            # Параметры теплового излучения
+            # Тепловое излучение и давление
             row_cells[6].text = f"{result.q_10_5:.2f}" if result.q_10_5 else "-"
             row_cells[7].text = f"{result.q_7_0:.2f}" if result.q_7_0 else "-"
             row_cells[8].text = f"{result.q_4_2:.2f}" if result.q_4_2 else "-"
             row_cells[9].text = f"{result.q_1_4:.2f}" if result.q_1_4 else "-"
 
-            # Параметры ударной волны
             row_cells[10].text = f"{result.p_53:.2f}" if result.p_53 else "-"
             row_cells[11].text = f"{result.p_28:.2f}" if result.p_28 else "-"
             row_cells[12].text = f"{result.p_12:.2f}" if result.p_12 else "-"
             row_cells[13].text = f"{result.p_5:.2f}" if result.p_5 else "-"
             row_cells[14].text = f"{result.p_2:.2f}" if result.p_2 else "-"
 
-            # Параметры факела
+            # Геометрические параметры
             row_cells[15].text = f"{result.l_f:.2f}" if result.l_f else "-"
             row_cells[16].text = f"{result.d_f:.2f}" if result.d_f else "-"
-
-            # Параметры вспышки
             row_cells[17].text = f"{result.r_nkpr:.2f}" if result.r_nkpr else "-"
             row_cells[18].text = f"{result.r_flash:.2f}" if result.r_flash else "-"
+            row_cells[19].text = f"{result.l_pt:.2f}" if result.l_pt else "-"
+            row_cells[20].text = f"{result.p_pt:.2f}" if result.p_pt else "-"
+
+            # Тепловой поток
+            row_cells[21].text = f"{result.q_600:.2f}" if result.q_600 else "-"
+            row_cells[22].text = f"{result.q_320:.2f}" if result.q_320 else "-"
+            row_cells[23].text = f"{result.q_220:.2f}" if result.q_220 else "-"
+            row_cells[24].text = f"{result.q_120:.2f}" if result.q_120 else "-"
+
+            # Площадь пролива
+            row_cells[25].text = f"{result.s_spill:.2f}" if result.s_spill else "-"
 
             # Последствия
-            row_cells[19].text = str(result.casualties)
-            row_cells[20].text = str(result.injured)
+            row_cells[26].text = str(result.casualties)
+            row_cells[27].text = str(result.injured)
 
             # Ущерб
-            row_cells[21].text = f"{result.direct_losses:.2f}"
-            row_cells[22].text = f"{result.liquidation_costs:.2f}"
-            row_cells[23].text = f"{result.social_losses:.2f}"
-            row_cells[24].text = f"{result.indirect_damage:.2f}"
-            row_cells[25].text = f"{result.environmental_damage:.2f}"
-            row_cells[26].text = f"{result.total_damage:.2f}"
+            row_cells[28].text = f"{result.direct_losses:.2f}"
+            row_cells[29].text = f"{result.liquidation_costs:.2f}"
+            row_cells[30].text = f"{result.social_losses:.2f}"
+            row_cells[31].text = f"{result.indirect_damage:.2f}"
+            row_cells[32].text = f"{result.environmental_damage:.2f}"
+            row_cells[33].text = f"{result.total_damage:.2f}"
 
-            # Риски
-            row_cells[27].text = f"{result.casualty_risk:.2e}"
-            row_cells[28].text = f"{result.injury_risk:.2e}"
-            row_cells[29].text = f"{result.expected_damage:.2e}"
-            row_cells[30].text = f"{result.probability:.2e}"
+            # Риски и частоты
+            row_cells[34].text = f"{result.casualty_risk:.2e}"
+            row_cells[35].text = f"{result.injury_risk:.2e}"
+            row_cells[36].text = f"{result.expected_damage:.2e}"
+            row_cells[37].text = f"{result.probability:.2e}"
+            row_cells[38].text = f"{result.mass_risk:.2e}"
 
             # Массы
-            row_cells[31].text = f"{result.mass_in_accident:.2f}"
-            row_cells[32].text = f"{result.mass_in_factor:.2f}"
-            row_cells[33].text = f"{result.mass_in_equipment:.2f}"
+            row_cells[39].text = f"{result.mass_in_accident:.2f}"
+            row_cells[40].text = f"{result.mass_in_factor:.2f}"
+            row_cells[41].text = f"{result.mass_in_equipment:.2f}"
 
-    # report_generator.py (продолжение)
+            # Выравниваем числовые значения по центру
+            for cell in row_cells[6:]:
+                cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+
+
+
+
+
 
     def add_risk_statistics(self, project_code: str = None):
         """Добавление статистических показателей"""
@@ -791,24 +829,33 @@ class ReportGenerator:
 
         if casualty_data:
             people, probability = list(sum_data.keys()), list(sum_data.values())
-            # для сплошных горизонтальных линий
+            # для сплошных линий
             chart_line_x = []
             chart_line_y = []
+            for i in people:
+                if people[0] == i:
+                    chart_line_x.extend([0, i, i, i])
+                    chart_line_y.extend([probability[people.index(i)], probability[people.index(i)], None, None])
+                elif people[-1] == i:
+                    chart_line_x.extend([people[people.index(i)-1], people[people.index(i)-1], i, i])
+                    chart_line_y.extend([probability[people.index(i)], probability[people.index(i)], probability[people.index(i)], probability[people.index(i)]])
+                    break
+                else:
+                    chart_line_x.extend([people[people.index(i) - 1], i, i, i])
+                    chart_line_y.extend([probability[people.index(i)], probability[people.index(i)], None, None])
 
-            for i in range(len(people) - 1):
-                # Добавляем две точки для текущего горизонтального отрезка
-                chart_line_x.extend([people[i], people[i + 1], None])
-                chart_line_y.extend([probability[i], probability[i], None])
-
-            print(chart_line_x, chart_line_y)
-            # для вертикальных пунктирных линий
+            # для пунктирных линий
             chart_dot_line_x = []
             chart_dot_line_y = []
-
-            for i in range(len(people) - 1):
-                # Добавляем две точки для вертикального пунктирного отрезка
-                chart_dot_line_x.extend([people[i + 1], people[i + 1]])
-                chart_dot_line_y.extend([probability[i], probability[i + 1]])
+            for i in people:
+                if i == people[-1]:
+                    chart_dot_line_x.extend([i, i])
+                    chart_dot_line_y.extend([probability[people.index(i)], probability[people.index(i)]])
+                    chart_dot_line_x.extend([i, i])
+                    chart_dot_line_y.extend([probability[people.index(i)], 0])
+                    break
+                chart_dot_line_x.extend([i, i])
+                chart_dot_line_y.extend([probability[people.index(i)], probability[people.index(i) + 1]])
 
             # Строим F/N кривую
             ax1.semilogy(chart_line_x, chart_line_y, color='b', linestyle='-', marker='.')
@@ -822,8 +869,8 @@ class ReportGenerator:
         # F/G диаграмма
         damage_data = []
         for result in results:
-            if result.casualties > 0:
-                damage_data.append((result.probability, result.casualties))
+            if result.total_damage > 0:
+                damage_data.append((result.probability, result.total_damage))
 
         sum_data = self._sum_data_for_fg(damage_data)
 

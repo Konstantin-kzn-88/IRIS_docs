@@ -66,13 +66,13 @@ class RiskAnalysisWidget(QWidget):
     # иии
     def load_data(self, project_code: str = None, opo_id: Optional[int] = None):
         """Загрузка данных анализа риска"""
-        if not project_code:
-            QMessageBox.warning(
-                self,
-                "Предупреждение",
-                "Не выполнены расчеты. Сначала выполните расчет сценариев для проекта."
-            )
-            return
+        # if not project_code:
+        #     QMessageBox.warning(
+        #         self,
+        #         "Предупреждение",
+        #         "Не выполнены расчеты. Сначала выполните расчет сценариев для проекта."
+        #     )
+        #     return
 
         if not self.check_calculation_status(project_code):
             return
@@ -104,9 +104,9 @@ class RiskAnalysisWidget(QWidget):
             if component:
                 components.add(component)
 
-        print(f"Found {len(components)} unique components:", components)
-
-        print(f"Found {len(components)} unique components")
+        # print(f"Found {len(components)} unique components:", components)
+        #
+        # print(f"Found {len(components)} unique components")
 
         # Рассчитываем анализ риска для каждого компонента
         analyses = []

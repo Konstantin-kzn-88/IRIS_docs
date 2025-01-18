@@ -62,7 +62,6 @@ class FNFGPlotsWidget(QWidget):
         :return: данные вида: {0.2: 0.00018, 1: 0.012, 3: 6.9008e-06, 5: 3.8e-08, 6.25: 7.29e-05}
         '''
         uniq = np.arange(0, max([i[1] for i in data])+max([i[1] for i in data]) / 7, max([i[1] for i in data]) / 7)
-
         result = dict(zip(uniq, [0] * len(uniq)))
 
         for item_data in data:
@@ -92,24 +91,33 @@ class FNFGPlotsWidget(QWidget):
 
         if casualty_data:
             people, probability = list(sum_data.keys()), list(sum_data.values())
-            # для сплошных горизонтальных линий
+            # для сплошных линий
             chart_line_x = []
             chart_line_y = []
+            for i in people:
+                if people[0] == i:
+                    chart_line_x.extend([0, i, i, i])
+                    chart_line_y.extend([probability[people.index(i)], probability[people.index(i)], None, None])
+                elif people[-1] == i:
+                    chart_line_x.extend([people[people.index(i)-1], people[people.index(i)-1], i, i])
+                    chart_line_y.extend([probability[people.index(i)], probability[people.index(i)], probability[people.index(i)], probability[people.index(i)]])
+                    break
+                else:
+                    chart_line_x.extend([people[people.index(i) - 1], i, i, i])
+                    chart_line_y.extend([probability[people.index(i)], probability[people.index(i)], None, None])
 
-            for i in range(len(people) - 1):
-                # Добавляем две точки для текущего горизонтального отрезка
-                chart_line_x.extend([people[i], people[i + 1], None])
-                chart_line_y.extend([probability[i], probability[i], None])
-
-            print(chart_line_x, chart_line_y)
-            # для вертикальных пунктирных линий
+            # для пунктирных линий
             chart_dot_line_x = []
             chart_dot_line_y = []
-
-            for i in range(len(people) - 1):
-                # Добавляем две точки для вертикального пунктирного отрезка
-                chart_dot_line_x.extend([people[i + 1], people[i + 1]])
-                chart_dot_line_y.extend([probability[i], probability[i + 1]])
+            for i in people:
+                if i == people[-1]:
+                    chart_dot_line_x.extend([i, i])
+                    chart_dot_line_y.extend([probability[people.index(i)], probability[people.index(i)]])
+                    chart_dot_line_x.extend([i, i])
+                    chart_dot_line_y.extend([probability[people.index(i)], 0])
+                    break
+                chart_dot_line_x.extend([i, i])
+                chart_dot_line_y.extend([probability[people.index(i)], probability[people.index(i) + 1]])
 
 
             # Создание графика
@@ -122,8 +130,8 @@ class FNFGPlotsWidget(QWidget):
         # Построение F/G диаграммы
         damage_data = []
         for result in results:
-            if result.casualties > 0:
-                damage_data.append((result.probability, result.casualties))
+            if result.total_damage > 0:
+                damage_data.append((result.probability, result.total_damage))
 
         sum_data = self._sum_data_for_fg(damage_data)
 
