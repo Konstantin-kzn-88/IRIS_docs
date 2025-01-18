@@ -12,7 +12,7 @@ from database.repositories.equipment_repo import EquipmentRepository
 from database.repositories.project_repo import ProjectRepository
 from database.repositories.substance_repo import SubstanceRepository
 from calc_method import calc_pipe_0, calc_tank_0, calc_truc_tank_0, calc_device_0, calc_pump_0, calc_pipe_1, \
-    calc_device_1, calc_pump_1, calc_tank_1
+    calc_device_1, calc_pump_1, calc_tank_1, calc_truc_tank_1
 
 
 class CalculationManager:
@@ -131,6 +131,15 @@ class CalculationManager:
                         # Сохраняем в БД
                         self._save_calculation(item)
                     init_num_scenario = result[1]
+
+                if substance.sub_type.value == 1:  # ЛВЖ+токси
+                    result = calc_truc_tank_1.Calc(project_code, init_num_scenario, substance, equipment,
+                                                   dangerous_object).result()
+                    for item in result[0]:
+                        # Сохраняем в БД
+                        self._save_calculation(item)
+                    init_num_scenario = result[1]
+
 
             elif equipment.equipment_type.value == 'Technological_device':
                 if substance.sub_type.value == 0:  # ЛВЖ
