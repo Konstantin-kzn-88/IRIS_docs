@@ -765,11 +765,6 @@ class ReportGenerator:
                 cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
 
-
-
-
-
-
     def add_risk_statistics(self, project_code: str = None):
         """Добавление статистических показателей"""
         results = self.calc_repo.get_by_project(project_code) if project_code else self.calc_repo.get_all()
