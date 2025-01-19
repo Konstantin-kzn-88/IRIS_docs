@@ -23,6 +23,8 @@ from widgets.truck_tanks_widget import TruckTanksWidget
 from widgets.compressors_widget import CompressorsWidget
 from widgets.risk_analysis_widget import RiskAnalysisWidget
 
+from report.template_report_generator import TemplateReportGenerator
+
 from report.report_generator import ReportGenerator
 
 import os
@@ -183,6 +185,24 @@ class MainWindow(QMainWindow):
                 f"Не удалось сформировать отчет:\n{str(e)}"
             )
 
+    def generate_report_from_template(self):
+        """Генерация отчета на основе шаблона"""
+        try:
+            # Получаем код проекта
+            project_code = None
+            if self.calculation_results_widget:
+                if self.calculation_results_widget.table.rowCount() > 0:
+                    project_code = self.calculation_results_widget.table.item(0, 1).text()
+
+            report_gen = TemplateReportGenerator(self.db)
+            report_gen.generate_report(project_code)
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось сформировать отчет:\n{str(e)}"
+            )
 
     def create_tree_items(self):
         """Создание элементов дерева навигации"""
@@ -269,12 +289,18 @@ class MainWindow(QMainWindow):
         report_action = QAction(QIcon("ico/save.png"), "Вывод результатов расчета", self)
         report_action.triggered.connect(self.generate_word_report)
 
+        # В методе create_menu() добавить:
+        template_report_action = QAction(QIcon("ico/template.png"), "Отчет по шаблону", self)
+        template_report_action.triggered.connect(self.generate_report_from_template)
+
         exit_action = QAction(QIcon("ico/exit.png"), "Выход", self)
         exit_action.triggered.connect(self.close)
+
 
         # Добавляем действия в меню
         file_menu.addAction(calculate_action)
         file_menu.addAction(report_action)
+        file_menu.addAction(template_report_action)
         file_menu.addSeparator()
         file_menu.addAction(exit_action)
         menubar.addMenu(file_menu)
