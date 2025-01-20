@@ -1,8 +1,3 @@
-sum_ = 0
+i = int(input('Get num: '))
 
-for i in range(1,100):
-    print(f'{i}*{i+1}')
-    sum_ = sum_ + i*(i+1)
-
-print('sum_ = ',sum_)
-
+if i > 3: print('Hello')

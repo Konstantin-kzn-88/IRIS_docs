@@ -116,6 +116,9 @@ class TemplateReportGenerator:
         # Добавляем данные о расчетах ПФ
         calc_data = self._get_substance_distribution_data(project_code)
 
+        # Добавляем данные анализа риска
+        risk_analysis_data = self._get_risk_analysis_data(project_code)
+
         # Формируем общий контекст
         context = {
             **org_data,
@@ -123,7 +126,8 @@ class TemplateReportGenerator:
             **project_data,
             **equipment_data,
             **mass_data,
-            **calc_data
+            **calc_data,
+            **risk_analysis_data
         }
 
         return context
@@ -499,4 +503,131 @@ class TemplateReportGenerator:
 
         return {
             'calculation_results': calculation_results
+        }
+
+    def _get_risk_analysis_data(self, project_code: str) -> dict:
+        """
+        Получение данных анализа риска для шаблона отчета
+        Args:
+            project_code: Код проекта
+        Returns:
+            dict: Словарь с данными анализа риска для шаблона
+        """
+        # Получаем результаты расчетов
+        results = self.calc_repo.get_by_project(project_code) if project_code else self.calc_repo.get_all()
+
+        if not results:
+            return {
+                'risk_statistics': {},
+                'critical_scenarios': [],
+                'component_analysis': []
+            }
+
+        # Формируем статистические показатели
+        risk_statistics = {
+            'total_scenarios': len(results),
+            'max_casualties': max(r.casualties for r in results),
+            'max_injured': max(r.injured for r in results),
+            'max_damage': f"{max(r.total_damage for r in results):.2f}",
+            'total_death_risk': f"{sum(r.casualty_risk for r in results):.2e}",
+            'total_injury_risk': f"{sum(r.injury_risk for r in results):.2e}",
+            'max_eco_damage': f"{max(r.environmental_damage for r in results):.2f}"
+        }
+
+        # Добавляем максимальную частоту аварий с гибелью
+        death_scenarios = [r for r in results if r.casualties >= 1]
+        max_death_frequency = max((r.probability for r in death_scenarios), default=0)
+        risk_statistics['max_death_frequency'] = f"{max_death_frequency:.2e}"
+
+        # Получаем уникальные компоненты
+        components = set()
+        for result in results:
+            component = None
+            if hasattr(result, 'component_enterprise') and result.component_enterprise:
+                component = result.component_enterprise
+            elif hasattr(result, 'equipment_name') and result.equipment_name:
+                import re
+                match = re.search(r'\((.*?)\)', result.equipment_name)
+                if match:
+                    component = match.group(1)
+            if component:
+                components.add(component)
+
+        # Формируем список критических сценариев
+        critical_scenarios = []
+        for component in sorted(components):
+            # Фильтруем результаты для компонента
+            component_results = []
+            for result in results:
+                if (hasattr(result, 'component_enterprise') and
+                        result.component_enterprise == component):
+                    component_results.append(result)
+                elif hasattr(result, 'equipment_name'):
+                    match = re.search(r'\((.*?)\)', result.equipment_name)
+                    if match and match.group(1) == component:
+                        component_results.append(result)
+
+            if not component_results:
+                continue
+
+            # Наиболее опасный сценарий
+            most_dangerous = max(component_results, key=lambda x: x.total_damage)
+            critical_scenarios.append({
+                'component': component,
+                'scenario_type': "Наиболее опасный",
+                'scenario_number': str(most_dangerous.scenario_number),
+                'equipment': most_dangerous.equipment_name,
+                'casualties': str(most_dangerous.casualties),
+                'injured': str(most_dangerous.injured),
+                'total_damage': f"{most_dangerous.total_damage:.2f}",
+                'probability': f"{most_dangerous.probability:.2e}"
+            })
+
+            # Наиболее вероятный сценарий
+            most_probable = max(component_results, key=lambda x: x.probability)
+            critical_scenarios.append({
+                'component': component,
+                'scenario_type': "Наиболее вероятный",
+                'scenario_number': str(most_probable.scenario_number),
+                'equipment': most_probable.equipment_name,
+                'casualties': str(most_probable.casualties),
+                'injured': str(most_probable.injured),
+                'total_damage': f"{most_probable.total_damage:.2f}",
+                'probability': f"{most_probable.probability:.2e}"
+            })
+
+        # Формируем анализ по компонентам
+        from models.risk_analysis import ComponentRiskAnalysis
+        from models.dangerous_object import DangerousObject
+
+        component_analysis = []
+        for i, component in enumerate(sorted(components), 1):
+            analysis = ComponentRiskAnalysis.calculate_for_component(
+                component, results, None  # DangerousObject здесь не используется
+            )
+
+            if not analysis:
+                continue
+
+            component_analysis.append({
+                'number': str(i),
+                'component': analysis.component_name,
+                'max_damage': f"{analysis.max_damage:.2f}",
+                'max_eco_damage': f"{analysis.max_eco_damage:.2f}",
+                'max_casualties': str(analysis.max_casualties),
+                'max_injured': str(analysis.max_injured),
+                'collective_death_risk': f"{analysis.collective_death_risk:.2e}",
+                'collective_injury_risk': f"{analysis.collective_injury_risk:.2e}",
+                'individual_death_risk': f"{analysis.individual_death_risk:.2e}",
+                'individual_injury_risk': f"{analysis.individual_injury_risk:.2e}",
+                'risk_level_ppm': f"{analysis.risk_level_ppm:.2f}",
+                'risk_level_dbr': f"{analysis.risk_level_dbr:.2f}",
+                'max_death_frequency': f"{analysis.max_death_frequency:.2e}"
+            })
+
+        # Возвращаем все данные анализа риска
+        return {
+            'risk_statistics': risk_statistics,
+            'critical_scenarios': critical_scenarios,
+            'component_analysis': component_analysis
         }
