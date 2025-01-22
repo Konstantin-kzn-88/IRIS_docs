@@ -205,7 +205,17 @@ class ReportGenerator:
         from models.risk_analysis import ComponentRiskAnalysis
         from models.dangerous_object import DangerousObject
 
-        dangerous_object = None  # здесь можно добавить получение ОПО если нужно
+        dangerous_object = None
+        if project_code:
+            query = """
+                SELECT do.* FROM dangerous_objects do
+                JOIN projects p ON p.opo_id = do.id
+                WHERE p.project_code = ?
+            """
+            opo_data = self.db.execute_query(query, (project_code,))
+            if opo_data:
+                from models.dangerous_object import DangerousObject
+                dangerous_object = DangerousObject.from_dict(dict(opo_data[0]))
 
         for i, component in enumerate(sorted(components), 1):
             # Расчет анализа риска для компонента
