@@ -286,6 +286,10 @@ class MainWindow(QMainWindow):
         calculate_action = QAction(QIcon("ico/calculator.png"), "Расчет", self)
         calculate_action.triggered.connect(self.show_calculation_dialog)
 
+        # Добавляем новое действие для импорта из Excel
+        import_excel_action = QAction(QIcon("ico/excel.png"), "Импорт из Excel", self)
+        import_excel_action.triggered.connect(self.import_from_excel)
+
         report_action = QAction(QIcon("ico/save.png"), "Вывод результатов расчета", self)
         report_action.triggered.connect(self.generate_word_report)
 
@@ -299,6 +303,7 @@ class MainWindow(QMainWindow):
 
         # Добавляем действия в меню
         file_menu.addAction(calculate_action)
+        file_menu.addAction(import_excel_action)  # Новый пункт меню
         file_menu.addAction(report_action)
         file_menu.addAction(template_report_action)
         file_menu.addSeparator()
@@ -309,6 +314,18 @@ class MainWindow(QMainWindow):
         help_menu = QMenu("&Помощь", self)
         help_menu.addAction("О программе", self.show_about)
         menubar.addMenu(help_menu)
+
+    # Добавляем новый метод в класс MainWindow
+    def import_from_excel(self):
+        """Импорт данных из Excel-файла"""
+        from importer_data.excel_importer import ExcelImporter
+        importer = ExcelImporter(self.db, self)
+        importer.exec()
+
+        # Обновляем представления после импорта
+        current_item = self.tree.currentItem()
+        if current_item:
+            self.on_tree_item_changed(current_item, None)
 
 
 
