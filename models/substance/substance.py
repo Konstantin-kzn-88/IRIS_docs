@@ -57,8 +57,11 @@ class Substance:
         protection: str = "",
         neutralization_methods: str = "",
         first_aid: str = "",
+        id: Optional[int] = None,
+
     ):
         # -------- Общие поля --------
+        self.id = id
         self.name = name            # Наименование вещества (строка)
         self.kind = kind            # Вид (целое число, см. KIND_LABELS)
         self.formula = formula      # Химическая формула (строка)
@@ -139,6 +142,7 @@ class Substance:
         Преобразовать объект в словарь (удобно для JSON/SQLite).
         """
         return {
+            "id": self.id,
             "name": self.name,
             "kind": self.kind,
             "formula": self.formula,
@@ -162,6 +166,7 @@ class Substance:
         Создать объект Substance из словаря (например, после чтения из SQLite/JSON).
         """
         return Substance(
+            id=data.get("id"),
             name=data.get("name", ""),
             kind=data.get("kind", 0),
             formula=data.get("formula", ""),
