@@ -3,8 +3,8 @@ import sqlite3
 import json
 from typing import Optional, Any, Dict, List, Tuple
 
-from models.substance.substance import Substance
-from models.equipment.equipment_entities import TechPipeline, PumpCompressorEquipment, VesselApparatusEquipment
+from models.substance.substance_model import Substance
+from models.equipment.equipment_model import TechPipeline, PumpCompressorEquipment, VesselApparatusEquipment
 
 
 def _jdump(x: Any) -> Optional[str]:
