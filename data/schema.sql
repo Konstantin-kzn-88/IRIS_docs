@@ -1,0 +1,130 @@
+PRAGMA foreign_keys = ON;
+
+-- 1) Вещества (поля из JSON; вложенные объекты храним как JSON-текст)
+CREATE TABLE IF NOT EXISTS substances (
+  id                         INTEGER PRIMARY KEY,
+  name                       TEXT    NOT NULL,
+  kind                       INTEGER NOT NULL,
+  formula                    TEXT,
+
+  composition_json           TEXT,   -- JSON
+  physical_json              TEXT,   -- JSON
+  explosion_json             TEXT,   -- JSON
+  toxicity_json              TEXT,   -- JSON
+
+  reactivity                 TEXT,
+  odor                       TEXT,
+  corrosiveness              TEXT,
+  precautions                TEXT,
+  impact                     TEXT,
+  protection                 TEXT,
+  neutralization_methods     TEXT,
+  first_aid                  TEXT
+);
+
+-- 2) Оборудование (поля из JSON; coordinates храним как JSON-текст)
+CREATE TABLE IF NOT EXISTS equipment (
+  id                         INTEGER PRIMARY KEY,
+  substance_id               INTEGER NOT NULL,
+  equipment_name             TEXT    NOT NULL,
+  phase_state                TEXT,
+  coord_type                 INTEGER,
+  equipment_type             INTEGER,
+  coordinates_json           TEXT,   -- JSON
+
+  length_m                   REAL,
+  diameter_mm                REAL,
+  wall_thickness_mm          REAL,
+  volume_m3                  REAL,
+  fill_fraction              REAL,
+  pressure_mpa               REAL,
+  spill_coefficient          REAL,
+  spill_area_m2              REAL,
+  substance_temperature_c    REAL,
+  shutdown_time_s            REAL,
+  evaporation_time_s         REAL,
+
+  FOREIGN KEY (substance_id) REFERENCES substances(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_equipment_substance_id ON equipment(substance_id);
+
+-- 3) Количество опасного вещества
+CREATE TABLE IF NOT EXISTS hazardous_substance_amounts (
+  id                         INTEGER PRIMARY KEY,
+  substance_id               INTEGER NOT NULL,
+  equipment_id               INTEGER NOT NULL,
+
+  equipment_name             TEXT    NOT NULL,  -- денормализация для удобства отчетности
+  amount_t                   REAL    NOT NULL,  -- количество ОВ, т
+
+  phase_state                TEXT,
+  pressure_mpa               REAL,
+  substance_temperature_c    REAL,
+
+  FOREIGN KEY (substance_id) REFERENCES substances(id),
+  FOREIGN KEY (equipment_id) REFERENCES equipment(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hsa_substance_id ON hazardous_substance_amounts(substance_id);
+CREATE INDEX IF NOT EXISTS idx_hsa_equipment_id ON hazardous_substance_amounts(equipment_id);
+
+-- 4) Расчеты
+CREATE TABLE IF NOT EXISTS calculations (
+  id                         INTEGER PRIMARY KEY,
+  equipment_id               INTEGER NOT NULL,
+  equipment_name             TEXT    NOT NULL,
+
+  base_frequency             REAL,   -- базовая частота
+  accident_event_probability REAL,   -- вероятность события аварии
+  scenario_frequency         REAL,   -- частота сценария аварии
+
+  ov_in_accident_t           REAL,   -- количество ОВ участвующего в аварии (т)
+  ov_in_hazard_factor_t      REAL,   -- количество ОВ в создании поражающего фактора (т)
+
+  q_10_5                     REAL,
+  q_7_0                      REAL,
+  q_4_2                      REAL,
+  q_1_4                      REAL,
+
+  p_70                       REAL,
+  p_28                       REAL,
+  p_14                       REAL,
+  p_5                        REAL,
+  p_2                        REAL,
+
+  l_f                        REAL,
+  d_f                        REAL,
+  r_nkpr                     REAL,
+  r_vsp                      REAL,
+  l_pt                       REAL,
+  p_pt                       REAL,
+
+  q_600                      REAL,
+  q_320                      REAL,
+  q_220                      REAL,
+  q_120                      REAL,
+
+  s_t                        REAL,
+
+  fatalities_count           INTEGER, -- кол-во пог.
+  injured_count              INTEGER, -- кол-во постр.
+
+  direct_losses              REAL,   -- прямые потери
+  liquidation_costs          REAL,   -- затраты на ликвидацию
+  social_losses              REAL,   -- социальные потери
+  indirect_damage            REAL,   -- косвенный ущерб
+  total_environmental_damage REAL,   -- суммарный экологический ущерб
+  total_damage               REAL,   -- суммарный ущерб
+
+  collective_risk_fatalities REAL,   -- кол. риск погибшие
+  collective_risk_injured    REAL,   -- кол. риск пострадавшие
+  expected_value             REAL,   -- мат. ожидание
+
+  individual_risk_fatalities REAL,   -- инд. риск погибшие
+  individual_risk_injured    REAL,   -- инд. риск пострадавшие
+
+  FOREIGN KEY (equipment_id) REFERENCES equipment(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_calc_equipment_id ON calculations(equipment_id);

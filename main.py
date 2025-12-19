@@ -21,14 +21,14 @@ from models.calculations import recalc_hazardous_amounts
 def main():
     # 1. Создаём вещества
     init_substances_db()
-    seed_default_substances_if_empty()
+
 
     substances = list_substances()
     print(f"Веществ создано: {len(substances)}")
 
     # 2. Создаём оборудование
     init_equipment_db()
-    seed_equipment_for_default_substances_if_empty()
+
 
     equipment = list_equipment()
     print(f"Оборудования создано: {len(equipment)}")
