@@ -16,6 +16,7 @@
       "boiling_point_C": 35
     },
     "explosion": {
+      "explosion_hazard_class": 4,
       "flash_point_C": -40,
       "lel_percent": 1.4,
       "autoignition_temp_C": 280,
@@ -39,7 +40,6 @@
     "neutralization_methods": "Сорбенты",
     "first_aid": "Свежий воздух"
   },
-
   {
     "id": 2,
     "name": "Толуол",
@@ -57,6 +57,7 @@
       "boiling_point_C": 111
     },
     "explosion": {
+      "explosion_hazard_class": 3,
       "flash_point_C": 4,
       "lel_percent": 1.2,
       "autoignition_temp_C": 480,
@@ -80,7 +81,6 @@
     "neutralization_methods": "Сорбенты",
     "first_aid": "Свежий воздух"
   },
-
   {
     "id": 3,
     "name": "Метан",
@@ -98,6 +98,7 @@
       "boiling_point_C": -161
     },
     "explosion": {
+      "explosion_hazard_class": 4,
       "flash_point_C": null,
       "lel_percent": 5.0,
       "autoignition_temp_C": 537,
@@ -121,7 +122,6 @@
     "neutralization_methods": "Вентиляция",
     "first_aid": "Свежий воздух"
   },
-
   {
     "id": 4,
     "name": "Сероводород",
@@ -139,6 +139,7 @@
       "boiling_point_C": -60
     },
     "explosion": {
+      "explosion_hazard_class": 4,
       "flash_point_C": null,
       "lel_percent": 4.0,
       "autoignition_temp_C": 260,
@@ -162,7 +163,6 @@
     "neutralization_methods": "Окисление",
     "first_aid": "Свежий воздух, врач"
   },
-
   {
     "id": 5,
     "name": "Пропан",
@@ -180,6 +180,7 @@
       "boiling_point_C": -42
     },
     "explosion": {
+      "explosion_hazard_class": 4,
       "flash_point_C": null,
       "lel_percent": 2.1,
       "autoignition_temp_C": 470,
@@ -203,7 +204,6 @@
     "neutralization_methods": "Отключение подачи",
     "first_aid": "Свежий воздух"
   },
-
   {
     "id": 6,
     "name": "Аммиак",
@@ -221,6 +221,7 @@
       "boiling_point_C": -33
     },
     "explosion": {
+      "explosion_hazard_class": 2,
       "flash_point_C": null,
       "lel_percent": 15.0,
       "autoignition_temp_C": 651,
@@ -244,7 +245,6 @@
     "neutralization_methods": "Поглощение водой",
     "first_aid": "Врач"
   },
-
   {
     "id": 7,
     "name": "Фенол",
@@ -262,6 +262,7 @@
       "boiling_point_C": 182
     },
     "explosion": {
+      "explosion_hazard_class": 1,
       "flash_point_C": 79,
       "lel_percent": 1.8,
       "autoignition_temp_C": 715,
@@ -285,7 +286,6 @@
     "neutralization_methods": "Щелочная обработка",
     "first_aid": "Врач"
   },
-
   {
     "id": 8,
     "name": "Хлор",
@@ -303,6 +303,7 @@
       "boiling_point_C": -34
     },
     "explosion": {
+      "explosion_hazard_class": 0,
       "flash_point_C": null,
       "lel_percent": null,
       "autoignition_temp_C": null,
@@ -326,7 +327,6 @@
     "neutralization_methods": "Щелочные растворы",
     "first_aid": "Врач"
   },
-
   {
     "id": 9,
     "name": "Хлор (жидкий)",
@@ -344,6 +344,7 @@
       "boiling_point_C": -34
     },
     "explosion": {
+      "explosion_hazard_class": 0,
       "flash_point_C": null,
       "lel_percent": null,
       "autoignition_temp_C": null,
@@ -367,7 +368,6 @@
     "neutralization_methods": "Щёлочи",
     "first_aid": "Врач"
   },
-
   {
     "id": 10,
     "name": "Дизельное топливо",
@@ -385,6 +385,7 @@
       "boiling_point_C": 180
     },
     "explosion": {
+      "explosion_hazard_class": 1,
       "flash_point_C": 62,
       "lel_percent": 0.6,
       "autoignition_temp_C": 210,

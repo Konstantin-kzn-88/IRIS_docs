@@ -22,7 +22,8 @@
     "spill_area_m2": 120,
     "substance_temperature_c": 20,
     "shutdown_time_s": 60,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Трубопроводная система"
   },
   {
     "id": 2,
@@ -45,7 +46,8 @@
     "spill_area_m2": 600,
     "substance_temperature_c": 20,
     "shutdown_time_s": 120,
-    "evaporation_time_s": 3600
+    "evaporation_time_s": 3600,
+    "hazard_component": "Парк РВС"
   },
   {
     "id": 3,
@@ -68,7 +70,8 @@
     "spill_area_m2": 80,
     "substance_temperature_c": 20,
     "shutdown_time_s": 30,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 4,
@@ -91,7 +94,8 @@
     "spill_area_m2": 100,
     "substance_temperature_c": 20,
     "shutdown_time_s": 45,
-    "evaporation_time_s": 2400
+    "evaporation_time_s": 2400,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 5,
@@ -114,7 +118,8 @@
     "spill_area_m2": 20,
     "substance_temperature_c": 20,
     "shutdown_time_s": 15,
-    "evaporation_time_s": 1200
+    "evaporation_time_s": 1200,
+    "hazard_component": "Насосная станция"
   },
   {
     "id": 6,
@@ -137,7 +142,8 @@
     "spill_area_m2": 30,
     "substance_temperature_c": 20,
     "shutdown_time_s": 10,
-    "evaporation_time_s": 900
+    "evaporation_time_s": 900,
+    "hazard_component": "Дожимная станция"
   },
   {
     "id": 7,
@@ -160,7 +166,8 @@
     "spill_area_m2": 50,
     "substance_temperature_c": 20,
     "shutdown_time_s": 20,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 8,
@@ -185,7 +192,8 @@
     "spill_area_m2": 150,
     "substance_temperature_c": 20,
     "shutdown_time_s": 90,
-    "evaporation_time_s": 3600
+    "evaporation_time_s": 3600,
+    "hazard_component": "Парк РВС"
   },
   {
     "id": 9,
@@ -210,7 +218,8 @@
     "spill_area_m2": 120,
     "substance_temperature_c": -5,
     "shutdown_time_s": 60,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Трубопроводная система"
   },
   {
     "id": 10,
@@ -233,7 +242,8 @@
     "spill_area_m2": 600,
     "substance_temperature_c": -5,
     "shutdown_time_s": 120,
-    "evaporation_time_s": 3600
+    "evaporation_time_s": 3600,
+    "hazard_component": "Парк РВС"
   },
   {
     "id": 11,
@@ -256,7 +266,8 @@
     "spill_area_m2": 80,
     "substance_temperature_c": -5,
     "shutdown_time_s": 30,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 12,
@@ -279,7 +290,8 @@
     "spill_area_m2": 100,
     "substance_temperature_c": -5,
     "shutdown_time_s": 45,
-    "evaporation_time_s": 2400
+    "evaporation_time_s": 2400,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 13,
@@ -302,7 +314,8 @@
     "spill_area_m2": 20,
     "substance_temperature_c": -5,
     "shutdown_time_s": 15,
-    "evaporation_time_s": 1200
+    "evaporation_time_s": 1200,
+    "hazard_component": "Насосная станция"
   },
   {
     "id": 14,
@@ -325,7 +338,8 @@
     "spill_area_m2": 30,
     "substance_temperature_c": -5,
     "shutdown_time_s": 10,
-    "evaporation_time_s": 900
+    "evaporation_time_s": 900,
+    "hazard_component": "Дожимная станция"
   },
   {
     "id": 15,
@@ -348,7 +362,8 @@
     "spill_area_m2": 50,
     "substance_temperature_c": -5,
     "shutdown_time_s": 20,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 16,
@@ -373,7 +388,8 @@
     "spill_area_m2": 150,
     "substance_temperature_c": -5,
     "shutdown_time_s": 90,
-    "evaporation_time_s": 3600
+    "evaporation_time_s": 3600,
+    "hazard_component": "Парк РВС"
   },
   {
     "id": 17,
@@ -398,7 +414,8 @@
     "spill_area_m2": 120,
     "substance_temperature_c": 10,
     "shutdown_time_s": 60,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Трубопроводная система"
   },
   {
     "id": 18,
@@ -421,7 +438,8 @@
     "spill_area_m2": 600,
     "substance_temperature_c": 10,
     "shutdown_time_s": 120,
-    "evaporation_time_s": 3600
+    "evaporation_time_s": 3600,
+    "hazard_component": "Парк РВС"
   },
   {
     "id": 19,
@@ -444,7 +462,8 @@
     "spill_area_m2": 80,
     "substance_temperature_c": 10,
     "shutdown_time_s": 30,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 20,
@@ -467,7 +486,8 @@
     "spill_area_m2": 100,
     "substance_temperature_c": 10,
     "shutdown_time_s": 45,
-    "evaporation_time_s": 2400
+    "evaporation_time_s": 2400,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 21,
@@ -490,7 +510,8 @@
     "spill_area_m2": 20,
     "substance_temperature_c": 10,
     "shutdown_time_s": 15,
-    "evaporation_time_s": 1200
+    "evaporation_time_s": 1200,
+    "hazard_component": "Насосная станция"
   },
   {
     "id": 22,
@@ -513,7 +534,8 @@
     "spill_area_m2": 30,
     "substance_temperature_c": 10,
     "shutdown_time_s": 10,
-    "evaporation_time_s": 900
+    "evaporation_time_s": 900,
+    "hazard_component": "Дожимная станция"
   },
   {
     "id": 23,
@@ -536,7 +558,8 @@
     "spill_area_m2": 50,
     "substance_temperature_c": 10,
     "shutdown_time_s": 20,
-    "evaporation_time_s": 1800
+    "evaporation_time_s": 1800,
+    "hazard_component": "Установка подготовки"
   },
   {
     "id": 24,
@@ -561,6 +584,7 @@
     "spill_area_m2": 150,
     "substance_temperature_c": 10,
     "shutdown_time_s": 90,
-    "evaporation_time_s": 3600
+    "evaporation_time_s": 3600,
+    "hazard_component": "Парк РВС"
   }
 ]

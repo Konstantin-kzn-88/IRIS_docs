@@ -1,6 +1,8 @@
 PRAGMA foreign_keys = ON;
 
--- 1) Вещества (поля из JSON; вложенные объекты храним как JSON-текст)
+-- =========================================================
+-- 1) Вещества
+-- =========================================================
 CREATE TABLE IF NOT EXISTS substances (
   id                         INTEGER PRIMARY KEY,
   name                       TEXT    NOT NULL,
@@ -12,6 +14,28 @@ CREATE TABLE IF NOT EXISTS substances (
   explosion_json             TEXT,   -- JSON
   toxicity_json              TEXT,   -- JSON
 
+  -- Распакованные поля из JSON (для удобства запросов)
+  composition_notes            TEXT,
+  composition_components_json  TEXT,   -- JSON
+  physical_molar_mass_kg_per_mol REAL,
+  physical_density_liquid_kg_per_m3 REAL,
+  physical_density_gas_kg_per_m3 REAL,
+  physical_evaporation_heat_J_per_kg REAL,
+  physical_boiling_point_C     REAL,
+  explosion_explosion_hazard_class INTEGER,
+  explosion_flash_point_C      REAL,
+  explosion_lel_percent        REAL,
+  explosion_autoignition_temp_C REAL,
+  explosion_burning_rate_kg_per_s_m2 REAL,
+  explosion_heat_of_combustion_kJ_per_kg REAL,
+  explosion_expansion_degree   REAL,
+  explosion_energy_reserve_factor REAL,
+  toxicity_hazard_class        INTEGER,
+  toxicity_pdk_mg_per_m3       REAL,
+  toxicity_threshold_tox_dose_mg_min_per_L REAL,
+  toxicity_lethal_tox_dose_mg_min_per_L REAL,
+
+
   reactivity                 TEXT,
   odor                       TEXT,
   corrosiveness              TEXT,
@@ -19,14 +43,19 @@ CREATE TABLE IF NOT EXISTS substances (
   impact                     TEXT,
   protection                 TEXT,
   neutralization_methods     TEXT,
-  first_aid                  TEXT
-);
+  first_aid                  TEXT);
 
--- 2) Оборудование (поля из JSON; coordinates храним как JSON-текст)
+-- =========================================================
+-- 2) Оборудование
+-- =========================================================
 CREATE TABLE IF NOT EXISTS equipment (
   id                         INTEGER PRIMARY KEY,
   substance_id               INTEGER NOT NULL,
   equipment_name             TEXT    NOT NULL,
+
+  -- Составляющая опасного объекта (например: "Парк РВС", "Установка подготовки", "Дожимная станция")
+  hazard_component           TEXT    NOT NULL,
+
   phase_state                TEXT,
   coord_type                 INTEGER,
   equipment_type             INTEGER,
@@ -47,15 +76,18 @@ CREATE TABLE IF NOT EXISTS equipment (
   FOREIGN KEY (substance_id) REFERENCES substances(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_equipment_substance_id ON equipment(substance_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_substance_id
+  ON equipment(substance_id);
 
+-- =========================================================
 -- 3) Количество опасного вещества
+-- =========================================================
 CREATE TABLE IF NOT EXISTS hazardous_substance_amounts (
   id                         INTEGER PRIMARY KEY,
   substance_id               INTEGER NOT NULL,
   equipment_id               INTEGER NOT NULL,
 
-  equipment_name             TEXT    NOT NULL,  -- денормализация для удобства отчетности
+  equipment_name             TEXT    NOT NULL,  -- денормализация
   amount_t                   REAL    NOT NULL,  -- количество ОВ, т
 
   phase_state                TEXT,
@@ -66,14 +98,26 @@ CREATE TABLE IF NOT EXISTS hazardous_substance_amounts (
   FOREIGN KEY (equipment_id) REFERENCES equipment(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_hsa_substance_id ON hazardous_substance_amounts(substance_id);
-CREATE INDEX IF NOT EXISTS idx_hsa_equipment_id ON hazardous_substance_amounts(equipment_id);
+CREATE INDEX IF NOT EXISTS idx_hsa_substance_id
+  ON hazardous_substance_amounts(substance_id);
 
+CREATE INDEX IF NOT EXISTS idx_hsa_equipment_id
+  ON hazardous_substance_amounts(equipment_id);
+
+-- =========================================================
 -- 4) Расчеты
+-- =========================================================
 CREATE TABLE IF NOT EXISTS calculations (
   id                         INTEGER PRIMARY KEY,
+
   equipment_id               INTEGER NOT NULL,
   equipment_name             TEXT    NOT NULL,
+
+  -- Составляющая опасного объекта, для которой рассчитан сценарий
+  hazard_component           TEXT    NOT NULL,
+
+  -- Сквозная нумерация сценариев по всей таблице calculations
+  scenario_no                INTEGER NOT NULL UNIQUE,
 
   base_frequency             REAL,   -- базовая частота
   accident_event_probability REAL,   -- вероятность события аварии
@@ -127,4 +171,8 @@ CREATE TABLE IF NOT EXISTS calculations (
   FOREIGN KEY (equipment_id) REFERENCES equipment(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_calc_equipment_id ON calculations(equipment_id);
+CREATE INDEX IF NOT EXISTS idx_calc_equipment_id
+  ON calculations(equipment_id);
+
+CREATE INDEX IF NOT EXISTS idx_calc_hazard_component
+  ON calculations(hazard_component);
