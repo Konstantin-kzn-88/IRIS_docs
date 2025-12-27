@@ -1,13 +1,21 @@
 {
   "meta": {
     "equipment_type_mapping": {
-      "0": "Трубопровод"
+      "0": "Трубопровод",
+      "1": "Резервуар вертикальный стальной (РВС)",
+      "2": "Аппарат под давлением"
     },
     "kind_mapping": {
       "0": "Легковоспламеняющаяся жидкость (ЛВЖ)",
       "1": "Токсичная ЛВЖ",
       "2": "Горючий газ",
-      "4": "Сжиженный горючий газ"
+      "4": "Сжиженный горючий газ",
+      "5": "Сжиженный горючий газ (токсичный)",
+      "6": "Токсичная жидкость (практически не испаряемая)",
+      "7": "Токсичный газ",
+      "8": "Сжиженный токсичный газ",
+      "9": "Горючая жидкость (практически неиспаряемая)",
+      "3": "Горючий газ (токсичный)"
     },
     "note": "Структура: scenarios[equipment_type][kind] -> список сценариев",
     "calc_code_mapping": {
@@ -18,7 +26,57 @@
       "4": "токсическое поражение",
       "5": "факельное горение",
       "6": "огненный шар",
-      "7": "токсичный пролив"
+      "7": "химически опасный пролив"
+    },
+    "allowed_pairs": {
+      "1": {
+        "2": {
+          "allowed": false,
+          "reason": "В РВС не хранятся газы под давлением/в газовой фазе; для газа используются трубопроводы/газгольдеры/аппараты."
+        },
+        "3": {
+          "allowed": false,
+          "reason": "В РВС не хранятся токсичные горючие газы; требуются специализированные емкости/аппараты."
+        },
+        "4": {
+          "allowed": false,
+          "reason": "СГГ (LPG) в РВС не хранится; используются сферические/горизонтальные резервуары, изотермические емкости и т.п."
+        },
+        "5": {
+          "allowed": false,
+          "reason": "Токсичный СГГ в РВС не хранится; требуются специализированные емкости/аппараты."
+        },
+        "7": {
+          "allowed": false,
+          "reason": "Токсичный газ в РВС не хранится; используются баллоны/аппараты/газгольдеры."
+        },
+        "8": {
+          "allowed": false,
+          "reason": "Сжиженный токсичный газ (например, Cl2 жидкий) не хранится в РВС; применяются специальные сосуды/контейнеры."
+        },
+        "0": {
+          "allowed": true
+        },
+        "1": {
+          "allowed": true
+        },
+        "6": {
+          "allowed": true
+        },
+        "9": {
+          "allowed": true
+        }
+      },
+      "2": {
+        "6": {
+          "allowed": false,
+          "reason": "Практически неиспаряемые жидкости не рассматриваются для аппаратов под давлением; типично используются атмосферные емкости или трубопроводы."
+        },
+        "9": {
+          "allowed": false,
+          "reason": "Практически неиспаряемые горючие жидкости не характерны для аппаратов под давлением; применяется хранение/перекачка в резервуарах и трубопроводах."
+        }
+      }
     }
   },
   "scenarios": {
@@ -253,6 +311,846 @@
           "accident_event_probability": 0.9303,
           "scenario_frequency": 1.8606e-06,
           "calc_code": 0
+        }
+      ],
+      "5": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Разрыв трубопровода на сечение → мгновенное воспламенение → факельное горение",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 0.2,
+          "scenario_frequency": 6e-08,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Разрыв трубопровода на сечение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 0.1152,
+          "scenario_frequency": 3.456e-08,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Разрыв трубопровода на сечение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → огненный шар",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 0.0768,
+          "scenario_frequency": 2.3039999999999997e-08,
+          "calc_code": 6
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Разрыв трубопровода на сечение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 0.608,
+          "scenario_frequency": 1.824e-07,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация трубопровода → мгновенное воспламенение → факельное горение",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 0.035,
+          "scenario_frequency": 7e-08,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация трубопровода → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 0.0083,
+          "scenario_frequency": 1.66e-08,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 7,
+          "scenario_text": "Частичная разгерметизация трубопровода → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 0.0264,
+          "scenario_frequency": 5.2799999999999996e-08,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 8,
+          "scenario_text": "Частичная разгерметизация трубопровода → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 0.9303,
+          "scenario_frequency": 1.8606e-06,
+          "calc_code": 4
+        }
+      ],
+      "6": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Разрыв трубопровода на сечение → химически опасный пролив",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 3e-07,
+          "calc_code": 7
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Частичная разгерметизация трубопровода → химически опасный пролив",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 2e-06,
+          "calc_code": 7
+        }
+      ],
+      "7": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Разрыв трубопровода на сечение → токсическое поражение",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 3e-07,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Частичная разгерметизация трубопровода → токсическое поражение",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 2e-06,
+          "calc_code": 4
+        }
+      ],
+      "8": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Разрыв трубопровода на сечение → вскипание и испарение вещества из пролива → токсическое поражение",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 3e-07,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Частичная разгерметизация трубопровода → вскипание и испарение вещества из пролива → токсическое поражение",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 2e-06,
+          "calc_code": 4
+        }
+      ],
+      "9": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Разрыв трубопровода на сечение → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 0.2,
+          "scenario_frequency": 6e-08,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Разрыв трубопровода на сечение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар пролива",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 1.2e-08,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Разрыв трубопровода на сечение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 3e-07,
+          "accident_event_probability": 0.76,
+          "scenario_frequency": 2.28e-07,
+          "calc_code": 0
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Частичная разгерметизация трубопровода → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 0.2,
+          "scenario_frequency": 4e-07,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация трубопровода → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар пролива",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 8e-08,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация трубопровода → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 2e-06,
+          "accident_event_probability": 0.76,
+          "scenario_frequency": 1.5199999999999998e-06,
+          "calc_code": 0
+        }
+      ],
+      "3": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Разрыв трубопровода на сечение → мгновенное воспламенение → факельное горение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.2,
+          "scenario_frequency": 2.0000000000000003e-06,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Разрыв трубопровода на сечение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.1152,
+          "scenario_frequency": 1.1520000000000002e-06,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Разрыв трубопровода на сечение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.0768,
+          "scenario_frequency": 7.68e-07,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Разрыв трубопровода на сечение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.608,
+          "scenario_frequency": 6.08e-06,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация трубопровода → мгновенное воспламенение → факельное горение",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.035,
+          "scenario_frequency": 3.5000000000000004e-06,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация трубопровода → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.0083,
+          "scenario_frequency": 8.300000000000001e-07,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 7,
+          "scenario_text": "Частичная разгерметизация трубопровода → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.0264,
+          "scenario_frequency": 2.64e-06,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 8,
+          "scenario_text": "Частичная разгерметизация трубопровода → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.9303,
+          "scenario_frequency": 9.303000000000001e-05,
+          "calc_code": 4
+        }
+      ]
+    },
+    "1": {
+      "0": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.1,
+          "scenario_frequency": 1.0000000000000002e-06,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.18,
+          "scenario_frequency": 1.8000000000000001e-06,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.72,
+          "scenario_frequency": 7.2000000000000005e-06,
+          "calc_code": 0
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Частичная разгерметизация → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.1,
+          "scenario_frequency": 1e-05,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.045,
+          "scenario_frequency": 4.5e-06,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.855,
+          "scenario_frequency": 8.55e-05,
+          "calc_code": 0
+        }
+      ],
+      "1": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.1,
+          "scenario_frequency": 1.0000000000000002e-06,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.18,
+          "scenario_frequency": 1.8000000000000001e-06,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.72,
+          "scenario_frequency": 7.2000000000000005e-06,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Частичная разгерметизация → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.1,
+          "scenario_frequency": 1e-05,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.045,
+          "scenario_frequency": 4.5e-06,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.855,
+          "scenario_frequency": 8.55e-05,
+          "calc_code": 4
+        }
+      ],
+      "6": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → химически опасный пролив",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 1e-05,
+          "calc_code": 7
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Частичное разрушение → химически опасный пролив",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 0.0001,
+          "calc_code": 7
+        }
+      ],
+      "9": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.1,
+          "scenario_frequency": 1.0000000000000002e-06,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → отсроченное воспламенение → пожар пролива",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.18,
+          "scenario_frequency": 1.8000000000000001e-06,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.72,
+          "scenario_frequency": 7.2000000000000005e-06,
+          "calc_code": 0
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Частичная разгерметизация → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.1,
+          "scenario_frequency": 1e-05,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → отсроченное воспламенение → пожар пролива",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.045,
+          "scenario_frequency": 4.5e-06,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 0.0001,
+          "accident_event_probability": 0.855,
+          "scenario_frequency": 8.55e-05,
+          "calc_code": 0
+        }
+      ]
+    },
+    "2": {
+      "0": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.05,
+          "scenario_frequency": 5e-08,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.19,
+          "scenario_frequency": 1.8999999999999998e-07,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.76,
+          "scenario_frequency": 7.599999999999999e-07,
+          "calc_code": 0
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Частичная разгерметизация → разрушение ниже уровня жидкости → возможность мгновенного воспламенения → горение жидкостного факела",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 4.0000000000000003e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → разрушение ниже уровня жидкости → отсутствие мгновенного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.16,
+          "scenario_frequency": 1.6000000000000001e-06,
+          "calc_code": 0
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → возможность мгновенного воспламенения → горение жидкостного факела",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 4.0000000000000003e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 7,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → отсутствие мгновенного воспламенения → возможность отсроченного воспламенения → пожар-вспышка",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.152,
+          "scenario_frequency": 1.52e-06,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 8,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → отсутствие мгновенного воспламенения → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.608,
+          "scenario_frequency": 6.08e-06,
+          "calc_code": 0
+        }
+      ],
+      "1": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → пожар пролива",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.05,
+          "scenario_frequency": 5e-08,
+          "calc_code": 1
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.19,
+          "scenario_frequency": 1.8999999999999998e-07,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.76,
+          "scenario_frequency": 7.599999999999999e-07,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Частичная разгерметизация → разрушение ниже уровня жидкости → возможность мгновенного воспламенения → горение жидкостного факела",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 4.0000000000000003e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → разрушение ниже уровня жидкости → отсутствие мгновенного воспламенения → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.16,
+          "scenario_frequency": 1.6000000000000001e-06,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → возможность мгновенного воспламенения → горение жидкостного факела",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 4.0000000000000003e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 7,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → отсутствие мгновенного воспламенения → возможность отсроченного воспламенения → пожар-вспышка",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.152,
+          "scenario_frequency": 1.52e-06,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 8,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → отсутствие мгновенного воспламенения → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.608,
+          "scenario_frequency": 6.08e-06,
+          "calc_code": 4
+        }
+      ],
+      "2": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → пожар-вспышка",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.2,
+          "scenario_frequency": 2e-07,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.1152,
+          "scenario_frequency": 1.1519999999999999e-07,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.0768,
+          "scenario_frequency": 7.679999999999999e-08,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.608,
+          "scenario_frequency": 6.079999999999999e-07,
+          "calc_code": 0
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → мгновенное воспламенение → факельное горение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.035,
+          "scenario_frequency": 3.5000000000000004e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.0083,
+          "scenario_frequency": 8.3e-08,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 7,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.0264,
+          "scenario_frequency": 2.6400000000000003e-07,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 8,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.9303,
+          "scenario_frequency": 9.303e-06,
+          "calc_code": 0
+        }
+      ],
+      "4": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → огненный шар",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.05,
+          "scenario_frequency": 5e-08,
+          "calc_code": 6
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.19,
+          "scenario_frequency": 1.8999999999999998e-07,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.76,
+          "scenario_frequency": 7.599999999999999e-07,
+          "calc_code": 0
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Частичная разгерметизация → разрушение ниже уровня жидкости → возможность мгновенного воспламенения → горение жидкостного факела",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 4.0000000000000003e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → разрушение ниже уровня жидкости → отсутствие мгновенного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.16,
+          "scenario_frequency": 1.6000000000000001e-06,
+          "calc_code": 0
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → возможность мгновенного воспламенения → горение жидкостного факела",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 4.0000000000000003e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 7,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → отсутствие мгновенного воспламенения → возможность отсроченного воспламенения → пожар-вспышка",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.152,
+          "scenario_frequency": 1.52e-06,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 8,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → отсутствие мгновенного воспламенения → отсутствие отсроченного воспламенения → ликвидация аварии",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.608,
+          "scenario_frequency": 6.08e-06,
+          "calc_code": 0
+        }
+      ],
+      "5": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → огненный шар",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.05,
+          "scenario_frequency": 5e-08,
+          "calc_code": 6
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.19,
+          "scenario_frequency": 1.8999999999999998e-07,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.76,
+          "scenario_frequency": 7.599999999999999e-07,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Частичная разгерметизация → разрушение ниже уровня жидкости → возможность мгновенного воспламенения → горение жидкостного факела",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 4.0000000000000003e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → разрушение ниже уровня жидкости → отсутствие мгновенного воспламенения → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.16,
+          "scenario_frequency": 1.6000000000000001e-06,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → возможность мгновенного воспламенения → горение жидкостного факела",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.04,
+          "scenario_frequency": 4.0000000000000003e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 7,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → отсутствие мгновенного воспламенения → возможность отсроченного воспламенения → пожар-вспышка",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.152,
+          "scenario_frequency": 1.52e-06,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 8,
+          "scenario_text": "Частичная разгерметизация → разрушение выше уровня жидкости → отсутствие мгновенного воспламенения → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.608,
+          "scenario_frequency": 6.08e-06,
+          "calc_code": 4
+        }
+      ],
+      "7": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → токсическое поражение",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 1e-06,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Частичная разгерметизация → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 1e-05,
+          "calc_code": 4
+        }
+      ],
+      "8": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → вскипание и испарение пролива → токсическое поражение",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 1e-06,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Частичная разгерметизация → вскипание и испарение пролива → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 1.0,
+          "scenario_frequency": 1e-05,
+          "calc_code": 4
+        }
+      ],
+      "3": [
+        {
+          "scenario_no": 1,
+          "scenario_text": "Полное разрушение → мгновенное воспламенение → пожар-вспышка",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.2,
+          "scenario_frequency": 2e-07,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 2,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.1152,
+          "scenario_frequency": 1.1519999999999999e-07,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 3,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.0768,
+          "scenario_frequency": 7.679999999999999e-08,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 4,
+          "scenario_text": "Полное разрушение → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 1e-06,
+          "accident_event_probability": 0.608,
+          "scenario_frequency": 6.079999999999999e-07,
+          "calc_code": 4
+        },
+        {
+          "scenario_no": 5,
+          "scenario_text": "Частичная разгерметизация → мгновенное воспламенение → факельное горение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.035,
+          "scenario_frequency": 3.5000000000000004e-07,
+          "calc_code": 5
+        },
+        {
+          "scenario_no": 6,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → взрыв облака ТВС",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.0083,
+          "scenario_frequency": 8.3e-08,
+          "calc_code": 2
+        },
+        {
+          "scenario_no": 7,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсроченное воспламенение → пожар-вспышка",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.0264,
+          "scenario_frequency": 2.6400000000000003e-07,
+          "calc_code": 3
+        },
+        {
+          "scenario_no": 8,
+          "scenario_text": "Частичная разгерметизация → отсутствие мгновенного воспламенения → возможность образования взрывоопасного облака → отсутствие отсроченного воспламенения → токсическое поражение",
+          "base_frequency": 1e-05,
+          "accident_event_probability": 0.9303,
+          "scenario_frequency": 9.303e-06,
+          "calc_code": 4
         }
       ]
     }
