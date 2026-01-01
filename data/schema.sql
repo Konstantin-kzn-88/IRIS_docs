@@ -49,60 +49,41 @@ CREATE TABLE IF NOT EXISTS substances (
 -- 2) Оборудование
 -- =========================================================
 CREATE TABLE IF NOT EXISTS equipment (
-  id                         INTEGER PRIMARY KEY,
-  substance_id               INTEGER NOT NULL,
-  equipment_name             TEXT    NOT NULL,
+    id                      INTEGER PRIMARY KEY,
+    substance_id            INTEGER NOT NULL,
+    equipment_name          TEXT NOT NULL,
 
-  -- Составляющая опасного объекта (например: "Парк РВС", "Установка подготовки", "Дожимная станция")
-  hazard_component           TEXT    NOT NULL,
+    -- Составляющая опасного объекта
+    hazard_component        TEXT NOT NULL,
 
-  phase_state                TEXT,
-  coord_type                 INTEGER,
-  equipment_type             INTEGER,
-  coordinates_json           TEXT,   -- JSON
+    -- Степень загроможденности:
+    -- 1 — очень загроможденное пространство
+    -- 4 — слабо загроможденное пространство
+    clutter_degree          INTEGER NOT NULL
+                             CHECK (clutter_degree BETWEEN 1 AND 4),
 
-  length_m                   REAL,
-  diameter_mm                REAL,
-  wall_thickness_mm          REAL,
-  volume_m3                  REAL,
-  fill_fraction              REAL,
-  pressure_mpa               REAL,
-  spill_coefficient          REAL,
-  spill_area_m2              REAL,
-  substance_temperature_c    REAL,
-  shutdown_time_s            REAL,
-  evaporation_time_s         REAL,
+    phase_state             TEXT,
+    coord_type              INTEGER,
+    equipment_type          INTEGER,
+    coordinates_json        TEXT,
 
-  FOREIGN KEY (substance_id) REFERENCES substances(id)
+    length_m                REAL,
+    diameter_mm             REAL,
+    wall_thickness_mm       REAL,
+    volume_m3               REAL,
+    fill_fraction           REAL,
+    pressure_mpa            REAL,
+    spill_coefficient       REAL,
+    spill_area_m2           REAL,
+    substance_temperature_c REAL,
+    shutdown_time_s         REAL,
+    evaporation_time_s      REAL,
+
+    FOREIGN KEY (substance_id) REFERENCES substances(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_equipment_substance_id
   ON equipment(substance_id);
-
--- =========================================================
--- 3) Количество опасного вещества
--- =========================================================
-CREATE TABLE IF NOT EXISTS hazardous_substance_amounts (
-  id                         INTEGER PRIMARY KEY,
-  substance_id               INTEGER NOT NULL,
-  equipment_id               INTEGER NOT NULL,
-
-  equipment_name             TEXT    NOT NULL,  -- денормализация
-  amount_t                   REAL    NOT NULL,  -- количество ОВ, т
-
-  phase_state                TEXT,
-  pressure_mpa               REAL,
-  substance_temperature_c    REAL,
-
-  FOREIGN KEY (substance_id) REFERENCES substances(id),
-  FOREIGN KEY (equipment_id) REFERENCES equipment(id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_hsa_substance_id
-  ON hazardous_substance_amounts(substance_id);
-
-CREATE INDEX IF NOT EXISTS idx_hsa_equipment_id
-  ON hazardous_substance_amounts(equipment_id);
 
 -- =========================================================
 -- 4) Расчеты
@@ -122,6 +103,8 @@ CREATE TABLE IF NOT EXISTS calculations (
   base_frequency             REAL,   -- базовая частота
   accident_event_probability REAL,   -- вероятность события аварии
   scenario_frequency         REAL,   -- частота сценария аварии
+
+  amount_t                   REAL    NOT NULL,  -- количество ОВ, т
 
   ov_in_accident_t           REAL,   -- количество ОВ участвующего в аварии (т)
   ov_in_hazard_factor_t      REAL,   -- количество ОВ в создании поражающего фактора (т)

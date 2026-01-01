@@ -23,7 +23,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 2,
@@ -47,7 +48,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 120,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк РВС"
+    "hazard_component": "Парк РВС",
+    "clutter_degree": 2
   },
   {
     "id": 3,
@@ -71,7 +73,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 4,
@@ -95,7 +98,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 5,
@@ -119,7 +123,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
-    "hazard_component": "Насосная станция"
+    "hazard_component": "Насосная станция",
+    "clutter_degree": 2
   },
   {
     "id": 6,
@@ -143,7 +148,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 7,
@@ -169,7 +175,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (без давления)"
+    "hazard_component": "Парк емкостей (без давления)",
+    "clutter_degree": 2
   },
   {
     "id": 8,
@@ -195,7 +202,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (под давлением)"
+    "hazard_component": "Парк емкостей (под давлением)",
+    "clutter_degree": 2
   },
   {
     "id": 9,
@@ -221,7 +229,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система ПТ"
+    "hazard_component": "Трубопроводная система ПТ",
+    "clutter_degree": 2
   },
   {
     "id": 10,
@@ -247,7 +256,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 11,
@@ -271,7 +281,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 120,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк РВС"
+    "hazard_component": "Парк РВС",
+    "clutter_degree": 2
   },
   {
     "id": 12,
@@ -295,7 +306,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 13,
@@ -319,7 +331,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 14,
@@ -343,7 +356,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
-    "hazard_component": "Насосная станция"
+    "hazard_component": "Насосная станция",
+    "clutter_degree": 2
   },
   {
     "id": 15,
@@ -367,7 +381,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 16,
@@ -393,7 +408,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (без давления)"
+    "hazard_component": "Парк емкостей (без давления)",
+    "clutter_degree": 2
   },
   {
     "id": 17,
@@ -419,7 +435,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (под давлением)"
+    "hazard_component": "Парк емкостей (под давлением)",
+    "clutter_degree": 2
   },
   {
     "id": 18,
@@ -445,7 +462,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система ПТ"
+    "hazard_component": "Трубопроводная система ПТ",
+    "clutter_degree": 2
   },
   {
     "id": 19,
@@ -471,7 +489,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 20,
@@ -495,7 +514,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 21,
@@ -519,7 +539,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 22,
@@ -543,7 +564,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 10,
     "evaporation_time_s": 900,
-    "hazard_component": "Дожимная станция"
+    "hazard_component": "Дожимная станция",
+    "clutter_degree": 2
   },
   {
     "id": 23,
@@ -567,7 +589,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 24,
@@ -593,7 +616,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (под давлением)"
+    "hazard_component": "Парк емкостей (под давлением)",
+    "clutter_degree": 2
   },
   {
     "id": 25,
@@ -619,7 +643,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 26,
@@ -643,7 +668,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 27,
@@ -667,7 +693,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 28,
@@ -691,7 +718,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 10,
     "evaporation_time_s": 900,
-    "hazard_component": "Дожимная станция"
+    "hazard_component": "Дожимная станция",
+    "clutter_degree": 2
   },
   {
     "id": 29,
@@ -715,7 +743,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 30,
@@ -741,7 +770,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (под давлением)"
+    "hazard_component": "Парк емкостей (под давлением)",
+    "clutter_degree": 2
   },
   {
     "id": 31,
@@ -767,7 +797,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 32,
@@ -791,7 +822,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 33,
@@ -815,7 +847,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 34,
@@ -839,7 +872,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
-    "hazard_component": "Насосная станция"
+    "hazard_component": "Насосная станция",
+    "clutter_degree": 2
   },
   {
     "id": 35,
@@ -863,7 +897,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 36,
@@ -889,7 +924,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (под давлением)"
+    "hazard_component": "Парк емкостей (под давлением)",
+    "clutter_degree": 2
   },
   {
     "id": 37,
@@ -915,7 +951,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 38,
@@ -939,7 +976,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 39,
@@ -963,7 +1001,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 40,
@@ -987,7 +1026,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
-    "hazard_component": "Насосная станция"
+    "hazard_component": "Насосная станция",
+    "clutter_degree": 2
   },
   {
     "id": 41,
@@ -1011,7 +1051,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 42,
@@ -1037,7 +1078,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (под давлением)"
+    "hazard_component": "Парк емкостей (под давлением)",
+    "clutter_degree": 2
   },
   {
     "id": 43,
@@ -1063,7 +1105,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 44,
@@ -1087,7 +1130,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 120,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк РВС"
+    "hazard_component": "Парк РВС",
+    "clutter_degree": 2
   },
   {
     "id": 45,
@@ -1111,7 +1155,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
-    "hazard_component": "Насосная станция"
+    "hazard_component": "Насосная станция",
+    "clutter_degree": 2
   },
   {
     "id": 46,
@@ -1137,7 +1182,8 @@
     "substance_temperature_c": 20,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (без давления)"
+    "hazard_component": "Парк емкостей (без давления)",
+    "clutter_degree": 2
   },
   {
     "id": 47,
@@ -1163,7 +1209,8 @@
     "substance_temperature_c": 10,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 48,
@@ -1187,7 +1234,8 @@
     "substance_temperature_c": 10,
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 49,
@@ -1211,7 +1259,8 @@
     "substance_temperature_c": 10,
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 50,
@@ -1235,7 +1284,8 @@
     "substance_temperature_c": 10,
     "shutdown_time_s": 10,
     "evaporation_time_s": 900,
-    "hazard_component": "Дожимная станция"
+    "hazard_component": "Дожимная станция",
+    "clutter_degree": 2
   },
   {
     "id": 51,
@@ -1259,7 +1309,8 @@
     "substance_temperature_c": 10,
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 52,
@@ -1285,7 +1336,8 @@
     "substance_temperature_c": 10,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (под давлением)"
+    "hazard_component": "Парк емкостей (под давлением)",
+    "clutter_degree": 2
   },
   {
     "id": 53,
@@ -1311,7 +1363,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 54,
@@ -1335,7 +1388,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 55,
@@ -1359,7 +1413,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 56,
@@ -1383,7 +1438,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
-    "hazard_component": "Насосная станция"
+    "hazard_component": "Насосная станция",
+    "clutter_degree": 2
   },
   {
     "id": 57,
@@ -1407,7 +1463,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
-    "hazard_component": "Установка подготовки"
+    "hazard_component": "Установка подготовки",
+    "clutter_degree": 2
   },
   {
     "id": 58,
@@ -1433,7 +1490,8 @@
     "substance_temperature_c": -5,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (под давлением)"
+    "hazard_component": "Парк емкостей (под давлением)",
+    "clutter_degree": 2
   },
   {
     "id": 59,
@@ -1459,7 +1517,8 @@
     "substance_temperature_c": 30,
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
-    "hazard_component": "Трубопроводная система"
+    "hazard_component": "Трубопроводная система",
+    "clutter_degree": 2
   },
   {
     "id": 60,
@@ -1483,7 +1542,8 @@
     "substance_temperature_c": 30,
     "shutdown_time_s": 120,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк РВС"
+    "hazard_component": "Парк РВС",
+    "clutter_degree": 2
   },
   {
     "id": 61,
@@ -1507,7 +1567,8 @@
     "substance_temperature_c": 30,
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
-    "hazard_component": "Насосная станция"
+    "hazard_component": "Насосная станция",
+    "clutter_degree": 2
   },
   {
     "id": 62,
@@ -1533,6 +1594,7 @@
     "substance_temperature_c": 30,
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
-    "hazard_component": "Парк емкостей (без давления)"
+    "hazard_component": "Парк емкостей (без давления)",
+    "clutter_degree": 2
   }
 ]

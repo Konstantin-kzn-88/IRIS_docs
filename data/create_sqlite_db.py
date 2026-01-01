@@ -2,12 +2,14 @@ import json
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path("iris.sqlite3")
-SUBSTANCES_JSON = Path("substances.json")
-EQUIPMENT_JSON = Path("equipment.json")
+BASE_DIR = Path(__file__).resolve().parent
+
+DB_PATH = BASE_DIR / "iris.sqlite3"
+SUBSTANCES_JSON = BASE_DIR / "substances.json"
+EQUIPMENT_JSON = BASE_DIR / "equipment.json"
 
 # Используем отдельный файл схемы, чтобы не дублировать SQL в коде
-SCHEMA_PATH = Path("schema.sql")
+SCHEMA_PATH = BASE_DIR / "schema.sql"
 
 
 def to_json_text(value):
@@ -160,7 +162,7 @@ def main():
             '''
             INSERT INTO equipment (
               id, substance_id, equipment_name,
-              hazard_component, phase_state,
+              hazard_component, clutter_degree, phase_state,
               coord_type, equipment_type, coordinates_json,
               length_m, diameter_mm, wall_thickness_mm,
               volume_m3, fill_fraction, pressure_mpa,
@@ -169,7 +171,7 @@ def main():
               shutdown_time_s, evaporation_time_s
             ) VALUES (
               :id, :substance_id, :equipment_name,
-              :hazard_component, :phase_state,
+              :hazard_component, :clutter_degree, :phase_state,
               :coord_type, :equipment_type, :coordinates_json,
               :length_m, :diameter_mm, :wall_thickness_mm,
               :volume_m3, :fill_fraction, :pressure_mpa,
@@ -184,6 +186,7 @@ def main():
                     "substance_id": e.get("substance_id"),
                     "equipment_name": e.get("equipment_name"),
                     "hazard_component": e.get("hazard_component"),
+                    "clutter_degree": e.get("clutter_degree"),
                     "phase_state": e.get("phase_state"),
                     "coord_type": e.get("coord_type"),
                     "equipment_type": e.get("equipment_type"),
