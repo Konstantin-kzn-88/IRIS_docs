@@ -23,12 +23,29 @@ def get_scenarios_for(scenarios_tree: dict, equipment_type: int, kind: int) -> l
 
 def write_calculation(cur: sqlite3.Cursor, payload: dict) -> None:
     """
-    Заглушка записи в calculations.
-    payload — то, что вернул calc_for_scenario().
+    Запись результата расчёта в таблицу calculations.
+    payload — словарь, который вернул calc_for_scenario().
     """
-    # 3.5. Записываем в calculations (пока заглушим pass)
 
-    pass
+    # Кэшируем список колонок calculations один раз
+    if not hasattr(write_calculation, "_cols"):
+        # PRAGMA table_info: (cid, name, type, notnull, dflt_value, pk)
+        cols = [r[1] for r in cur.execute("PRAGMA table_info(calculations);").fetchall()]
+        # id автоинкремент — не вставляем
+        write_calculation._cols = [c for c in cols if c != "id"]
+
+    cols = write_calculation._cols
+
+    # Для отсутствующих ключей подставляем None
+    values = [payload.get(c) for c in cols]
+
+    placeholders = ",".join(["?"] * len(cols))
+    col_list = ",".join(cols)
+
+    cur.execute(
+        f"INSERT INTO calculations ({col_list}) VALUES ({placeholders});",
+        values,
+    )
 
 
 def main(db_path: Path = DB_PATH, typical_scenarios_path: Path = TYPICAL_SCENARIOS_PATH) -> None:
@@ -66,9 +83,6 @@ def main(db_path: Path = DB_PATH, typical_scenarios_path: Path = TYPICAL_SCENARI
             con.commit()
             return
 
-        # (опционально) сквозная нумерация сценариев после очистки
-        scenario_no_global = 1
-
         # 3. Перебираем оборудование в цикле
         for row in equipment_rows:
             # 3.1. Получаем свойства вещества в оборудовании
@@ -103,36 +117,23 @@ def main(db_path: Path = DB_PATH, typical_scenarios_path: Path = TYPICAL_SCENARI
 
             # 3.4. По перечню сценариев делаем расчет (пока заглушим pass)
 
-            init_scenario_no = 0
             # 3.5. Записываем в calculations (пока заглушим pass)
             for sc in scenarios_list:
+                # следующий свободный scenario_no в таблице
+                scenario_no_global = cur.execute(
+                    "SELECT COALESCE(MAX(scenario_no), 0) + 1 FROM calculations;"
+                ).fetchone()[0]
                 # если вам нужно сохранять исходные частоты из json — можно собирать payload уже тут
                 # а расчёт потом расширить
-                init_scenario_no += 1
-                if equipment["equipment_type"] == 0:
-                    if substance["kind"] == 0:
-                        payload = equipment_type_0_kind_0.calc_for_scenario(equipment, substance, sc, init_scenario_no)
-                # print(f"[equipment_id={equipment_id}] "
-                #       f"[sc={sc}] "
-                #       f"substance_kind={kind}"
-                #       f"equipment_type={equipment_type} ")
-                # print(sc)
+                if equipment["equipment_type"] == 0 and substance["kind"] == 0:
+                    payload = equipment_type_0_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
 
-                # Пример места, где обычно формируют payload даже при заглушках:
-                # payload = {
-                #     "equipment_id": equipment_id,
-                #     "equipment_name": equipment_name,
-                #     "hazard_component": hazard_component,
-                #     "scenario_no": scenario_no_global,
-                #     "base_frequency": sc.get("base_frequency"),
-                #     "accident_event_probability": sc.get("accident_event_probability"),
-                #     "scenario_frequency": sc.get("scenario_frequency"),
-                # }
+                else:
+                    continue
 
-                # write_calculation(cur, payload)
-                pass
+                write_calculation(cur, payload)
 
-                scenario_no_global += 1
+
 
         con.commit()
 

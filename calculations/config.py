@@ -9,3 +9,4 @@ WIND = 1  # м/с
 SPILL_TO_PART = 0.12  # для частичного пролива
 T_TO_KG = 1000
 Pa_TO_kPa = 0.001
+PEOPLE_COUNT = 369
