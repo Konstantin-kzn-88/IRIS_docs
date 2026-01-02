@@ -10,14 +10,14 @@ from calculations.app._lower_concentration import LCLP
 from calculations.app._pipeline_volume_m3 import pipeline_internal_volume_m3
 from calculations.app._strait_fire import Strait_fire
 from calculations.app._tvs_explosion import Explosion
-from calculations.config import KG_TO_T, MASS_IN_CLOUDE, MASS_TO_PART, MSG, TIME, WIND
+from calculations.config import KG_TO_T, MASS_IN_CLOUDE, MASS_TO_PART, MSG, WIND, SPILL_TO_PART, T_TO_KG, Pa_TO_kPa, P0
 
 
 def calc_for_scenario(
-    equipment: sqlite3.Row,
-    substance: sqlite3.Row,
-    scenario: dict,
-    scenario_no: int,
+        equipment: sqlite3.Row,
+        substance: sqlite3.Row,
+        scenario: dict,
+        scenario_no: int,
 ) -> dict:
     """
     Заглушка расчёта.
@@ -54,6 +54,7 @@ def calc_for_scenario(
     density = float(physical["density_liquid_kg_per_m3"])
     mol_mass = float(physical["molar_mass_kg_per_mol"])
     t_boiling = float(physical["boiling_point_C"])
+    evaporation_heat_J_per_kg = float(physical["evaporation_heat_J_per_kg"])
 
     # -------------------------------------------------------------------------
     # Количество ОВ
@@ -64,47 +65,73 @@ def calc_for_scenario(
         equipment["wall_thickness_mm"],
     )
 
-    result["amount_t"] = pipeline_volume * density
+    result["amount_t"] = pipeline_volume * density * KG_TO_T
+
+    print(f'result["amount_t"] = {result["amount_t"]}')
 
     if scenario["scenario_line"] in (1, 2, 3):  # пролив полная
         result["ov_in_accident_t"] = result["amount_t"] + liquid_leak_mass_flow(
             equipment["pressure_mpa"],
             equipment["diameter_mm"],
             density,
-        )
+        ) * KG_TO_T
 
-    if scenario["scenario_line"] in (4, 5, 6):  # пролив полная
+    if scenario["scenario_line"] in (4, 5, 6):  # пролив частичная
         result["ov_in_accident_t"] = (
-            result["amount_t"]
-            + liquid_leak_mass_flow(
-                equipment["pressure_mpa"],
-                equipment["diameter_mm"],
-                density,
-            )
-        ) * MASS_TO_PART
+                                             result["amount_t"]
+                                             + liquid_leak_mass_flow(
+                                         equipment["pressure_mpa"],
+                                         equipment["diameter_mm"],
+                                         density,
+                                     ) * KG_TO_T
+                                     ) * MASS_TO_PART
 
-    if scenario["scenario_line"] in (1, 4):  # пролив полная
+    print(f'result["ov_in_accident_t"] = {result["ov_in_accident_t"]}')
+
+    if scenario["scenario_line"] in (1, 4):  # пролив полная/частичная
         result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
 
-    if scenario["scenario_line"] in (2, 5):  # испарение
+    # -------------------------------------------------------------------------
+    # Параметры пролива и расчет испарения вещества
+    # -------------------------------------------------------------------------
+    if scenario["scenario_line"] in (1, 2, 3):  # пролив полная
+        if equipment["spill_area_m2"] == 0:
+            spill = result["ov_in_accident_t"] * equipment["spill_coefficient"]
+        else:
+            spill = equipment["spill_area_m2"]
+    else:
+        if equipment["spill_area_m2"] == 0:
+            spill = result["ov_in_accident_t"] * equipment["spill_coefficient"]
+        else:
+            spill = equipment["spill_area_m2"] * SPILL_TO_PART
+
+    print(f'spill={spill} м2')
+
+    if scenario["scenario_line"] in (2, 5):  # испарение для взрыва и вспышки
         Tk = equipment["substance_temperature_c"]
         Tp = t_boiling
         M = mol_mass
 
-        Pn = saturated_vapor_pressure_pa(Tk, Tp)
+        Pn = saturated_vapor_pressure_pa(equipment["substance_temperature_c"], t_boiling, evaporation_heat_J_per_kg, mol_mass, P0)
+        print(f'Pn = {Pn * Pa_TO_kPa} кПа')
         W = evaporation_intensity_kg_m2_s(Pn, M, eta=1.0)
 
-        if equipment["spill_area_m2"] == 0:
-            m_dot = W * result["ov_in_accident_t"] * equipment["spill_coefficient"]  # кг/с
-        else:
-            m_dot = W * equipment["spill_area_m2"]  # кг/с
+        m_dot = W * spill  # кг/с
 
-        result["ov_in_hazard_factor_t"] = m_dot * TIME * MASS_IN_CLOUDE * KG_TO_T
+        print(f'm_dot = {m_dot} кг/с')
+        print(
+            f'm_dot * equipment["evaporation_time_s"] * KG_TO_T = {m_dot * equipment["evaporation_time_s"] * KG_TO_T} т')
+
+        # Проверяем не испарилось ли больше чем вылилось
+        if m_dot * equipment["evaporation_time_s"] * KG_TO_T > result["ov_in_accident_t"]:
+            result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
+        else:
+            result["ov_in_hazard_factor_t"] = m_dot * equipment["evaporation_time_s"] * MASS_IN_CLOUDE * KG_TO_T
 
     if scenario["scenario_line"] in (3, 6):  # ликвидация
         result["ov_in_hazard_factor_t"] = 0
 
-    print(result["amount_t"], result["ov_in_accident_t"], result["ov_in_hazard_factor_t"])
+    print(f'result["ov_in_hazard_factor_t"] = {result["ov_in_hazard_factor_t"]}')
     print(20 * "-")
 
     # -------------------------------------------------------------------------
@@ -115,15 +142,7 @@ def calc_for_scenario(
     result["q_4_2"] = None
     result["q_1_4"] = None
 
-    if scenario["scenario_line"] in (1, 4):  # пролив полная
-        result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
-        if equipment["spill_area_m2"] == 0:
-            spill = result["ov_in_accident_t"] * equipment["spill_coefficient"]
-            if scenario["scenario_line"] == 4:
-                spill = result["ov_in_accident_t"] * equipment["spill_coefficient"] * MASS_TO_PART
-        else:
-            spill = equipment["spill_area_m2"]
-
+    if scenario["scenario_line"] in (1, 4):  # пролив полная/частичная
         zone = Strait_fire().termal_class_zone(
             S_spill=spill,
             m_sg=MSG,
@@ -155,7 +174,7 @@ def calc_for_scenario(
         sigma = int(explosion["expansion_degree"])
         energy_level = int(explosion["energy_reserve_factor"])
         view_space = equipment["clutter_degree"]
-        mass = result["ov_in_hazard_factor_t"]
+        mass = result["ov_in_hazard_factor_t"] * T_TO_KG
 
         zone = Explosion().explosion_class_zone(
             class_substance,
