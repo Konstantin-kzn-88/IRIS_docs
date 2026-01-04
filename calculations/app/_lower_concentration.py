@@ -27,7 +27,7 @@ class LCLP:
             raise ValueError(f'Фукнция не может принимать нулевые параметры')
 
         vapour_density = mol_mass / (22.413 * (1 + 0.00367 * t_boiling))
-        print(vapour_density)
+        # print(vapour_density)
         R_LCLP = round(7.8 * ((mass / (vapour_density * lower_concentration)) ** 0.33), 2)
         R_f = round((R_LCLP * 1.2), 2)
 
