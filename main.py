@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from pathlib import Path
-from calculations import equipment_type_0_kind_0, equipment_type_1_kind_0, equipment_type_2_kind_0
+from calculations import equipment_type_0_kind_0, equipment_type_1_kind_0, equipment_type_2_kind_0, equipment_type_3_kind_0
 
 TYPICAL_SCENARIOS_PATH = Path("data/calc/typical_scenarios.json")  # при необходимости поправьте
 DB_PATH = Path("data/iris.sqlite3")  # при необходимости поправьте
@@ -131,6 +131,8 @@ def main(db_path: Path = DB_PATH, typical_scenarios_path: Path = TYPICAL_SCENARI
                     payload = equipment_type_1_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
                 elif equipment["equipment_type"] == 2 and substance["kind"] == 0:
                     payload = equipment_type_2_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
+                elif equipment["equipment_type"] == 3 and substance["kind"] == 0:
+                    payload = equipment_type_3_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
                 else:
                     continue
 

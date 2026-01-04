@@ -27,7 +27,7 @@ def calc_for_scenario(
     Все неизвестные значения временно = 1
     """
 
-    # print("Считаем сценарий:", scenario_no, equipment["equipment_name"])
+    print("Считаем сценарий:", scenario_no, equipment["equipment_name"])
 
     result = {}
 
@@ -69,7 +69,7 @@ def calc_for_scenario(
     result["amount_t"] = volume * density_liquid * fill_fraction * KG_TO_T + volume * density_gas * (
             1 - fill_fraction) * KG_TO_T
 
-    # print(f'result["amount_t"] = {result["amount_t"]}')
+    print(f'result["amount_t"] = {result["amount_t"]}')
 
     if scenario["scenario_line"] in (1, 2, 3, 9):  # авария полная
         result["ov_in_accident_t"] = result["amount_t"]
@@ -83,7 +83,7 @@ def calc_for_scenario(
                                       mol_mass)
         result["ov_in_accident_t"] = gas_flow * equipment["shutdown_time_s"] * KG_TO_T
 
-    # print(f'result["ov_in_accident_t"] = {result["ov_in_accident_t"]}')
+    print(f'result["ov_in_accident_t"] = {result["ov_in_accident_t"]}')
     # -------------------------------------------------------------------------
     # Количество вещества участвующего в создании поражающего фактора
     # -------------------------------------------------------------------------
@@ -104,20 +104,20 @@ def calc_for_scenario(
         else:
             spill = equipment["spill_area_m2"] * SPILL_TO_PART
 
-    # print(f'spill={spill} м2')
+    print(f'spill={spill} м2')
 
     if scenario["scenario_line"] in (2,):  # испарение для взрыва
 
         Pn = saturated_vapor_pressure_pa(equipment["substance_temperature_c"], t_boiling, evaporation_heat_J_per_kg,
                                          mol_mass, P0)
-        # print(f'Pn = {Pn * Pa_TO_kPa} кПа')
+        print(f'Pn = {Pn * Pa_TO_kPa} кПа')
         W = evaporation_intensity_kg_m2_s(Pn, mol_mass, eta=1.0)
 
         m_dot = W * spill  # кг/с
 
-        # print(f'm_dot = {m_dot} кг/с')
-        # print(
-        #     f'm_dot * equipment["evaporation_time_s"] * KG_TO_T = {m_dot * equipment["evaporation_time_s"] * KG_TO_T} т')
+        print(f'm_dot = {m_dot} кг/с')
+        print(
+            f'm_dot * equipment["evaporation_time_s"] * KG_TO_T = {m_dot * equipment["evaporation_time_s"] * KG_TO_T} т')
 
         # Проверяем не испарилось ли больше чем вылилось
         if m_dot * equipment["evaporation_time_s"] * KG_TO_T > result["ov_in_accident_t"]:
@@ -137,8 +137,8 @@ def calc_for_scenario(
     if scenario["scenario_line"] in (9,):  # огненный шар
         result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"] * MASS_IN_BLEVE
 
-    # print(f'result["ov_in_hazard_factor_t"] = {result["ov_in_hazard_factor_t"]}')
-    # print(20 * "-")
+    print(f'result["ov_in_hazard_factor_t"] = {result["ov_in_hazard_factor_t"]}')
+    print(20 * "-")
 
     # -------------------------------------------------------------------------
     # Тепловые потоки
@@ -162,8 +162,8 @@ def calc_for_scenario(
         result["q_4_2"] = int(zone[2])
         result["q_1_4"] = int(zone[3])
 
-        # print(zone)
-        # print(20 * "-")
+        print(zone)
+        print(20 * "-")
 
     # -------------------------------------------------------------------------
     # Избыточное давление
@@ -197,8 +197,8 @@ def calc_for_scenario(
         result["p_5"] = int(zone[4])
         result["p_2"] = int(zone[5])
 
-        # print(zone)
-        # print(20 * "-")
+        print(zone)
+        print(20 * "-")
 
     # -------------------------------------------------------------------------
     # Зоны поражения
@@ -214,8 +214,8 @@ def calc_for_scenario(
         result["l_f"] = zone[0]
         result["d_f"] = zone[1]
 
-        # print(zone)
-        # print(20 * "-")
+        print(zone)
+        print(20 * "-")
 
     result["r_nkpr"] = None
     result["r_vsp"] = None
@@ -229,8 +229,8 @@ def calc_for_scenario(
         result["r_nkpr"] = int(zone[0])
         result["r_vsp"] = int(zone[1])
 
-        # print(zone)
-        # print(20 * "-")
+        print(zone)
+        print(20 * "-")
 
     result["l_pt"] = None
     result["p_pt"] = None
@@ -271,8 +271,8 @@ def calc_for_scenario(
         result["fatalities_count"] = 0
         result["injured_count"] = 1
     #
-    # print('Погибшие/раненые', result["fatalities_count"], result["injured_count"])
-    # print(20 * "-")
+    print('Погибшие/раненые', result["fatalities_count"], result["injured_count"])
+    print(20 * "-")
     # -------------------------------------------------------------------------
     # Ущерб
     # -------------------------------------------------------------------------
@@ -291,9 +291,9 @@ def calc_for_scenario(
     result["total_environmental_damage"] = base_damage["total_environmental_damage"]
     result["total_damage"] = base_damage["total_damage"]
 
-    # print('Ущерб, тыс.руб', result["direct_losses"], result["social_losses"], result["total_environmental_damage"],
-    #       result["total_damage"])
-    # print(20 * "-")
+    print('Ущерб, тыс.руб', result["direct_losses"], result["social_losses"], result["total_environmental_damage"],
+          result["total_damage"])
+    print(20 * "-")
     # -------------------------------------------------------------------------
     # Риски
     # -------------------------------------------------------------------------
