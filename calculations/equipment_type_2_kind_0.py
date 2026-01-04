@@ -3,15 +3,17 @@ import sqlite3
 
 from calculations.app._liguid_evaporation import evaporation_intensity_kg_m2_s, saturated_vapor_pressure_pa
 from calculations.app._liquid_flow import liquid_leak_mass_flow
+from calculations.app._gas_flow import gas_leak_mass_flow
 from calculations.app._lower_concentration import LCLP
-from calculations.app._pipeline_volume_m3 import pipeline_internal_volume_m3
 from calculations.app._strait_fire import Strait_fire
 from calculations.app._tvs_explosion import Explosion
+from calculations.app._jet_fire import Torch
+from calculations.app._fireball import Fireball
 from calculations.app._fatalities_count import count_dead_personal
 from calculations.app._injured_count import count_injured_personal
-from calculations.app._base_damage_line import damage
-from calculations.config import KG_TO_T, MASS_IN_CLOUDE, MASS_TO_PART, MSG, WIND, SPILL_TO_PART, T_TO_KG, Pa_TO_kPa, P0, \
-    PEOPLE_COUNT
+from calculations.app._base_damage_state import damage
+from calculations.config import KG_TO_T, MASS_IN_CLOUDE, MSG, WIND, SPILL_TO_PART, T_TO_KG, Pa_TO_kPa, P0, \
+    PEOPLE_COUNT, D_MM_JET_LIQUID, D_MM_JET_GAS, MASS_IN_BLEVE, EF
 
 
 def calc_for_scenario(
@@ -25,7 +27,7 @@ def calc_for_scenario(
     Все неизвестные значения временно = 1
     """
 
-    # print("Считаем сценарий:", scenario_no, equipment["equipment_name"])
+    print("Считаем сценарий:", scenario_no, equipment["equipment_name"])
 
     result = {}
 
@@ -43,8 +45,8 @@ def calc_for_scenario(
     result["base_frequency"] = scenario.get("base_frequency", 1)
     result["accident_event_probability"] = scenario.get("accident_event_probability", 1)
 
-    # Умножаем на длину, т.к. трубопровод
-    result["scenario_frequency"] = scenario.get("scenario_frequency", 1) * equipment["length_m"]
+    # Сценарий считается на одно оборудование
+    result["scenario_frequency"] = scenario.get("scenario_frequency", 1)
 
     # -------------------------------------------------------------------------
     # Физические свойства / взрывопожарные свойства (из substances.json)
@@ -52,7 +54,8 @@ def calc_for_scenario(
     physical = json.loads(substance["physical_json"])
     explosion = json.loads(substance["explosion_json"])
 
-    density = float(physical["density_liquid_kg_per_m3"])
+    density_liquid = float(physical["density_liquid_kg_per_m3"])
+    density_gas = float(physical["density_gas_kg_per_m3"])
     mol_mass = float(physical["molar_mass_kg_per_mol"])
     t_boiling = float(physical["boiling_point_C"])
     evaporation_heat_J_per_kg = float(physical["evaporation_heat_J_per_kg"])
@@ -60,36 +63,31 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     # Количество ОВ
     # -------------------------------------------------------------------------
-    pipeline_volume = pipeline_internal_volume_m3(
-        equipment["length_m"],
-        equipment["diameter_mm"],
-        equipment["wall_thickness_mm"],
-    )
+    volume = equipment["volume_m3"]
+    fill_fraction = equipment["fill_fraction"]
 
-    result["amount_t"] = pipeline_volume * density * KG_TO_T
+    result["amount_t"] = volume * density_liquid * fill_fraction * KG_TO_T + volume * density_gas * (
+            1 - fill_fraction) * KG_TO_T
 
-    # print(f'result["amount_t"] = {result["amount_t"]}')
+    print(f'result["amount_t"] = {result["amount_t"]}')
 
-    if scenario["scenario_line"] in (1, 2, 3):  # пролив полная
-        result["ov_in_accident_t"] = result["amount_t"] + liquid_leak_mass_flow(
-            equipment["pressure_mpa"],
-            equipment["diameter_mm"],
-            density,
-        ) * KG_TO_T
+    if scenario["scenario_line"] in (1, 2, 3, 9):  # авария полная
+        result["ov_in_accident_t"] = result["amount_t"]
 
-    if scenario["scenario_line"] in (4, 5, 6):  # пролив частичная
-        result["ov_in_accident_t"] = (
-                                             result["amount_t"]
-                                             + liquid_leak_mass_flow(
-                                         equipment["pressure_mpa"],
-                                         equipment["diameter_mm"],
-                                         density,
-                                     ) * equipment["shutdown_time_s"] * KG_TO_T
-                                     ) * MASS_TO_PART
+    if scenario["scenario_line"] in (4, 5):  # авария частичная (ниже уровня жидкости)
+        liquid_flow = liquid_leak_mass_flow(equipment["pressure_mpa"], D_MM_JET_LIQUID, density_liquid)
+        result["ov_in_accident_t"] = liquid_flow * equipment["shutdown_time_s"] * KG_TO_T
 
-    # print(f'result["ov_in_accident_t"] = {result["ov_in_accident_t"]}')
+    if scenario["scenario_line"] in (6, 7, 8):  # авария частичная (выше уровня жидкости)
+        gas_flow = gas_leak_mass_flow(equipment["pressure_mpa"], D_MM_JET_GAS, equipment["substance_temperature_c"],
+                                      mol_mass)
+        result["ov_in_accident_t"] = gas_flow * equipment["shutdown_time_s"] * KG_TO_T
 
-    if scenario["scenario_line"] in (1, 4):  # пролив полная/частичная
+    print(f'result["ov_in_accident_t"] = {result["ov_in_accident_t"]}')
+    # -------------------------------------------------------------------------
+    # Количество вещества участвующего в создании поражающего фактора
+    # -------------------------------------------------------------------------
+    if scenario["scenario_line"] in (1,):  # авария полная/частичная
         result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
 
     # -------------------------------------------------------------------------
@@ -106,20 +104,20 @@ def calc_for_scenario(
         else:
             spill = equipment["spill_area_m2"] * SPILL_TO_PART
 
-    # print(f'spill={spill} м2')
+    print(f'spill={spill} м2')
 
-    if scenario["scenario_line"] in (2, 5):  # испарение для взрыва и вспышки
+    if scenario["scenario_line"] in (2,):  # испарение для взрыва
 
         Pn = saturated_vapor_pressure_pa(equipment["substance_temperature_c"], t_boiling, evaporation_heat_J_per_kg,
                                          mol_mass, P0)
-        # print(f'Pn = {Pn * Pa_TO_kPa} кПа')
+        print(f'Pn = {Pn * Pa_TO_kPa} кПа')
         W = evaporation_intensity_kg_m2_s(Pn, mol_mass, eta=1.0)
 
         m_dot = W * spill  # кг/с
 
-        # print(f'm_dot = {m_dot} кг/с')
-        # print(
-        #     f'm_dot * equipment["evaporation_time_s"] * KG_TO_T = {m_dot * equipment["evaporation_time_s"] * KG_TO_T} т')
+        print(f'm_dot = {m_dot} кг/с')
+        print(
+            f'm_dot * equipment["evaporation_time_s"] * KG_TO_T = {m_dot * equipment["evaporation_time_s"] * KG_TO_T} т')
 
         # Проверяем не испарилось ли больше чем вылилось
         if m_dot * equipment["evaporation_time_s"] * KG_TO_T > result["ov_in_accident_t"]:
@@ -127,11 +125,20 @@ def calc_for_scenario(
         else:
             result["ov_in_hazard_factor_t"] = m_dot * equipment["evaporation_time_s"] * MASS_IN_CLOUDE * KG_TO_T
 
-    if scenario["scenario_line"] in (3, 6):  # ликвидация
+    if scenario["scenario_line"] in (4, 6,):  # факельное горение газа/жидкости
+        result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
+
+    if scenario["scenario_line"] in (7,):  # вспышка
+        result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"] * MASS_IN_CLOUDE
+
+    if scenario["scenario_line"] in (3, 5, 8):  # ликвидация
         result["ov_in_hazard_factor_t"] = 0
 
-    # print(f'result["ov_in_hazard_factor_t"] = {result["ov_in_hazard_factor_t"]}')
-    # print(20 * "-")
+    if scenario["scenario_line"] in (9,):  # огненный шар
+        result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"] * MASS_IN_BLEVE
+
+    print(f'result["ov_in_hazard_factor_t"] = {result["ov_in_hazard_factor_t"]}')
+    print(20 * "-")
 
     # -------------------------------------------------------------------------
     # Тепловые потоки
@@ -141,7 +148,7 @@ def calc_for_scenario(
     result["q_4_2"] = None
     result["q_1_4"] = None
 
-    if scenario["scenario_line"] in (1, 4):  # пролив полная/частичная
+    if scenario["scenario_line"] in (1,):  # пролив полная
         zone = Strait_fire().termal_class_zone(
             S_spill=spill,
             m_sg=MSG,
@@ -155,8 +162,8 @@ def calc_for_scenario(
         result["q_4_2"] = int(zone[2])
         result["q_1_4"] = int(zone[3])
 
-        # print(zone)
-        # print(20 * "-")
+        print(zone)
+        print(20 * "-")
 
     # -------------------------------------------------------------------------
     # Избыточное давление
@@ -190,8 +197,8 @@ def calc_for_scenario(
         result["p_5"] = int(zone[4])
         result["p_2"] = int(zone[5])
 
-        # print(zone)
-        # print(20 * "-")
+        print(zone)
+        print(20 * "-")
 
     # -------------------------------------------------------------------------
     # Зоны поражения
@@ -199,10 +206,21 @@ def calc_for_scenario(
     result["l_f"] = None
     result["d_f"] = None
 
+    if scenario["scenario_line"] in (4, 6):  # факел жидкость
+        type_jet = 2 if scenario["scenario_line"] == 4 else 0
+        flow = liquid_flow if scenario["scenario_line"] == 4 else gas_flow
+        zone = Torch().jetfire_size(flow, type_jet)
+
+        result["l_f"] = zone[0]
+        result["d_f"] = zone[1]
+
+        print(zone)
+        print(20 * "-")
+
     result["r_nkpr"] = None
     result["r_vsp"] = None
 
-    if scenario["scenario_line"] in (5,):  # вспышка
+    if scenario["scenario_line"] in (7,):  # вспышка
         mass = result["ov_in_hazard_factor_t"]
         lower_concentration = float(explosion["lel_percent"])
 
@@ -211,8 +229,8 @@ def calc_for_scenario(
         result["r_nkpr"] = int(zone[0])
         result["r_vsp"] = int(zone[1])
 
-        # print(zone)
-        # print(20 * "-")
+        print(zone)
+        print(20 * "-")
 
     result["l_pt"] = None
     result["p_pt"] = None
@@ -224,6 +242,13 @@ def calc_for_scenario(
     result["q_320"] = None
     result["q_220"] = None
     result["q_120"] = None
+
+    if scenario["scenario_line"] in (9,):  # шар
+        zone = Fireball().termal_class_zone(result["ov_in_hazard_factor_t"], EF)
+        result["q_600"] = int(zone[0])
+        result["q_320"] = int(zone[1])
+        result["q_220"] = int(zone[2])
+        result["q_120"] = int(zone[3])
 
     result["s_t"] = None
 
@@ -239,15 +264,15 @@ def calc_for_scenario(
     elif scenario["scenario_line"] in (2,):  # взрыв
         result["fatalities_count"] = count_dead_personal(result["p_5"])
         result["injured_count"] = count_injured_personal(result["p_5"])
-    elif scenario["scenario_line"] in (3, 6):  # ликвидация
+    elif scenario["scenario_line"] in (3, 5, 8):  # ликвидация
         result["fatalities_count"] = 0
         result["injured_count"] = 0
-    elif scenario["scenario_line"] in (4, 5):  # вспышка и пожар частичный
+    elif scenario["scenario_line"] in (4, 6, 7, 9):  # вспышка, факел, и отсроченный огненный шар
         result["fatalities_count"] = 0
         result["injured_count"] = 1
     #
-    # print('Погибшие/раненые', result["fatalities_count"], result["injured_count"])
-    # print(20 * "-")
+    print('Погибшие/раненые', result["fatalities_count"], result["injured_count"])
+    print(20 * "-")
     # -------------------------------------------------------------------------
     # Ущерб
     # -------------------------------------------------------------------------
@@ -266,9 +291,9 @@ def calc_for_scenario(
     result["total_environmental_damage"] = base_damage["total_environmental_damage"]
     result["total_damage"] = base_damage["total_damage"]
 
-    # print('Ущерб, тыс.руб', result["direct_losses"], result["social_losses"], result["total_environmental_damage"],
-    #       result["total_damage"])
-    # print(20 * "-")
+    print('Ущерб, тыс.руб', result["direct_losses"], result["social_losses"], result["total_environmental_damage"],
+          result["total_damage"])
+    print(20 * "-")
     # -------------------------------------------------------------------------
     # Риски
     # -------------------------------------------------------------------------
