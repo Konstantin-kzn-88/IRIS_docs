@@ -61,7 +61,6 @@ def calc_for_scenario(
     t_boiling = float(physical["boiling_point_C"])
     substance_temperature_c = float(equipment["substance_temperature_c"])
 
-
     # -------------------------------------------------------------------------
     # Количество ОВ
     # -------------------------------------------------------------------------
@@ -124,7 +123,7 @@ def calc_for_scenario(
     result["p_5"] = None
     result["p_2"] = None
 
-    if scenario["scenario_line"] in (2,):
+    if scenario["scenario_line"] in (2, 6):
         zone = Explosion().explosion_class_zone(
             int(explosion["explosion_hazard_class"]),
             equipment["clutter_degree"],
@@ -145,12 +144,16 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     result["l_f"] = None
     result["d_f"] = None
-    if scenario["scenario_line"] in (2, 6):  # факел газ
+    if scenario["scenario_line"] in (1,):  # факел газ
         type_jet = 0
         zone = Torch().jetfire_size(flow, type_jet)
 
         result["l_f"] = zone[0]
         result["d_f"] = zone[1]
+
+        if DEBUG:
+            print(zone)
+            print(20 * "-")
 
     elif scenario["scenario_line"] in (5,):  # факел газ
         type_jet = 0
