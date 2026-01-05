@@ -75,7 +75,7 @@ def calc_for_scenario(
             equipment["pressure_mpa"],
             equipment["diameter_mm"],
             density,
-        ) * KG_TO_T
+        ) * equipment["shutdown_time_s"] * KG_TO_T
 
     if scenario["scenario_line"] in (4, 5, 6):  # пролив частичная
         result["ov_in_accident_t"] = (
