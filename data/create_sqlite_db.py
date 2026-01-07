@@ -168,7 +168,8 @@ def main():
               volume_m3, fill_fraction, pressure_mpa,
               spill_coefficient, spill_area_m2,
               substance_temperature_c,
-              shutdown_time_s, evaporation_time_s
+              shutdown_time_s, evaporation_time_s,
+              possible_dead, possible_injured
             ) VALUES (
               :id, :substance_id, :equipment_name,
               :hazard_component, :clutter_degree, :phase_state,
@@ -177,7 +178,8 @@ def main():
               :volume_m3, :fill_fraction, :pressure_mpa,
               :spill_coefficient, :spill_area_m2,
               :substance_temperature_c,
-              :shutdown_time_s, :evaporation_time_s
+              :shutdown_time_s, :evaporation_time_s,
+              :possible_dead, :possible_injured
             );
             ''',
             [
@@ -202,6 +204,10 @@ def main():
                     "substance_temperature_c": e.get("substance_temperature_c"),
                     "shutdown_time_s": e.get("shutdown_time_s"),
                     "evaporation_time_s": e.get("evaporation_time_s"),
+
+                    # новые поля (если отсутствуют в JSON — будут 0)
+                    "possible_dead": e.get("possible_dead", 0),
+                    "possible_injured": e.get("possible_injured", 0),
                 }
                 for e in equipment
             ],

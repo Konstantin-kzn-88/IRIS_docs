@@ -9,11 +9,9 @@ from calculations.app._strait_fire import Strait_fire
 from calculations.app._tvs_explosion import Explosion
 from calculations.app._jet_fire import Torch
 from calculations.app._fireball import Fireball
-from calculations.app._fatalities_count import count_dead_personal
-from calculations.app._injured_count import count_injured_personal
 from calculations.app._base_damage_state import damage
 from calculations.config import KG_TO_T, MASS_IN_CLOUDE, MSG, WIND, SPILL_TO_PART, T_TO_KG, Pa_TO_kPa, P0, \
-    PEOPLE_COUNT, D_MM_JET_LIQUID, D_MM_JET_GAS, MASS_IN_BLEVE, EF
+    PEOPLE_COUNT, D_MM_JET_LIQUID, D_MM_JET_GAS, MASS_IN_BLEVE, EF, DAMAGE_NINE_SC
 
 # Включение/отключение отладочного вывода
 DEBUG = False  # True -> печатаем отладку, False -> молчим
@@ -299,22 +297,23 @@ def calc_for_scenario(
     result["injured_count"] = None
 
     if scenario["scenario_line"] in (1,):  # пожар
-        result["fatalities_count"] = count_dead_personal(result["q_4_2"])
-        result["injured_count"] = count_injured_personal(result["q_4_2"])
+        result["fatalities_count"] = max(0, equipment["possible_dead"] - 1)
+        result["injured_count"] = max(0, equipment["possible_injured"] - 1)
     elif scenario["scenario_line"] in (2,):  # взрыв
-        result["fatalities_count"] = count_dead_personal(result["p_5"])
-        result["injured_count"] = count_injured_personal(result["p_5"])
+        result["fatalities_count"] = equipment["possible_dead"]
+        result["injured_count"] = equipment["possible_injured"]
     elif scenario["scenario_line"] in (3, 5, 8):  # ликвидация
         result["fatalities_count"] = 0
         result["injured_count"] = 0
-    elif scenario["scenario_line"] in (4, 6, 7, 9):  # вспышка, факел, и отсроченный огненный шар
+    elif scenario["scenario_line"] in (4, 6, 7):  # факел, вспышка и пожар частичный
+        result["fatalities_count"] = 0
+        result["injured_count"] = 1
+    elif scenario["scenario_line"] in (9, ):  # шар после нагрева
         result["fatalities_count"] = 0
         result["injured_count"] = 1
     #
-    # print('Погибшие/раненые', result["fatalities_count"], result["injured_count"])
-    # print(20 * "-")
     if DEBUG:
-        print('Погибшие/раненые', result["fatalities_count"], result["injured_count"])
+        print("Погибшие/раненые", result["fatalities_count"], result["injured_count"])
         print(20 * "-")
 
     # -------------------------------------------------------------------------
@@ -327,7 +326,23 @@ def calc_for_scenario(
     result["total_environmental_damage"] = None
     result["total_damage"] = None
 
-    base_damage = damage(result["ov_in_accident_t"], result["fatalities_count"], result["injured_count"])
+    sc_line = int(scenario.get("scenario_line", 0))
+
+    if 1 <= sc_line <= 9:
+        k = DAMAGE_NINE_SC[sc_line - 1]
+    else:
+        # если прилетело неизвестное значение, безопасно считаем 0 ущерба по массе
+        k = 0.0
+
+    amount_t = float(result.get("amount_t", 0.0))
+    mass_for_damage = k * amount_t
+
+    base_damage = damage(
+        mass_for_damage,
+        int(result.get("fatalities_count", 0)),
+        int(result.get("injured_count", 0)),
+    )
+
     result["direct_losses"] = base_damage["direct_losses"]
     result["liquidation_costs"] = base_damage["liquidation_costs"]
     result["social_losses"] = base_damage["social_losses"]
@@ -335,14 +350,10 @@ def calc_for_scenario(
     result["total_environmental_damage"] = base_damage["total_environmental_damage"]
     result["total_damage"] = base_damage["total_damage"]
 
-    # print('Ущерб, тыс.руб', result["direct_losses"], result["social_losses"], result["total_environmental_damage"],
-    #       result["total_damage"])
-    # print(20 * "-")
     if DEBUG:
         print('Ущерб, тыс.руб', result["direct_losses"], result["social_losses"], result["total_environmental_damage"],
               result["total_damage"])
         print(20 * "-")
-
     # -------------------------------------------------------------------------
     # Риски
     # -------------------------------------------------------------------------

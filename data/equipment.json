@@ -24,7 +24,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 1
   },
   {
     "id": 2,
@@ -49,7 +51,9 @@
     "shutdown_time_s": 120,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк РВС",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 1
   },
   {
     "id": 3,
@@ -74,7 +78,9 @@
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 2
   },
   {
     "id": 4,
@@ -99,7 +105,9 @@
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 1
   },
   {
     "id": 5,
@@ -124,7 +132,9 @@
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
     "hazard_component": "Насосная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 1
   },
   {
     "id": 6,
@@ -149,7 +159,9 @@
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 0
   },
   {
     "id": 7,
@@ -176,7 +188,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (без давления)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 1
   },
   {
     "id": 8,
@@ -203,7 +217,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (под давлением)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 0
   },
   {
     "id": 9,
@@ -230,7 +246,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система ПТ",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 3
   },
   {
     "id": 10,
@@ -257,7 +275,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 0
   },
   {
     "id": 11,
@@ -282,7 +302,9 @@
     "shutdown_time_s": 120,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк РВС",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 4
   },
   {
     "id": 12,
@@ -307,7 +329,9 @@
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 1
   },
   {
     "id": 13,
@@ -332,7 +356,9 @@
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 2
   },
   {
     "id": 14,
@@ -357,7 +383,9 @@
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
     "hazard_component": "Насосная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 3
   },
   {
     "id": 15,
@@ -382,7 +410,9 @@
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 0
   },
   {
     "id": 16,
@@ -409,7 +439,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (без давления)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 3
   },
   {
     "id": 17,
@@ -436,7 +468,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (под давлением)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 2
   },
   {
     "id": 18,
@@ -463,7 +497,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система ПТ",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 3
   },
   {
     "id": 19,
@@ -490,7 +526,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 2
   },
   {
     "id": 20,
@@ -515,7 +553,9 @@
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 4
   },
   {
     "id": 21,
@@ -540,7 +580,9 @@
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 1
   },
   {
     "id": 22,
@@ -565,7 +607,9 @@
     "shutdown_time_s": 10,
     "evaporation_time_s": 900,
     "hazard_component": "Дожимная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 2
   },
   {
     "id": 23,
@@ -590,7 +634,9 @@
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 1
   },
   {
     "id": 24,
@@ -617,7 +663,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (под давлением)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 0
   },
   {
     "id": 25,
@@ -644,7 +692,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 4
   },
   {
     "id": 26,
@@ -669,7 +719,9 @@
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 1
   },
   {
     "id": 27,
@@ -694,7 +746,9 @@
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 1
   },
   {
     "id": 28,
@@ -719,7 +773,9 @@
     "shutdown_time_s": 10,
     "evaporation_time_s": 900,
     "hazard_component": "Дожимная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 1
   },
   {
     "id": 29,
@@ -744,7 +800,9 @@
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 2
   },
   {
     "id": 30,
@@ -771,7 +829,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (под давлением)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 3
   },
   {
     "id": 31,
@@ -798,7 +858,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 1
   },
   {
     "id": 32,
@@ -823,7 +885,9 @@
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 4
   },
   {
     "id": 33,
@@ -848,7 +912,9 @@
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 2
   },
   {
     "id": 34,
@@ -873,7 +939,9 @@
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
     "hazard_component": "Насосная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 3
   },
   {
     "id": 35,
@@ -898,7 +966,9 @@
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 3
   },
   {
     "id": 36,
@@ -925,7 +995,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (под давлением)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 3
   },
   {
     "id": 37,
@@ -952,7 +1024,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 0
   },
   {
     "id": 38,
@@ -977,7 +1051,9 @@
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 4
   },
   {
     "id": 39,
@@ -1002,7 +1078,9 @@
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 0
   },
   {
     "id": 40,
@@ -1027,7 +1105,9 @@
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
     "hazard_component": "Насосная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 0
   },
   {
     "id": 41,
@@ -1052,7 +1132,9 @@
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 0
   },
   {
     "id": 42,
@@ -1079,7 +1161,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (под давлением)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 4
   },
   {
     "id": 43,
@@ -1106,7 +1190,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 2
   },
   {
     "id": 44,
@@ -1131,7 +1217,9 @@
     "shutdown_time_s": 120,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк РВС",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 3
   },
   {
     "id": 45,
@@ -1156,7 +1244,9 @@
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
     "hazard_component": "Насосная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 2
   },
   {
     "id": 46,
@@ -1183,7 +1273,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (без давления)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 0
   },
   {
     "id": 47,
@@ -1210,7 +1302,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 2
   },
   {
     "id": 48,
@@ -1235,7 +1329,9 @@
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 4
   },
   {
     "id": 49,
@@ -1260,7 +1356,9 @@
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 0
   },
   {
     "id": 50,
@@ -1285,7 +1383,9 @@
     "shutdown_time_s": 10,
     "evaporation_time_s": 900,
     "hazard_component": "Дожимная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 0
   },
   {
     "id": 51,
@@ -1310,7 +1410,9 @@
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 2
   },
   {
     "id": 52,
@@ -1337,7 +1439,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (под давлением)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 3
   },
   {
     "id": 53,
@@ -1364,7 +1468,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 4
   },
   {
     "id": 54,
@@ -1389,7 +1495,9 @@
     "shutdown_time_s": 30,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 1
   },
   {
     "id": 55,
@@ -1414,7 +1522,9 @@
     "shutdown_time_s": 45,
     "evaporation_time_s": 2400,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 0
   },
   {
     "id": 56,
@@ -1439,7 +1549,9 @@
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
     "hazard_component": "Насосная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 2
   },
   {
     "id": 57,
@@ -1464,7 +1576,9 @@
     "shutdown_time_s": 20,
     "evaporation_time_s": 1800,
     "hazard_component": "Установка подготовки",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 3,
+    "possible_injured": 3
   },
   {
     "id": 58,
@@ -1491,7 +1605,9 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (под давлением)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 2,
+    "possible_injured": 1
   },
   {
     "id": 59,
@@ -1518,7 +1634,9 @@
     "shutdown_time_s": 60,
     "evaporation_time_s": 1800,
     "hazard_component": "Трубопроводная система",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 0
   },
   {
     "id": 60,
@@ -1543,7 +1661,9 @@
     "shutdown_time_s": 120,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк РВС",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 2
   },
   {
     "id": 61,
@@ -1568,7 +1688,9 @@
     "shutdown_time_s": 15,
     "evaporation_time_s": 1200,
     "hazard_component": "Насосная станция",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 0,
+    "possible_injured": 2
   },
   {
     "id": 62,
@@ -1595,6 +1717,8 @@
     "shutdown_time_s": 90,
     "evaporation_time_s": 3600,
     "hazard_component": "Парк емкостей (без давления)",
-    "clutter_degree": 2
+    "clutter_degree": 2,
+    "possible_dead": 4,
+    "possible_injured": 1
   }
 ]

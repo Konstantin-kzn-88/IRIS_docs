@@ -131,7 +131,7 @@ def main(db_path: Path = DB_PATH, typical_scenarios_path: Path = TYPICAL_SCENARI
                     payload = equipment_type_7_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
                 elif equipment["equipment_type"] == 8 and substance["kind"] == 0:
                     payload = equipment_type_8_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-
+                #
                 elif equipment["equipment_type"] == 5 and substance["kind"] == 2:
                     payload = equipment_type_5_kind_2.calc_for_scenario(equipment, substance, sc, scenario_no_global)
                 else:

@@ -5,8 +5,6 @@ from calculations.app._liguid_evaporation import evaporation_intensity_kg_m2_s, 
 from calculations.app._lower_concentration import LCLP
 from calculations.app._strait_fire import Strait_fire
 from calculations.app._tvs_explosion import Explosion
-from calculations.app._fatalities_count import count_dead_personal
-from calculations.app._injured_count import count_injured_personal
 from calculations.app._base_damage_state import damage
 from calculations.config import (
     KG_TO_T,
@@ -18,7 +16,7 @@ from calculations.config import (
     T_TO_KG,
     Pa_TO_kPa,
     P0,
-    PEOPLE_COUNT,
+    PEOPLE_COUNT, DAMAGE_SIX_SC,
 )
 
 # Включение/отключение отладочного вывода
@@ -75,8 +73,8 @@ def calc_for_scenario(
     fill_fraction = equipment["fill_fraction"]
 
     result["amount_t"] = (
-        volume * density_liquid * fill_fraction * KG_TO_T
-        + volume * density_gas * (1 - fill_fraction) * KG_TO_T
+            volume * density_liquid * fill_fraction * KG_TO_T
+            + volume * density_gas * (1 - fill_fraction) * KG_TO_T
     )
 
     if DEBUG:
@@ -138,7 +136,7 @@ def calc_for_scenario(
             result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
         else:
             result["ov_in_hazard_factor_t"] = (
-                m_dot * equipment["evaporation_time_s"] * MASS_IN_CLOUDE * KG_TO_T
+                    m_dot * equipment["evaporation_time_s"] * MASS_IN_CLOUDE * KG_TO_T
             )
 
     if scenario["scenario_line"] in (3, 6):
@@ -219,16 +217,19 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     # Последствия
     # -------------------------------------------------------------------------
+    result["fatalities_count"] = None
+    result["injured_count"] = None
+
     if scenario["scenario_line"] in (1,):
-        result["fatalities_count"] = count_dead_personal(result["q_4_2"])
-        result["injured_count"] = count_injured_personal(result["q_4_2"])
+        result["fatalities_count"] = max(0, equipment["possible_dead"] - 1)
+        result["injured_count"] = max(0, equipment["possible_injured"] - 1)
     elif scenario["scenario_line"] in (2,):
-        result["fatalities_count"] = count_dead_personal(result["p_5"])
-        result["injured_count"] = count_injured_personal(result["p_5"])
+        result["fatalities_count"] = equipment["possible_dead"]
+        result["injured_count"] = equipment["possible_injured"]
     elif scenario["scenario_line"] in (3, 6):
         result["fatalities_count"] = 0
         result["injured_count"] = 0
-    else:
+    elif scenario["scenario_line"] in (4, 5):  # вспышка и пожар частичный
         result["fatalities_count"] = 0
         result["injured_count"] = 1
 
@@ -237,15 +238,47 @@ def calc_for_scenario(
         print(20 * "-")
 
     # -------------------------------------------------------------------------
-    # Ущерб и риски
+    # Ущерб
     # -------------------------------------------------------------------------
+    result["direct_losses"] = None
+    result["liquidation_costs"] = None
+    result["social_losses"] = None
+    result["indirect_damage"] = None
+    result["total_environmental_damage"] = None
+    result["total_damage"] = None
+
+    sc_line = int(scenario.get("scenario_line", 0))
+
+    if 1 <= sc_line <= 6:
+        k = DAMAGE_SIX_SC[sc_line - 1]
+    else:
+        # если прилетело неизвестное значение, безопасно считаем 0 ущерба по массе
+        k = 0.0
+
+    amount_t = float(result.get("amount_t", 0.0))
+    mass_for_damage = k * amount_t
+
     base_damage = damage(
-        result["ov_in_accident_t"],
-        result["fatalities_count"],
-        result["injured_count"],
+        mass_for_damage,
+        int(result.get("fatalities_count", 0)),
+        int(result.get("injured_count", 0)),
     )
 
-    result.update(base_damage)
+    result["direct_losses"] = base_damage["direct_losses"]
+    result["liquidation_costs"] = base_damage["liquidation_costs"]
+    result["social_losses"] = base_damage["social_losses"]
+    result["indirect_damage"] = base_damage["indirect_damage"]
+    result["total_environmental_damage"] = base_damage["total_environmental_damage"]
+    result["total_damage"] = base_damage["total_damage"]
+
+    if DEBUG:
+        print('Ущерб, тыс.руб', result["direct_losses"], result["social_losses"], result["total_environmental_damage"],
+              result["total_damage"])
+        print(20 * "-")
+
+    # -------------------------------------------------------------------------
+    # Ущерб и риски
+    # -------------------------------------------------------------------------
 
     result["collective_risk_fatalities"] = result["fatalities_count"] * result["scenario_frequency"]
     result["collective_risk_injured"] = result["injured_count"] * result["scenario_frequency"]

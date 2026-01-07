@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS substances (
   toxicity_threshold_tox_dose_mg_min_per_L REAL,
   toxicity_lethal_tox_dose_mg_min_per_L REAL,
 
-
   reactivity                 TEXT,
   odor                       TEXT,
   corrosiveness              TEXT,
@@ -43,7 +42,8 @@ CREATE TABLE IF NOT EXISTS substances (
   impact                     TEXT,
   protection                 TEXT,
   neutralization_methods     TEXT,
-  first_aid                  TEXT);
+  first_aid                  TEXT
+);
 
 -- =========================================================
 -- 2) Оборудование
@@ -78,6 +78,10 @@ CREATE TABLE IF NOT EXISTS equipment (
     substance_temperature_c REAL,
     shutdown_time_s         REAL,
     evaporation_time_s      REAL,
+
+    -- Предположительное количество людей на оборудовании
+    possible_dead           INTEGER DEFAULT 0, -- возможное количество погибших, чел
+    possible_injured        INTEGER DEFAULT 0, -- возможное количество пострадавших, чел
 
     FOREIGN KEY (substance_id) REFERENCES substances(id)
 );

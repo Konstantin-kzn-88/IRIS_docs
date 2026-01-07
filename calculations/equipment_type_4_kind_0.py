@@ -16,7 +16,7 @@ from calculations.config import (
     Pa_TO_kPa,
     P0,
     PEOPLE_COUNT,
-    D_MM_JET_LIQUID,
+    D_MM_JET_LIQUID, DAMAGE_SIX_SC,
 )
 
 # Включение/отключение отладочного вывода
@@ -247,23 +247,29 @@ def calc_for_scenario(
     result["total_environmental_damage"] = None
     result["total_damage"] = None
 
-    base_damage = damage(result["ov_in_accident_t"], result["fatalities_count"], result["injured_count"])
+    sc_line = int(scenario.get("scenario_line", 0))
+
+    if 1 <= sc_line <= 6:
+        k = DAMAGE_SIX_SC[sc_line - 1]
+    else:
+        # если прилетело неизвестное значение, безопасно считаем 0 ущерба по массе
+        k = 0.0
+
+    amount_t = float(result.get("amount_t", 0.0))
+    mass_for_damage = k * amount_t
+
+    base_damage = damage(
+        mass_for_damage,
+        int(result.get("fatalities_count", 0)),
+        int(result.get("injured_count", 0)),
+    )
+
     result["direct_losses"] = base_damage["direct_losses"]
     result["liquidation_costs"] = base_damage["liquidation_costs"]
     result["social_losses"] = base_damage["social_losses"]
     result["indirect_damage"] = base_damage["indirect_damage"]
     result["total_environmental_damage"] = base_damage["total_environmental_damage"]
     result["total_damage"] = base_damage["total_damage"]
-
-    if DEBUG:
-        print(
-            "Ущерб, тыс.руб",
-            result["direct_losses"],
-            result["social_losses"],
-            result["total_environmental_damage"],
-            result["total_damage"],
-        )
-        print(20 * "-")
 
     # -------------------------------------------------------------------------
     # Риски
