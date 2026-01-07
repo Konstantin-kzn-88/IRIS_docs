@@ -14,7 +14,7 @@ from calculations.config import (
 )
 
 # Включение/отключение отладочного вывода
-DEBUG = True  # True -> печатаем отладку, False -> молчим
+DEBUG = False  # True -> печатаем отладку, False -> молчим
 
 
 def calc_for_scenario(

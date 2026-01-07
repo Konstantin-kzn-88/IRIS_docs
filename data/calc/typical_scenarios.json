@@ -2222,6 +2222,14 @@
           "accident_event_probability": 0.608,
           "scenario_frequency": 0.000608,
           "calc_code": 0
+        },
+        {
+          "scenario_line": 9,
+          "scenario_text": "Полное разрушение при воздействии внешнего источника горения → образование «огненного шара»",
+          "base_frequency": 2e-05,
+          "accident_event_probability": 1,
+          "scenario_frequency": 2e-05,
+          "calc_code": 6
         }
       ],
       "1": [
