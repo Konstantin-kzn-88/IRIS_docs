@@ -2,16 +2,19 @@ import json
 import sqlite3
 
 from calculations.app._liguid_evaporation import evaporation_intensity_kg_m2_s, saturated_vapor_pressure_pa
+from calculations.app._liquid_flow import liquid_leak_mass_flow
+from calculations.app._gas_flow import gas_leak_mass_flow
 from calculations.app._lower_concentration import LCLP
 from calculations.app._strait_fire import Strait_fire
 from calculations.app._tvs_explosion import Explosion
+from calculations.app._jet_fire import Torch
+from calculations.app._fireball import Fireball
 from calculations.app._fatalities_count import count_dead_personal
 from calculations.app._injured_count import count_injured_personal
 from calculations.app._base_damage_state import damage
 from calculations.config import (
     KG_TO_T,
     MASS_IN_CLOUDE,
-    MASS_TO_PART,
     MSG,
     WIND,
     SPILL_TO_PART,
@@ -19,10 +22,14 @@ from calculations.config import (
     Pa_TO_kPa,
     P0,
     PEOPLE_COUNT,
+    D_MM_JET_LIQUID,
+    D_MM_JET_GAS,
+    MASS_IN_BLEVE,
+    EF,
 )
 
 # Включение/отключение отладочного вывода
-DEBUG = False  # True -> печатаем отладку, False -> молчим
+DEBUG = True  # True -> печатаем отладку, False -> молчим
 
 
 def calc_for_scenario(
@@ -82,16 +89,31 @@ def calc_for_scenario(
     if DEBUG:
         print(f'result["amount_t"] = {result["amount_t"]}')
 
-    if scenario["scenario_line"] in (1, 2, 3):
+    if scenario["scenario_line"] in (1, 2, 3, 9):
         result["ov_in_accident_t"] = result["amount_t"]
 
-    if scenario["scenario_line"] in (4, 5, 6):
-        result["ov_in_accident_t"] = result["amount_t"] * MASS_TO_PART
+    if scenario["scenario_line"] in (4, 5):
+        liquid_flow = liquid_leak_mass_flow(
+            equipment["pressure_mpa"], D_MM_JET_LIQUID, density_liquid
+        )
+        result["ov_in_accident_t"] = liquid_flow * equipment["shutdown_time_s"] * KG_TO_T
+
+    if scenario["scenario_line"] in (6, 7, 8):
+        gas_flow = gas_leak_mass_flow(
+            equipment["pressure_mpa"],
+            D_MM_JET_GAS,
+            equipment["substance_temperature_c"],
+            mol_mass,
+        )
+        result["ov_in_accident_t"] = gas_flow * equipment["shutdown_time_s"] * KG_TO_T
 
     if DEBUG:
         print(f'result["ov_in_accident_t"] = {result["ov_in_accident_t"]}')
 
-    if scenario["scenario_line"] in (1, 4):
+    # -------------------------------------------------------------------------
+    # Масса в поражающем факторе
+    # -------------------------------------------------------------------------
+    if scenario["scenario_line"] in (1,):
         result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
 
     # -------------------------------------------------------------------------
@@ -113,7 +135,7 @@ def calc_for_scenario(
     if DEBUG:
         print(f"spill={spill} м2")
 
-    if scenario["scenario_line"] in (2, 5):
+    if scenario["scenario_line"] in (2,):
         Pn = saturated_vapor_pressure_pa(
             equipment["substance_temperature_c"],
             t_boiling,
@@ -141,8 +163,17 @@ def calc_for_scenario(
                 m_dot * equipment["evaporation_time_s"] * MASS_IN_CLOUDE * KG_TO_T
             )
 
-    if scenario["scenario_line"] in (3, 6):
+    if scenario["scenario_line"] in (4, 6):
+        result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
+
+    if scenario["scenario_line"] in (7,):
+        result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"] * MASS_IN_CLOUDE
+
+    if scenario["scenario_line"] in (3, 5, 8):
         result["ov_in_hazard_factor_t"] = 0
+
+    if scenario["scenario_line"] in (9,):
+        result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"] * MASS_IN_BLEVE
 
     if DEBUG:
         print(f'result["ov_in_hazard_factor_t"] = {result["ov_in_hazard_factor_t"]}')
@@ -156,7 +187,7 @@ def calc_for_scenario(
     result["q_4_2"] = None
     result["q_1_4"] = None
 
-    if scenario["scenario_line"] in (1, 4):
+    if scenario["scenario_line"] in (1,):
         zone = Strait_fire().termal_class_zone(
             S_spill=spill,
             m_sg=MSG,
@@ -199,10 +230,24 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     # Зоны поражения
     # -------------------------------------------------------------------------
+    result["l_f"] = None
+    result["d_f"] = None
+
+    if scenario["scenario_line"] in (4, 6):
+        type_jet = 2 if scenario["scenario_line"] == 4 else 0
+        flow = liquid_flow if scenario["scenario_line"] == 4 else gas_flow
+        zone = Torch().jetfire_size(flow, type_jet)
+
+        result["l_f"], result["d_f"] = zone
+
+        if DEBUG:
+            print(zone)
+            print(20 * "-")
+
     result["r_nkpr"] = None
     result["r_vsp"] = None
 
-    if scenario["scenario_line"] in (5,):
+    if scenario["scenario_line"] in (7,):
         zone = LCLP().lower_concentration_limit(
             result["ov_in_hazard_factor_t"],
             mol_mass,
@@ -217,6 +262,22 @@ def calc_for_scenario(
             print(20 * "-")
 
     # -------------------------------------------------------------------------
+    # Огненный шар
+    # -------------------------------------------------------------------------
+    result["q_600"] = None
+    result["q_320"] = None
+    result["q_220"] = None
+    result["q_120"] = None
+
+    if scenario["scenario_line"] in (9,):
+        zone = Fireball().termal_class_zone(result["ov_in_hazard_factor_t"]*T_TO_KG, EF)
+        result["q_600"], result["q_320"], result["q_220"], result["q_120"] = map(int, zone)
+
+        if DEBUG:
+            print(zone)
+            print(20 * "-")
+
+    # -------------------------------------------------------------------------
     # Последствия
     # -------------------------------------------------------------------------
     if scenario["scenario_line"] in (1,):
@@ -225,7 +286,7 @@ def calc_for_scenario(
     elif scenario["scenario_line"] in (2,):
         result["fatalities_count"] = count_dead_personal(result["p_5"])
         result["injured_count"] = count_injured_personal(result["p_5"])
-    elif scenario["scenario_line"] in (3, 6):
+    elif scenario["scenario_line"] in (3, 5, 8):
         result["fatalities_count"] = 0
         result["injured_count"] = 0
     else:
