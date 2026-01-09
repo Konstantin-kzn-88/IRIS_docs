@@ -110,5 +110,45 @@ def get_ov_amounts_in_accident(conn) -> list[dict]:
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
+def get_impact_zones(conn) -> list[dict]:
+    sql = """
+    SELECT
+        e.equipment_name,
+        c.scenario_no,
+
+        c.q_10_5,
+        c.q_7_0,
+        c.q_4_2,
+        c.q_1_4,
+
+        c.p_70,
+        c.p_28,
+        c.p_14,
+        c.p_5,
+        c.p_2,
+
+        c.l_f,
+        c.d_f,
+        c.r_nkpr,
+        c.r_vsp,
+        c.l_pt,
+        c.p_pt,
+
+        c.q_600,
+        c.q_320,
+        c.q_220,
+        c.q_120,
+
+        c.s_t
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    ORDER BY e.equipment_name, c.scenario_no
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
 def open_db(db_path):
     return sqlite3.connect(db_path)

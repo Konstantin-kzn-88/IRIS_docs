@@ -11,6 +11,7 @@ from report.db import (
     get_hazard_distribution,
     get_scenarios,
     get_ov_amounts_in_accident,
+    get_impact_zones
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -65,6 +66,25 @@ def fill_table(table, obj: dict, sections, json_formatter):
             r = table.add_row().cells
             set_cell_text(r[0], label)
             set_cell_text(r[1], value)
+
+
+def fmt(value):
+    """Для таблицы зон поражающих факторов:
+    - None -> '-'
+    - если |value| >= 1: округлить до целого (int)
+    - если |value| < 1: округлить до 1 знака после запятой
+    """
+    if value is None:
+        return "-"
+
+    try:
+        v = float(value)
+    except Exception:
+        return str(value)
+
+    if abs(v) >= 1:
+        return str(int(round(v)))
+    return f"{v:.1f}"
 
 
 def render_section_at_marker(
@@ -326,6 +346,89 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
     insert_paragraph_after_table(doc, table, "")
 
 
+def render_impact_zones_table(doc, marker: str, rows: list[dict]):
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Зоны действия поражающих факторов")
+    set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=23, style="Table Grid")
+
+    headers = [
+        "№ п/п",
+        "Наименование оборудования",
+        "Номер сценария",
+
+        "q = 10,5",
+        "q = 7,0",
+        "q = 4,2",
+        "q = 1,4",
+
+        "ΔР = 70",
+        "ΔР = 28",
+        "ΔР = 14",
+        "ΔР = 5",
+        "ΔР = 2",
+
+        "Lf",
+        "Df",
+        "Rнкпр",
+        "Rвсп",
+        "Rlpt",
+        "Rppt",
+
+        "Q600",
+        "Q320",
+        "Q220",
+        "Q120",
+
+        "St",
+    ]
+
+    # шапка
+    for i, h in enumerate(headers):
+        set_cell_text(table.rows[0].cells[i], h, bold=True)
+
+    # повторяемая шапка (через word_utils, у тебя уже работает)
+    # ничего дописывать не нужно
+
+    for idx, r in enumerate(rows, start=1):
+        row = table.add_row().cells
+
+        set_cell_text(row[0], idx)
+        set_cell_text(row[1], r["equipment_name"])
+        set_cell_text(row[2], f"С{r['scenario_no']}")
+
+        set_cell_text(row[3], fmt(r["q_10_5"]))
+        set_cell_text(row[4], fmt(r["q_7_0"]))
+        set_cell_text(row[5], fmt(r["q_4_2"]))
+        set_cell_text(row[6], fmt(r["q_1_4"]))
+
+        set_cell_text(row[7], fmt(r["p_70"]))
+        set_cell_text(row[8], fmt(r["p_28"]))
+        set_cell_text(row[9], fmt(r["p_14"]))
+        set_cell_text(row[10], fmt(r["p_5"]))
+        set_cell_text(row[11], fmt(r["p_2"]))
+
+        set_cell_text(row[12], fmt(r["l_f"]))
+        set_cell_text(row[13], fmt(r["d_f"]))
+        set_cell_text(row[14], fmt(r["r_nkpr"]))
+        set_cell_text(row[15], fmt(r["r_vsp"]))
+        set_cell_text(row[16], fmt(r["l_pt"]))
+        set_cell_text(row[17], fmt(r["p_pt"]))
+
+        set_cell_text(row[18], fmt(r["q_600"]))
+        set_cell_text(row[19], fmt(r["q_320"]))
+        set_cell_text(row[20], fmt(r["q_220"]))
+        set_cell_text(row[21], fmt(r["q_120"]))
+
+        set_cell_text(row[22], fmt(r["s_t"]))
+
+
 
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -336,6 +439,7 @@ def main():
         distribution = get_hazard_distribution(conn)
         scenarios = get_scenarios(conn)
         ov_amounts = get_ov_amounts_in_accident(conn)
+        impact_zones = get_impact_zones(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -380,8 +484,16 @@ def main():
         rows=ov_amounts,
     )
 
+    render_impact_zones_table(
+        doc,
+        "{{IMPACT_ZONES_SECTION}}",
+        impact_zones
+    )
+
     doc.save(OUT_PATH)
     print("Отчёт сформирован:", OUT_PATH)
+
+
 
 
 if __name__ == "__main__":
