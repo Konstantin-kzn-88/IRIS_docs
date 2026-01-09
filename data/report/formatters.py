@@ -108,3 +108,12 @@ def pretty_json_substance(json_text: str) -> str:
         lines.append(f"{title}: {val}")
 
     return "\n".join(lines) if lines else "-"
+
+
+def format_exp(value) -> str:
+    if value is None:
+        return "-"
+    try:
+        return f"{float(value):.2e}"
+    except Exception:
+        return str(value)

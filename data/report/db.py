@@ -61,5 +61,28 @@ def get_hazard_distribution(conn) -> list[dict]:
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
+def get_scenarios(conn) -> list[dict]:
+    sql = """
+    SELECT
+        c.scenario_no,
+        c.base_frequency,
+        c.accident_event_probability,
+        c.scenario_frequency,
+
+        e.equipment_name,
+        e.equipment_type,
+
+        s.kind AS substance_kind
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    JOIN substances s ON s.id = e.substance_id
+    ORDER BY e.equipment_name, e.equipment_type, s.kind, c.scenario_no
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
 def open_db(db_path):
     return sqlite3.connect(db_path)
