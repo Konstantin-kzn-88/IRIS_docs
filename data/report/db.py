@@ -84,5 +84,31 @@ def get_scenarios(conn) -> list[dict]:
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
+def get_ov_amounts_in_accident(conn) -> list[dict]:
+    """
+    Оценка количества опасного вещества в аварии (по таблице calculations).
+
+    Возвращает строки с полями:
+      - equipment_name
+      - scenario_no
+      - ov_in_accident_t
+      - ov_in_hazard_factor_t
+    """
+    sql = """
+    SELECT
+        e.equipment_name AS equipment_name,
+        c.scenario_no AS scenario_no,
+        c.ov_in_accident_t AS ov_in_accident_t,
+        c.ov_in_hazard_factor_t AS ov_in_hazard_factor_t
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    ORDER BY c.scenario_no, e.equipment_name
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
 def open_db(db_path):
     return sqlite3.connect(db_path)

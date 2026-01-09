@@ -1,79 +1,42 @@
+import json
+from pathlib import Path
+
 from docx import Document
 
-from report.paths import DB_PATH, TEMPLATE_PATH, OUT_PATH
-from report.db import open_db, get_used_substances, get_used_equipment, get_hazard_distribution
+from report.paths import BASE_DIR, DB_PATH, TEMPLATE_PATH, OUT_PATH
+from report.db import (
+    open_db,
+    get_used_substances,
+    get_used_equipment,
+    get_hazard_distribution,
+    get_scenarios,
+    get_ov_amounts_in_accident,
+)
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
-from report.formatters import format_value, pretty_json_substance, pretty_json_generic
+from report.formatters import (
+    format_value,
+    pretty_json_substance,
+    pretty_json_generic,
+    format_exp,
+    format_float_3,
+)
 from report.word_utils import (
     find_paragraph_with_marker,
     clear_paragraph,
     insert_paragraph_after,
     insert_table_after,
     insert_paragraph_after_table,
-    add_section_header_row, set_run_font
+    add_section_header_row,
+    set_run_font,
 )
 
-import json
-from report.db import get_scenarios
-from report.formatters import format_exp
 
-from pathlib import Path
-from report.paths import BASE_DIR
-TYPICAL_SCENARIOS_PATH = BASE_DIR / "calc" / "typical_scenarios.json"
-
-with open(TYPICAL_SCENARIOS_PATH, "r", encoding="utf-8") as f:
-    TYPICAL_SCENARIOS = json.load(f)
-
-# typical_scenarios.json может быть либо сразу словарём сценариев, либо иметь корневой ключ "scenarios"
-TYPICAL_SCENARIOS_ROOT = TYPICAL_SCENARIOS.get("scenarios", TYPICAL_SCENARIOS)
-
-def _scenario_text(item) -> str:
-    if isinstance(item, str):
-        return item
-    if isinstance(item, dict):
-        return str(item.get("scenario_text", "Описание не задано"))
-    return "Описание не задано"
-
-def attach_local_index(rows: list[dict]) -> list[dict]:
-    """
-    Для каждой пары (equipment_type, kind) сортируем по scenario_no
-    и присваиваем локальный индекс 0..N-1.
-    """
-    groups = {}
-    for r in rows:
-        key = (r["equipment_type"], r["substance_kind"])
-        groups.setdefault(key, []).append(r)
-
-    out = []
-    for key, items in groups.items():
-        items_sorted = sorted(items, key=lambda x: (x["scenario_no"] if x["scenario_no"] is not None else 0))
-        for i, r in enumerate(items_sorted):
-            rr = dict(r)
-            rr["_local_idx"] = i
-            out.append(rr)
-
-    # можно вернуть в удобной сортировке по оборудованию/сценарию
-    return sorted(out, key=lambda x: (x["equipment_name"], x["equipment_type"], x["substance_kind"], x["scenario_no"]))
-
-
-def get_description(equipment_type, kind, local_idx) -> str:
-    try:
-        lst = TYPICAL_SCENARIOS[str(equipment_type)][str(kind)]
-        if not isinstance(lst, list):
-            return "Описание не задано"
-        if local_idx < 0 or local_idx >= len(lst):
-            return "Описание не задано"
-        return _scenario_text(lst[local_idx])
-    except Exception:
-        return "Описание не задано"
-
-
-
-def set_cell_text(cell, text, bold=False):
+def set_cell_text(cell, text, bold: bool = False):
     cell.text = ""
     p = cell.paragraphs[0]
     run = p.add_run(str(text))
     set_run_font(run, bold=bold)
+
 
 def fill_table(table, obj: dict, sections, json_formatter):
     for section_title, fields in sections:
@@ -136,18 +99,6 @@ def render_section_at_marker(
         cur = insert_paragraph_after_table(doc, table, "")
 
 
-def _fmt_number(x, suffix=""):
-    if x is None:
-        return "-"
-    try:
-        # аккуратно: без научной нотации, разумно по месту
-        v = float(x)
-        s = f"{v:.6f}".rstrip("0").rstrip(".")
-        return (s + suffix).strip()
-    except Exception:
-        return str(x)
-
-
 def render_distribution_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
     """
     Горизонтальная таблица:
@@ -157,6 +108,8 @@ def render_distribution_table_at_marker(doc: Document, marker: str, title: str, 
     4) Агрегатное состояние
     5) Давление, МПа
     6) Температура, °C
+
+    Требование: округление чисел до 3 знаков после запятой.
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -181,91 +134,135 @@ def render_distribution_table_at_marker(doc: Document, marker: str, title: str, 
         row = table.add_row().cells
         set_cell_text(row[0], r.get("equipment_name") or "-")
         set_cell_text(row[1], r.get("substance_name") or "-")
-        set_cell_text(row[2], _fmt_number(r.get("amount_t")))
+        set_cell_text(row[2], format_float_3(r.get("amount_t")))
         set_cell_text(row[3], r.get("phase_state") if r.get("phase_state") is not None else "-")
-        set_cell_text(row[4], _fmt_number(r.get("pressure_mpa")))
-        set_cell_text(row[5], _fmt_number(r.get("substance_temperature_c")))
+        set_cell_text(row[4], format_float_3(r.get("pressure_mpa")))
+        set_cell_text(row[5], format_float_3(r.get("substance_temperature_c")))
 
     insert_paragraph_after_table(doc, table, "")
 
-# -------------------------------------------------
-# Сценарии: описание из typical_scenarios.json
-# Формат: scenarios[equipment_type][kind] -> list[ str | {"scenario_text": "..."} ]
-# scenario_no в calculations - сквозная нумерация; описание берём по позиции внутри пары (equipment_type, kind)
-# -------------------------------------------------
-def build_scenario_index_map(rows: list[dict]) -> dict:
+
+def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
+    """
+    Таблица: Оценка количества опасного вещества в аварии
+    Колонки:
+      1) № п/п
+      2) Наименование оборудования
+      3) Номер сценария (С{scenario_no})
+      4) Количество ОВ участвующего в аварии, т (ov_in_accident_t)
+      5) Количество ОВ в создании поражающего фактора, т (ov_in_hazard_factor_t)
+
+    Требование: округление чисел до 3 знаков после запятой.
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, title)
+    if p.runs:
+        set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+
+    hdr = table.rows[0].cells
+    set_cell_text(hdr[0], "№ п/п", bold=True)
+    set_cell_text(hdr[1], "Наименование оборудования", bold=True)
+    set_cell_text(hdr[2], "Номер сценария", bold=True)
+    set_cell_text(hdr[3], "Количество ОВ участвующего в аварии, т", bold=True)
+    set_cell_text(hdr[4], "Количество ОВ в создании поражающего фактора, т", bold=True)
+
+
+    # Порядок С1..Сn, внутри номера — по оборудованию
+    rows_sorted = sorted(
+        rows,
+        key=lambda r: (
+            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10**9,
+            str(r.get("equipment_name") or ""),
+        ),
+    )
+
+    for idx, r in enumerate(rows_sorted, start=1):
+        row = table.add_row().cells
+        set_cell_text(row[0], idx)
+        set_cell_text(row[1], r.get("equipment_name") or "-")
+        sc_no = r.get("scenario_no")
+        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
+        set_cell_text(row[3], format_float_3(r.get("ov_in_accident_t")))
+        set_cell_text(row[4], format_float_3(r.get("ov_in_hazard_factor_t")))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+def _load_typical_scenarios() -> dict:
+    """typical_scenarios.json не изменяем; читаем из стандартных мест."""
+    candidates = [
+        BASE_DIR / "calc" / "typical_scenarios.json",
+        BASE_DIR / "typical_scenarios.json",
+    ]
+    for p in candidates:
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                return json.load(f)
+    return {}
+
+
+def _scenario_item_to_text(item) -> str:
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        # поддержка {"scenario_text": "..."} и близких вариантов
+        return str(item.get("scenario_text") or item.get("text") or item.get("description") or "Описание не задано")
+    return "Описание не задано"
+
+
+def _get_scenarios_root(typical: dict) -> dict:
+    # root может быть либо сразу словарём, либо лежать в ключе "scenarios"
+    if isinstance(typical, dict) and "scenarios" in typical and isinstance(typical["scenarios"], dict):
+        return typical["scenarios"]
+    return typical if isinstance(typical, dict) else {}
+
+
+def _get_description_list(root: dict, equipment_type, kind):
+    # основной формат: root[equipment_type][kind] -> list
+    et = str(equipment_type)
+    kd = str(kind)
+    if et in root and isinstance(root[et], dict) and kd in root[et]:
+        return root[et][kd]
+    # запасной вариант: root[kind][equipment_type]
+    if kd in root and isinstance(root[kd], dict) and et in root[kd]:
+        return root[kd][et]
+    return None
+
+
+def _build_scenario_index(rows: list[dict]):
     """
     Для каждой пары (equipment_type, kind) строим отображение:
-    scenario_no -> локальный индекс (0..N-1), где N = число уникальных scenario_no для этой пары.
-    Это корректно при наличии нескольких единиц оборудования с одинаковой парой (equipment_type, kind).
+    scenario_no (уникальный, отсортированный) -> локальный индекс 0..N-1
     """
-    pair_to_set = {}
+    mapping = {}
     for r in rows:
-        et = r.get("equipment_type")
-        k = r.get("substance_kind")
-        sn = r.get("scenario_no")
-        if et is None or k is None or sn is None:
-            continue
-        pair_to_set.setdefault((et, k), set()).add(sn)
+        key = (r.get("equipment_type"), r.get("substance_kind"))
+        mapping.setdefault(key, set()).add(r.get("scenario_no"))
 
-    pair_to_map = {}
-    for pair, sset in pair_to_set.items():
-        ordered = sorted(sset)
-        pair_to_map[pair] = {sn: i for i, sn in enumerate(ordered)}
-    return pair_to_map
-
-
-def get_scenario_description(equipment_type, kind, scenario_no, index_map: dict) -> str:
-    """
-    В typical_scenarios.json описания заданы списком по паре (equipment_type, kind).
-    scenario_no в calculations — сквозной номер; берём позицию в списке по локальному индексу
-    внутри пары (equipment_type, kind) согласно отсортированным уникальным scenario_no для этой пары.
-    Поддерживаем варианты структуры:
-      - root[equipment_type][kind] -> list
-      - root[kind][equipment_type] -> list  (на случай иной вложенности)
-      - root может быть в ключе "scenarios"
-    """
-    try:
-        local_idx = index_map.get((equipment_type, kind), {}).get(scenario_no, None)
-        if local_idx is None:
-            return "Описание не задано"
-
-        root = TYPICAL_SCENARIOS_ROOT
-
-        lst = None
-        # основной вариант: [equipment_type][kind]
-        try:
-            lst = root[str(equipment_type)][str(kind)]
-        except Exception:
-            lst = None
-
-        # запасной вариант: [kind][equipment_type]
-        if lst is None:
-            try:
-                lst = root[str(kind)][str(equipment_type)]
-            except Exception:
-                lst = None
-
-        if not isinstance(lst, list):
-            return "Описание не задано"
-        if local_idx < 0 or local_idx >= len(lst):
-            return "Описание не задано"
-
-        return _scenario_text(lst[local_idx])
-    except Exception:
-        return "Описание не задано"
+    idx_map = {}
+    for key, sc_set in mapping.items():
+        sc_list = sorted([x for x in sc_set if x is not None])
+        idx_map[key] = {sc_no: i for i, sc_no in enumerate(sc_list)}
+    return idx_map
 
 
 def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
     """
-    Таблица:
-    1. № п/п
-    2. Наименование оборудования (equipment_name)
-    3. Номер сценария (С{scenario_no})
-    4. Описание сценария (typical_scenarios.json по equipment_type/kind и позиции)
-    5. Базовая частота, 1/год (base_frequency) - экспоненциальная
-    6. Условная вероятность, - (accident_event_probability)
-    7. Частота сценария аварии, 1/год (scenario_frequency) - экспоненциальная
+    Таблица сценариев:
+    1) № п/п
+    2) Наименование оборудования
+    3) Номер сценария (С{scenario_no})
+    4) Описание сценария (typical_scenarios.json по (equipment_type, kind) и позиции)
+    5) Базовая частота, 1/год (base_frequency, экспонента)
+    6) Условная вероятность, -
+    7) Частота сценария аварии, 1/год (scenario_frequency, экспонента)
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -279,6 +276,7 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
 
     table = insert_table_after(doc, p, rows=1, cols=7, style="Table Grid")
     hdr = table.rows[0].cells
+
     headers = [
         "№ п/п",
         "Наименование оборудования",
@@ -291,36 +289,42 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
     for i, h in enumerate(headers):
         set_cell_text(hdr[i], h, bold=True)
 
-    # строим индекс соответствия scenario_no -> позиция в списке описаний для пары (equipment_type, kind)
-    index_map = build_scenario_index_map(rows)
+    typical = _load_typical_scenarios()
+    root = _get_scenarios_root(typical)
+    idx_map = _build_scenario_index(rows)
 
-    # удобная сортировка
+    # Порядок: С1..Сn, внутри — по оборудованию
     rows_sorted = sorted(
         rows,
         key=lambda r: (
-            r.get("scenario_no") if r.get("scenario_no") is not None else 0,
+            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10**9,
             str(r.get("equipment_name") or ""),
         ),
     )
 
-    for n, r in enumerate(rows_sorted, start=1):
-        equipment_name = r.get("equipment_name") or "-"
-        scenario_no = r.get("scenario_no")
-        equipment_type = r.get("equipment_type")
-        substance_kind = r.get("substance_kind")
+    for i, r in enumerate(rows_sorted, start=1):
+        et = r.get("equipment_type")
+        kd = r.get("substance_kind")
+        sc_no = r.get("scenario_no")
 
-        desc = get_scenario_description(equipment_type, substance_kind, scenario_no, index_map)
+        local_idx = idx_map.get((et, kd), {}).get(sc_no, None)
+        desc_list = _get_description_list(root, et, kd)
+        if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
+            desc = _scenario_item_to_text(desc_list[local_idx])
+        else:
+            desc = "Описание не задано"
 
         row = table.add_row().cells
-        set_cell_text(row[0], n)
-        set_cell_text(row[1], equipment_name)
-        set_cell_text(row[2], f"С{scenario_no}" if scenario_no is not None else "-")
+        set_cell_text(row[0], i)
+        set_cell_text(row[1], r.get("equipment_name") or "-")
+        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
         set_cell_text(row[3], desc)
         set_cell_text(row[4], format_exp(r.get("base_frequency")))
         set_cell_text(row[5], r.get("accident_event_probability") if r.get("accident_event_probability") is not None else "-")
         set_cell_text(row[6], format_exp(r.get("scenario_frequency")))
 
     insert_paragraph_after_table(doc, table, "")
+
 
 
 def main():
@@ -331,6 +335,7 @@ def main():
         equipment = get_used_equipment(conn)
         distribution = get_hazard_distribution(conn)
         scenarios = get_scenarios(conn)
+        ov_amounts = get_ov_amounts_in_accident(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -366,6 +371,13 @@ def main():
         marker="{{SCENARIOS_SECTION}}",
         title="Сценарии аварий",
         rows=scenarios,
+    )
+
+    render_ov_amount_table_at_marker(
+        doc=doc,
+        marker="{{OV_AMOUNT_SECTION}}",
+        title="Оценка количества опасного вещества в аварии",
+        rows=ov_amounts,
     )
 
     doc.save(OUT_PATH)

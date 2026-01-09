@@ -117,3 +117,17 @@ def format_exp(value) -> str:
         return f"{float(value):.2e}"
     except Exception:
         return str(value)
+
+
+def format_float_3(value):
+    """
+    Округление до 3 знаков после запятой.
+    None -> '-'
+    """
+    if value is None:
+        return "-"
+
+    try:
+        return f"{float(value):.3f}"
+    except Exception:
+        return str(value)
