@@ -11,7 +11,8 @@ from report.db import (
     get_hazard_distribution,
     get_scenarios,
     get_ov_amounts_in_accident,
-    get_impact_zones
+    get_impact_zones,
+    get_personnel_casualties,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -211,6 +212,61 @@ def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, row
         set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
         set_cell_text(row[3], format_float_3(r.get("ov_in_accident_t")))
         set_cell_text(row[4], format_float_3(r.get("ov_in_hazard_factor_t")))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+def render_personnel_casualties_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
+    """Таблица: Оценка количества погибших/пострадавших.
+
+    Колонки из calculations:
+      1) № п/п
+      2) Наименование оборудования (equipment_name)
+      3) Номер сценария (С{scenario_no})
+      4) Количество погибших, чел (fatalities_count)
+      5) Количество пострадавших, чел (injured_count)
+
+    Требование: None заменить на "-".
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, title)
+    if p.runs:
+        set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+
+    hdr = table.rows[0].cells
+    set_cell_text(hdr[0], "№ п/п", bold=True)
+    set_cell_text(hdr[1], "Наименование оборудования", bold=True)
+    set_cell_text(hdr[2], "Номер сценария", bold=True)
+    set_cell_text(hdr[3], "Количество погибших, чел", bold=True)
+    set_cell_text(hdr[4], "Количество пострадавших, чел", bold=True)
+
+    # Порядок С1..Сn, внутри номера — по оборудованию
+    rows_sorted = sorted(
+        rows,
+        key=lambda r: (
+            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10**9,
+            str(r.get("equipment_name") or ""),
+        ),
+    )
+
+    for idx, r in enumerate(rows_sorted, start=1):
+        sc_no = r.get("scenario_no")
+        row = table.add_row().cells
+        set_cell_text(row[0], idx)
+        set_cell_text(row[1], r.get("equipment_name") or "-")
+        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
+
+        fat = r.get("fatalities_count")
+        inj = r.get("injured_count")
+        set_cell_text(row[3], fat if fat is not None else "-")
+        set_cell_text(row[4], inj if inj is not None else "-")
 
     insert_paragraph_after_table(doc, table, "")
 
@@ -440,6 +496,7 @@ def main():
         scenarios = get_scenarios(conn)
         ov_amounts = get_ov_amounts_in_accident(conn)
         impact_zones = get_impact_zones(conn)
+        casualties = get_personnel_casualties(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -488,6 +545,13 @@ def main():
         doc,
         "{{IMPACT_ZONES_SECTION}}",
         impact_zones
+    )
+
+    render_personnel_casualties_table_at_marker(
+        doc=doc,
+        marker="{{CASUALTIES_SECTION}}",
+        title="Оценка количества погибших/пострадавших",
+        rows=casualties,
     )
 
     doc.save(OUT_PATH)

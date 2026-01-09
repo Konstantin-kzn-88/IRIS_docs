@@ -150,5 +150,29 @@ def get_impact_zones(conn) -> list[dict]:
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
+def get_personnel_casualties(conn) -> list[dict]:
+    """Оценка количества погибших/пострадавших (по таблице calculations).
+
+    Возвращает строки с полями:
+      - equipment_name
+      - scenario_no
+      - fatalities_count
+      - injured_count
+    """
+    sql = """
+    SELECT
+        e.equipment_name AS equipment_name,
+        c.scenario_no AS scenario_no,
+        c.fatalities_count AS fatalities_count,
+        c.injured_count AS injured_count
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    ORDER BY c.scenario_no, e.equipment_name
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
 def open_db(db_path):
     return sqlite3.connect(db_path)
