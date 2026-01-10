@@ -131,3 +131,15 @@ def format_float_3(value):
         return f"{float(value):.3f}"
     except Exception:
         return str(value)
+
+def format_float_1(value):
+    """
+    Округление до 1 знака после запятой.
+    None -> '-'
+    """
+    if value is None:
+        return "-"
+    try:
+        return f"{float(value):.1f}"
+    except Exception:
+        return str(value)

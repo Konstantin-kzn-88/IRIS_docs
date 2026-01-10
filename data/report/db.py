@@ -174,5 +174,28 @@ def get_personnel_casualties(conn) -> list[dict]:
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+
+def get_damage(conn) -> list[dict]:
+    sql = """
+    SELECT
+        e.equipment_name AS equipment_name,
+        c.scenario_no AS scenario_no,
+
+        c.direct_losses AS direct_losses,
+        c.liquidation_costs AS liquidation_costs,
+        c.social_losses AS social_losses,
+        c.indirect_damage AS indirect_damage,
+        c.total_environmental_damage AS total_environmental_damage,
+        c.total_damage AS total_damage
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    ORDER BY c.scenario_no, e.equipment_name
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
 def open_db(db_path):
     return sqlite3.connect(db_path)

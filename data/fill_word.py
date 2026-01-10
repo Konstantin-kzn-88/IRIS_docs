@@ -13,6 +13,7 @@ from report.db import (
     get_ov_amounts_in_accident,
     get_impact_zones,
     get_personnel_casualties,
+    get_damage,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -21,6 +22,7 @@ from report.formatters import (
     pretty_json_generic,
     format_exp,
     format_float_3,
+    format_float_1,
 )
 from report.word_utils import (
     find_paragraph_with_marker,
@@ -31,6 +33,7 @@ from report.word_utils import (
     add_section_header_row,
     set_run_font,
 )
+
 
 
 def set_cell_text(cell, text, bold: bool = False):
@@ -89,13 +92,13 @@ def fmt(value):
 
 
 def render_section_at_marker(
-    doc: Document,
-    marker: str,
-    section_title: str,
-    items: list[dict],
-    item_title_field: str,
-    sections,
-    json_formatter,
+        doc: Document,
+        marker: str,
+        section_title: str,
+        items: list[dict],
+        item_title_field: str,
+        sections,
+        json_formatter,
 ):
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -194,12 +197,11 @@ def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, row
     set_cell_text(hdr[3], "Количество ОВ участвующего в аварии, т", bold=True)
     set_cell_text(hdr[4], "Количество ОВ в создании поражающего фактора, т", bold=True)
 
-
     # Порядок С1..Сn, внутри номера — по оборудованию
     rows_sorted = sorted(
         rows,
         key=lambda r: (
-            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10**9,
+            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10 ** 9,
             str(r.get("equipment_name") or ""),
         ),
     )
@@ -251,7 +253,7 @@ def render_personnel_casualties_table_at_marker(doc: Document, marker: str, titl
     rows_sorted = sorted(
         rows,
         key=lambda r: (
-            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10**9,
+            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10 ** 9,
             str(r.get("equipment_name") or ""),
         ),
     )
@@ -373,7 +375,7 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
     rows_sorted = sorted(
         rows,
         key=lambda r: (
-            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10**9,
+            int(r.get("scenario_no")) if r.get("scenario_no") is not None else 10 ** 9,
             str(r.get("equipment_name") or ""),
         ),
     )
@@ -396,7 +398,8 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
         set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
         set_cell_text(row[3], desc)
         set_cell_text(row[4], format_exp(r.get("base_frequency")))
-        set_cell_text(row[5], r.get("accident_event_probability") if r.get("accident_event_probability") is not None else "-")
+        set_cell_text(row[5],
+                      r.get("accident_event_probability") if r.get("accident_event_probability") is not None else "-")
         set_cell_text(row[6], format_exp(r.get("scenario_frequency")))
 
     insert_paragraph_after_table(doc, table, "")
@@ -485,6 +488,49 @@ def render_impact_zones_table(doc, marker: str, rows: list[dict]):
         set_cell_text(row[22], fmt(r["s_t"]))
 
 
+def render_damage_table_at_marker(doc, marker: str, rows: list[dict]):
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Ущерб")
+    set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=9, style="Table Grid")
+
+    headers = [
+        "№ п/п",
+        "Наименование оборудования",
+        "Номер сценария",
+        "Прямые потери, тыс.руб",
+        "Затраты на ликвидацию, тыс.руб",
+        "Социальные потери, тыс.руб",
+        "Косвенный ущерб, тыс.руб",
+        "Экологический ущерб, тыс.руб",
+        "Суммарный ущерб, тыс.руб",
+    ]
+
+    for i, h in enumerate(headers):
+        set_cell_text(table.rows[0].cells[i], h, bold=True)
+
+    for idx, r in enumerate(rows, start=1):
+        row = table.add_row().cells
+        set_cell_text(row[0], idx)
+        set_cell_text(row[1], r.get("equipment_name", "-"))
+        set_cell_text(row[2], f"С{r.get('scenario_no')}" if r.get("scenario_no") is not None else "-")
+
+        set_cell_text(row[3], format_float_1(r.get("direct_losses")))
+        set_cell_text(row[4], format_float_1(r.get("liquidation_costs")))
+        set_cell_text(row[5], format_float_1(r.get("social_losses")))
+        set_cell_text(row[6], format_float_1(r.get("indirect_damage")))
+        set_cell_text(row[7], format_float_1(r.get("total_environmental_damage")))
+        set_cell_text(row[8], format_float_1(r.get("total_damage")))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
 
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -497,6 +543,7 @@ def main():
         ov_amounts = get_ov_amounts_in_accident(conn)
         impact_zones = get_impact_zones(conn)
         casualties = get_personnel_casualties(conn)
+        damage_rows = get_damage(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -554,10 +601,14 @@ def main():
         rows=casualties,
     )
 
+    render_damage_table_at_marker(
+        doc=doc,
+        marker="{{DAMAGE_SECTION}}",
+        rows=damage_rows,
+    )
+
     doc.save(OUT_PATH)
     print("Отчёт сформирован:", OUT_PATH)
-
-
 
 
 if __name__ == "__main__":
