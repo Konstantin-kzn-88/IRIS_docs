@@ -426,3 +426,100 @@ def save_component_damage_chart(rows, path: Path, title: str = "Распреде
     plt.tight_layout()
     plt.savefig(path, dpi=200, bbox_inches="tight")
     plt.close()
+
+
+def save_risk_matrix_chart(rows, path: Path, title: str = "Матрица риска (частота – последствия)"):
+    """
+    Специализированная матрица:
+      X = fatalities_count (>=1)
+      Y = scenario_frequency (лог)
+      Размер точки ~ частоте
+      Подписи крупнее
+    """
+    if not rows:
+        return
+
+    pts = []
+    for r in rows:
+        try:
+            x = int(r.get("fatalities_count"))
+            y = float(r.get("scenario_frequency"))
+        except Exception:
+            continue
+        if x < 1 or y <= 0:
+            continue
+        pts.append((x, y, r.get("scenario_no")))
+
+    if not pts:
+        return
+
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+
+    import math
+    y_min, y_max = min(ys), max(ys)
+    denom = (math.log10(y_max) - math.log10(y_min)) if y_max > y_min else 1.0
+
+    sizes = []
+    for y in ys:
+        t = (math.log10(y) - math.log10(y_min)) / (denom + 1e-12)
+        t = max(0.0, min(1.0, t))
+        sizes.append(25 + 60 * t)  # диапазон размеров
+
+    # линии матрицы (дефолтные пороги)
+    freq_levels = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]
+    cons_levels = [1, 3, 10]
+
+    plt.figure(figsize=(12, 6))
+    ax = plt.gca()
+    ax.set_yscale("log")
+
+    # горизонтальные линии по частоте
+    for f in freq_levels:
+        if abs(f - 1e-6) < 1e-12:
+            ax.axhline(
+                f,
+                color="green",
+                linestyle="--",
+                linewidth=1.5,
+            )
+        elif abs(f - 1e-4) < 1e-12:
+            ax.axhline(
+                f,
+                color="red",
+                linestyle="--",
+                linewidth=1.5,
+            )
+        else:
+            ax.axhline(
+                f,
+                linewidth=1,
+            )
+    for n in cons_levels:
+        ax.axvline(n, linewidth=1)
+
+    ax.scatter(xs, ys, s=sizes)
+
+    for x, y, sc_no in pts:
+        if sc_no is None:
+            continue
+        ax.annotate(
+            f"С{sc_no}",
+            (x, y),
+            textcoords="offset points",
+            xytext=(4, 3),
+            fontsize=11,
+        )
+
+    ax.set_title(title)
+    ax.set_xlabel("Последствия: число погибших, чел")
+    ax.set_ylabel("Частота сценария, 1/год")
+
+    ax.set_xlim(left=0, right=max(xs) + 1)
+    ax.set_ylim(bottom=min(ys) / 2, top=max(ys) * 2)
+
+    ax.grid(True, which="both")
+
+    plt.tight_layout()
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()

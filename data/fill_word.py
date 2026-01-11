@@ -23,7 +23,8 @@ from report.db import (
     get_pareto_risk_source_rows,
     get_pareto_damage_source_rows,
     get_pareto_environmental_damage_source_rows,
-    get_max_losses_by_hazard_component
+    get_max_losses_by_hazard_component,
+    get_risk_matrix_rows,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -52,6 +53,7 @@ from report.charts import (
     build_pareto_series,
     save_pareto_chart,
     save_component_damage_chart,
+    save_risk_matrix_chart,
 )
 
 
@@ -815,6 +817,7 @@ def render_pareto_environmental_damage_chart_at_marker(doc: Document, marker: st
         image_path,
     )
 
+
 def render_component_damage_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
     image_path = None
     if rows:
@@ -830,6 +833,24 @@ def render_component_damage_chart_at_marker(doc: Document, marker: str, rows: li
         image_path=image_path,
         width_cm=16.0,
     )
+
+
+def render_risk_matrix_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
+    image_path = None
+    if rows:
+        charts_dir = OUT_PATH.parent / "charts"
+        charts_dir.mkdir(parents=True, exist_ok=True)
+        image_path = charts_dir / "risk_matrix.png"
+        save_risk_matrix_chart(rows, image_path)
+
+    render_chart_at_marker(
+        doc=doc,
+        marker=marker,
+        title="Матрица риска (частота – последствия)",
+        image_path=image_path,
+        width_cm=16.0,
+    )
+
 
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -853,6 +874,7 @@ def main():
         pareto_damage_rows = get_pareto_damage_source_rows(conn)
         pareto_env_rows = get_pareto_environmental_damage_source_rows(conn)
         component_damage_rows = get_max_losses_by_hazard_component(conn)
+        risk_matrix_rows = get_risk_matrix_rows(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -975,6 +997,11 @@ def main():
         component_damage_rows,
     )
 
+    render_risk_matrix_chart_at_marker(
+        doc,
+        "{{RISK_MATRIX_CHART}}",
+        risk_matrix_rows,
+    )
 
     doc.save(OUT_PATH)
     print("Отчёт сформирован:", OUT_PATH)

@@ -376,5 +376,24 @@ def get_max_losses_by_hazard_component(conn) -> list[dict]:
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+
+def get_risk_matrix_rows(conn) -> list[dict]:
+    sql = """
+    SELECT
+        e.equipment_name AS equipment_name,
+        c.scenario_no AS scenario_no,
+        c.scenario_frequency AS scenario_frequency,
+        c.fatalities_count AS fatalities_count
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    WHERE c.scenario_frequency IS NOT NULL
+      AND c.fatalities_count IS NOT NULL
+      AND c.fatalities_count >= 1
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
 def open_db(db_path):
     return sqlite3.connect(db_path)
