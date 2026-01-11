@@ -360,5 +360,21 @@ def get_pareto_environmental_damage_source_rows(conn):
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
+def get_max_losses_by_hazard_component(conn) -> list[dict]:
+    sql = """
+    SELECT
+        e.hazard_component AS hazard_component,
+        MAX(c.direct_losses) AS max_direct_losses,
+        MAX(c.total_environmental_damage) AS max_total_environmental_damage
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    GROUP BY e.hazard_component
+    ORDER BY e.hazard_component
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
 def open_db(db_path):
     return sqlite3.connect(db_path)

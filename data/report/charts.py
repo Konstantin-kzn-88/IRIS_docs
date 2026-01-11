@@ -370,3 +370,59 @@ def limit_pareto_series(series, top_n=20):
     if other_sum > 0:
         head.append(("Прочие", other_sum))
     return head
+
+
+def save_component_damage_chart(rows, path: Path, title: str = "Распределение ущерба по составляющим ОПО"):
+    """
+    rows: list of dicts with keys:
+      - hazard_component
+      - max_direct_losses
+      - max_total_environmental_damage
+    """
+    if not rows:
+        return
+
+    # подготовка + сортировка по сумме
+    data = []
+    for r in rows:
+        comp = r.get("hazard_component")
+        d = r.get("max_direct_losses")
+        e = r.get("max_total_environmental_damage")
+        if comp is None:
+            continue
+        d = float(d) if d is not None else 0.0
+        e = float(e) if e is not None else 0.0
+        data.append((str(comp), d, e))
+
+    if not data:
+        return
+
+    data.sort(key=lambda x: (x[1] + x[2]), reverse=True)
+
+    labels = [x[0] for x in data]
+    direct = [x[1] for x in data]
+    env = [x[2] for x in data]
+
+    x = list(range(len(labels)))
+
+    plt.figure(figsize=(12, 6))
+    ax = plt.gca()
+
+    # stacked bar: нижний сегмент Прямой, сверху Экологический
+    ax.bar(x, direct, label="Прямой")
+    ax.bar(x, env, bottom=direct, label="Экологический")
+
+    ax.set_title(title)
+    ax.set_xlabel("Составляющая ОПО")
+    ax.set_ylabel("Ущерб, тыс. руб")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.tick_params(axis="x", labelrotation=90, labelsize=8)
+
+    ax.grid(True, axis="y")
+    ax.legend()
+
+    plt.tight_layout()
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()

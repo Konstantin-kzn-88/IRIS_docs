@@ -23,6 +23,7 @@ from report.db import (
     get_pareto_risk_source_rows,
     get_pareto_damage_source_rows,
     get_pareto_environmental_damage_source_rows,
+    get_max_losses_by_hazard_component
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -50,6 +51,7 @@ from report.charts import (
     save_fg_chart,
     build_pareto_series,
     save_pareto_chart,
+    save_component_damage_chart,
 )
 
 
@@ -813,6 +815,21 @@ def render_pareto_environmental_damage_chart_at_marker(doc: Document, marker: st
         image_path,
     )
 
+def render_component_damage_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
+    image_path = None
+    if rows:
+        charts_dir = OUT_PATH.parent / "charts"
+        charts_dir.mkdir(parents=True, exist_ok=True)
+        image_path = charts_dir / "damage_by_component.png"
+        save_component_damage_chart(rows, image_path)
+
+    render_chart_at_marker(
+        doc=doc,
+        marker=marker,
+        title="Распределение ущерба по составляющим ОПО",
+        image_path=image_path,
+        width_cm=16.0,
+    )
 
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -835,6 +852,7 @@ def main():
         pareto_rows = get_pareto_risk_source_rows(conn)
         pareto_damage_rows = get_pareto_damage_source_rows(conn)
         pareto_env_rows = get_pareto_environmental_damage_source_rows(conn)
+        component_damage_rows = get_max_losses_by_hazard_component(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -950,6 +968,13 @@ def main():
         "{{PARETO_ENV_DAMAGE_CHART}}",
         pareto_env_rows,
     )
+
+    render_component_damage_chart_at_marker(
+        doc,
+        "{{DAMAGE_BY_COMPONENT_CHART}}",
+        component_damage_rows,
+    )
+
 
     doc.save(OUT_PATH)
     print("Отчёт сформирован:", OUT_PATH)
