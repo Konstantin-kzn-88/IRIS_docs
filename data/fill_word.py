@@ -22,6 +22,7 @@ from report.db import (
     get_fg_source_rows,
     get_pareto_risk_source_rows,
     get_pareto_damage_source_rows,
+    get_pareto_environmental_damage_source_rows,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -776,7 +777,7 @@ def render_pareto_damage_chart_at_marker(doc: Document, marker: str, rows: list[
         save_pareto_chart(
             series=series,
             path=image_path,
-            title="Pareto сценариев по суммарному ущербу",
+            title="Pareto-диаграмма (вклад) сценариев по суммарному ущербу",
             ylabel="Суммарный ущерб, тыс.руб",
         )
 
@@ -786,6 +787,30 @@ def render_pareto_damage_chart_at_marker(doc: Document, marker: str, rows: list[
         title="Pareto сценариев по суммарному ущербу",
         image_path=image_path,
         width_cm=16.0,
+    )
+
+
+def render_pareto_environmental_damage_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
+    series = build_pareto_series(rows, value_key="total_environmental_damage")
+    image_path = None
+
+    if series:
+        charts_dir = OUT_PATH.parent / "charts"
+        charts_dir.mkdir(parents=True, exist_ok=True)
+        image_path = charts_dir / "pareto_environmental_damage.png"
+
+        save_pareto_chart(
+            series=series,
+            path=image_path,
+            title="Pareto-диаграмма (вклад) сценариев по экологическому ущербу",
+            ylabel="Экологический ущерб, тыс.руб",
+        )
+
+    render_chart_at_marker(
+        doc,
+        marker,
+        "Pareto сценариев по экологическому ущербу",
+        image_path,
     )
 
 
@@ -809,6 +834,7 @@ def main():
         fg_rows = get_fg_source_rows(conn)
         pareto_rows = get_pareto_risk_source_rows(conn)
         pareto_damage_rows = get_pareto_damage_source_rows(conn)
+        pareto_env_rows = get_pareto_environmental_damage_source_rows(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -918,6 +944,12 @@ def main():
 
     render_pareto_fatalities_chart_at_marker(doc, "{{PARETO_FATALITIES_CHART}}", pareto_rows)
     render_pareto_injured_chart_at_marker(doc, "{{PARETO_INJURED_CHART}}", pareto_rows)
+
+    render_pareto_environmental_damage_chart_at_marker(
+        doc,
+        "{{PARETO_ENV_DAMAGE_CHART}}",
+        pareto_env_rows,
+    )
 
     doc.save(OUT_PATH)
     print("Отчёт сформирован:", OUT_PATH)
