@@ -523,3 +523,72 @@ def save_risk_matrix_chart(rows, path: Path, title: str = "Матрица рис
     plt.tight_layout()
     plt.savefig(path, dpi=200, bbox_inches="tight")
     plt.close()
+
+
+def save_risk_matrix_chart_damage(rows, path: Path, title: str = "Матрица риска (частота – ущерб)"):
+    """
+    X = total_damage (млн руб)
+    Y = scenario_frequency (1/год), лог шкала
+    Размер точки ~ частоте
+    Пороговых линий нет
+    """
+    if not rows:
+        return
+
+    pts = []
+    for r in rows:
+        try:
+            x = float(r.get("total_damage")) / 1000.0  # тыс.руб -> млн.руб
+            y = float(r.get("scenario_frequency"))
+        except Exception:
+            continue
+        if x <= 0 or y <= 0:
+            continue
+        pts.append((x, y, r.get("scenario_no")))
+
+    if not pts:
+        return
+
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+
+    import math
+    y_min, y_max = min(ys), max(ys)
+    denom = (math.log10(y_max) - math.log10(y_min)) if y_max > y_min else 1.0
+
+    sizes = []
+    for y in ys:
+        t = (math.log10(y) - math.log10(y_min)) / (denom + 1e-12)
+        t = max(0.0, min(1.0, t))
+        sizes.append(25 + 60 * t)
+
+    plt.figure(figsize=(12, 6))
+    ax = plt.gca()
+    ax.set_yscale("log")
+
+    ax.scatter(xs, ys, s=sizes)
+
+    # подписи крупнее
+    for x, y, sc_no in pts:
+        if sc_no is None:
+            continue
+        ax.annotate(
+            f"С{sc_no}",
+            (x, y),
+            textcoords="offset points",
+            xytext=(4, 3),
+            fontsize=11,
+        )
+
+    ax.set_title(title)
+    ax.set_xlabel("Последствия: суммарный ущерб, млн руб")
+    ax.set_ylabel("Частота сценария, 1/год")
+
+    ax.set_xlim(left=0, right=max(xs) * 1.05)
+    ax.set_ylim(bottom=min(ys) / 2, top=max(ys) * 2)
+
+    ax.grid(True, which="both")
+
+    plt.tight_layout()
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()

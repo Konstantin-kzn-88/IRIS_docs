@@ -25,6 +25,7 @@ from report.db import (
     get_pareto_environmental_damage_source_rows,
     get_max_losses_by_hazard_component,
     get_risk_matrix_rows,
+    get_risk_matrix_damage_rows,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -54,6 +55,7 @@ from report.charts import (
     save_pareto_chart,
     save_component_damage_chart,
     save_risk_matrix_chart,
+    save_risk_matrix_chart_damage,
 )
 
 
@@ -852,6 +854,24 @@ def render_risk_matrix_chart_at_marker(doc: Document, marker: str, rows: list[di
     )
 
 
+
+def render_risk_matrix_damage_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
+    image_path = None
+    if rows:
+        charts_dir = OUT_PATH.parent / "charts"
+        charts_dir.mkdir(parents=True, exist_ok=True)
+        image_path = charts_dir / "risk_matrix_damage.png"
+        save_risk_matrix_chart_damage(rows, image_path)
+
+    render_chart_at_marker(
+        doc=doc,
+        marker=marker,
+        title="Матрица риска (частота – ущерб)",
+        image_path=image_path,
+        width_cm=16.0,
+    )
+
+
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -875,6 +895,7 @@ def main():
         pareto_env_rows = get_pareto_environmental_damage_source_rows(conn)
         component_damage_rows = get_max_losses_by_hazard_component(conn)
         risk_matrix_rows = get_risk_matrix_rows(conn)
+        risk_matrix_damage_rows = get_risk_matrix_damage_rows(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -1001,6 +1022,12 @@ def main():
         doc,
         "{{RISK_MATRIX_CHART}}",
         risk_matrix_rows,
+    )
+
+    render_risk_matrix_damage_chart_at_marker(
+        doc,
+        "{{RISK_MATRIX_DAMAGE_CHART}}",
+        risk_matrix_damage_rows,
     )
 
     doc.save(OUT_PATH)

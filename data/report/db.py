@@ -395,5 +395,24 @@ def get_risk_matrix_rows(conn) -> list[dict]:
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+
+def get_risk_matrix_damage_rows(conn) -> list[dict]:
+    sql = """
+    SELECT
+        c.scenario_no AS scenario_no,
+        c.scenario_frequency AS scenario_frequency,
+        c.total_damage AS total_damage
+    FROM calculations c
+    WHERE c.scenario_frequency IS NOT NULL
+      AND c.total_damage IS NOT NULL
+      AND c.total_damage > 0
+      AND c.scenario_frequency > 0
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
 def open_db(db_path):
     return sqlite3.connect(db_path)
