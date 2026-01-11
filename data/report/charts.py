@@ -276,3 +276,97 @@ if __name__ == '__main__':
     save_fg_chart(fg_points, Path("fg_chart.png"))
 
     print("Диаграммы сохранены: fn_chart.png, fg_chart.png")
+
+
+# ---------------------------
+# Pareto (сценарии по риску)
+# ---------------------------
+
+def build_pareto_series(rows, value_key):
+    """
+    rows: list of dicts
+    value_key: ключ значения (например 'collective_risk_fatalities' или 'total_damage')
+    label формируется как '<equipment_name> / С<scenario_no>'
+    """
+    series = []
+
+    for r in rows:
+        val = r.get(value_key)
+        if val is None:
+            continue
+
+        label = f"{r.get('equipment_name', '')} / С{r.get('scenario_no')}"
+        series.append((label, float(val)))
+
+    # сортировка по убыванию вклада
+    series.sort(key=lambda x: x[1], reverse=True)
+    return series
+
+def save_pareto_chart(series, path: Path, title: str, ylabel: str):
+    if not series:
+        return
+
+    # --- ограничиваем Top-20 ---
+    series = limit_pareto_series(series, top_n=20)
+
+    labels = [s[0] for s in series]
+    values = [s[1] for s in series]
+
+    total = sum(values)
+    cum_values = []
+    s = 0.0
+    for v in values:
+        s += v
+        cum_values.append(100.0 * s / total if total > 0 else 0.0)
+
+    x = range(len(values))
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.bar(x, values)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.tick_params(axis="x", labelrotation=90, labelsize=7)
+
+    ax2 = ax.twinx()
+    ax2.plot(
+        x,
+        cum_values,
+        color="orange",
+        marker="o",
+        linewidth=2,
+    )
+    ax2.set_ylabel("Накопленная доля, %")
+    ax2.set_ylim(0, 105)
+
+    # линия 80% по правой оси
+    ax2.axhline(
+        y=80,
+        color="red",
+        linestyle="--",
+        linewidth=1.5,
+    )
+
+    ax.grid(True, axis="y")
+
+    plt.tight_layout()
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()
+
+def limit_pareto_series(series, top_n=20):
+    """
+    series: list of (label, value), отсортированный по убыванию value
+    Возвращает Top-N + ('Прочие', сумма остальных)
+    """
+    if not series or len(series) <= top_n:
+        return series
+
+    head = series[:top_n]
+    tail = series[top_n:]
+    other_sum = sum(v for _, v in tail)
+
+    if other_sum > 0:
+        head.append(("Прочие", other_sum))
+    return head

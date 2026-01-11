@@ -305,5 +305,42 @@ def get_fg_source_rows(conn) -> list[dict]:
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+
+def get_pareto_risk_source_rows(conn) -> list[dict]:
+    """
+    Источник для Pareto по риску (сценарии/оборудование).
+    Возвращает строки по каждому (equipment, scenario_no) с рассчитанными в calculations показателями риска.
+    """
+    sql = """
+    SELECT
+        e.equipment_name AS equipment_name,
+        c.scenario_no AS scenario_no,
+        c.collective_risk_fatalities AS collective_risk_fatalities,
+        c.collective_risk_injured AS collective_risk_injured
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    ORDER BY c.scenario_no, e.equipment_name
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
+def get_pareto_damage_source_rows(conn) -> list[dict]:
+    sql = """
+    SELECT
+        e.equipment_name AS equipment_name,
+        c.scenario_no AS scenario_no,
+        c.total_damage AS total_damage
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    WHERE c.total_damage IS NOT NULL
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
 def open_db(db_path):
     return sqlite3.connect(db_path)

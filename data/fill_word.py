@@ -20,6 +20,8 @@ from report.db import (
     get_max_damage_by_hazard_component,
     get_fn_source_rows,
     get_fg_source_rows,
+    get_pareto_risk_source_rows,
+    get_pareto_damage_source_rows,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -45,7 +47,10 @@ from report.charts import (
     build_fg_points,
     save_fn_chart,
     save_fg_chart,
+    build_pareto_series,
+    save_pareto_chart,
 )
+
 
 def set_cell_text(cell, text, bold: bool = False):
     cell.text = ""
@@ -714,6 +719,76 @@ def render_fg_chart_at_marker(doc: Document, marker: str, fg_rows: list[dict]):
     )
 
 
+def render_pareto_fatalities_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
+    """Pareto по коллективному риску гибели (collective_risk_fatalities)"""
+    series = build_pareto_series(rows, "collective_risk_fatalities")
+    charts_dir = OUT_PATH.parent / "charts"
+    charts_dir.mkdir(parents=True, exist_ok=True)
+    img_path = charts_dir / "pareto_fatalities.png" if series else None
+    if series:
+        save_pareto_chart(
+            series,
+            img_path,
+            title="Pareto-диаграмма (вклад) сценариев по коллективному риску гибели",
+            ylabel="Коллективный риск гибели, чел·год⁻¹",
+        )
+    render_chart_at_marker(
+        doc=doc,
+        marker=marker,
+        title="Pareto сценариев по коллективному риску гибели",
+        image_path=img_path,
+        width_cm=16.0,
+    )
+
+
+def render_pareto_injured_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
+    """Pareto по коллективному риску ранения (collective_risk_injured)"""
+    series = build_pareto_series(rows, "collective_risk_injured")
+    charts_dir = OUT_PATH.parent / "charts"
+    charts_dir.mkdir(parents=True, exist_ok=True)
+    img_path = charts_dir / "pareto_injured.png" if series else None
+    if series:
+        save_pareto_chart(
+            series,
+            img_path,
+            title="Pareto-диаграмма (вклад) сценариев по коллективному риску ранения",
+            ylabel="Коллективный риск ранения, чел·год⁻¹",
+        )
+    render_chart_at_marker(
+        doc=doc,
+        marker=marker,
+        title="Pareto сценариев по коллективному риску ранения",
+        image_path=img_path,
+        width_cm=16.0,
+    )
+
+
+def render_pareto_damage_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
+    # собираем серии: подпись = "equipment / Сn", значение = total_damage
+    series = build_pareto_series(rows, value_key="total_damage")
+    image_path = None
+
+    if series:
+        charts_dir = OUT_PATH.parent / "charts"
+        charts_dir.mkdir(parents=True, exist_ok=True)
+        image_path = charts_dir / "pareto_damage.png"
+
+        save_pareto_chart(
+            series=series,
+            path=image_path,
+            title="Pareto сценариев по суммарному ущербу",
+            ylabel="Суммарный ущерб, тыс.руб",
+        )
+
+    render_chart_at_marker(
+        doc=doc,
+        marker=marker,
+        title="Pareto сценариев по суммарному ущербу",
+        image_path=image_path,
+        width_cm=16.0,
+    )
+
+
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -732,6 +807,8 @@ def main():
         max_damage_rows = get_max_damage_by_hazard_component(conn)
         fn_rows = get_fn_source_rows(conn)
         fg_rows = get_fg_source_rows(conn)
+        pareto_rows = get_pareto_risk_source_rows(conn)
+        pareto_damage_rows = get_pareto_damage_source_rows(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -832,6 +909,15 @@ def main():
         "{{FG_CHART}}",
         fg_rows,
     )
+
+    render_pareto_damage_chart_at_marker(
+        doc,
+        "{{PARETO_DAMAGE_CHART}}",
+        pareto_damage_rows,
+    )
+
+    render_pareto_fatalities_chart_at_marker(doc, "{{PARETO_FATALITIES_CHART}}", pareto_rows)
+    render_pareto_injured_chart_at_marker(doc, "{{PARETO_INJURED_CHART}}", pareto_rows)
 
     doc.save(OUT_PATH)
     print("Отчёт сформирован:", OUT_PATH)
