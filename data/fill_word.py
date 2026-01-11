@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-
+from docx.shared import Cm
 from docx import Document
 
 from report.paths import BASE_DIR, DB_PATH, TEMPLATE_PATH, OUT_PATH
@@ -14,6 +14,12 @@ from report.db import (
     get_impact_zones,
     get_personnel_casualties,
     get_damage,
+    get_collective_risk,
+    get_individual_risk,
+    get_fatal_accident_frequency_range,
+    get_max_damage_by_hazard_component,
+    get_fn_source_rows,
+    get_fg_source_rows,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -34,7 +40,12 @@ from report.word_utils import (
     set_run_font,
 )
 
-
+from report.charts import (
+    build_fn_points,
+    build_fg_points,
+    save_fn_chart,
+    save_fg_chart,
+)
 
 def set_cell_text(cell, text, bold: bool = False):
     cell.text = ""
@@ -531,6 +542,177 @@ def render_damage_table_at_marker(doc, marker: str, rows: list[dict]):
     insert_paragraph_after_table(doc, table, "")
 
 
+def render_collective_risk_table(doc, marker: str, rows: list[dict]):
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Коллективный риск")
+    set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=3, style="Table Grid")
+
+    headers = [
+        "Составляющая ОПО",
+        "Коллективный риск гибели, чел·год⁻¹",
+        "Коллективный риск ранения, чел·год⁻¹",
+    ]
+
+    for i, h in enumerate(headers):
+        set_cell_text(table.rows[0].cells[i], h, bold=True)
+
+    for r in rows:
+        row = table.add_row().cells
+        set_cell_text(row[0], r.get("hazard_component", "-"))
+        set_cell_text(row[1], format_exp(r.get("collective_risk_fatalities")))
+        set_cell_text(row[2], format_exp(r.get("collective_risk_injured")))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+def render_individual_risk_table(doc, marker: str, rows: list[dict]):
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Индивидуальный риск")
+    set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=3, style="Table Grid")
+
+    headers = [
+        "Составляющая ОПО",
+        "Индивидуальный риск гибели, 1·год⁻¹",
+        "Индивидуальный риск ранения, 1·год⁻¹",
+    ]
+
+    for i, h in enumerate(headers):
+        set_cell_text(table.rows[0].cells[i], h, bold=True)
+
+    for r in rows:
+        row = table.add_row().cells
+        set_cell_text(row[0], r.get("hazard_component", "-"))
+        set_cell_text(row[1], format_exp(r.get("individual_risk_fatalities")))
+        set_cell_text(row[2], format_exp(r.get("individual_risk_injured")))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+def render_fatal_accident_frequency_text(doc, marker: str, min_freq, max_freq):
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    if min_freq is None or max_freq is None:
+        text = "Частота аварии с гибелью не менее одного человека равна 0."
+        p = insert_paragraph_after(doc, p_marker, text)
+        set_run_font(p.runs[0], bold=False)
+        return
+
+    text = (
+        "Частота аварии с гибелью не менее одного человека "
+        f"лежит в диапазоне для объекта от {format_exp(min_freq)} "
+        f"и до {format_exp(max_freq)} 1/год."
+    )
+
+    p = insert_paragraph_after(doc, p_marker, text)
+    set_run_font(p.runs[0], bold=False)
+
+
+def render_max_damage_by_component_table(doc, marker: str, rows: list[dict]):
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Ущерб имуществу и окружающей среде")
+    set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=3, style="Table Grid")
+
+    headers = [
+        "Составляющая ОПО",
+        "Максимальный суммарный ущерб, тыс.руб",
+        "Максимальный экологический ущерб, тыс.руб",
+    ]
+    for i, h in enumerate(headers):
+        set_cell_text(table.rows[0].cells[i], h, bold=True)
+
+    for r in rows:
+        row = table.add_row().cells
+        set_cell_text(row[0], r.get("hazard_component", "-"))
+        set_cell_text(row[1], format_float_1(r.get("max_total_damage")))
+        set_cell_text(row[2], format_float_1(r.get("max_total_environmental_damage")))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+def render_chart_at_marker(doc: Document, marker: str, title: str, image_path: Path | None, width_cm: float = 16.0):
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, title)
+    if p.runs:
+        set_run_font(p.runs[0], bold=True)
+
+    if image_path is None or not Path(image_path).exists():
+        p2 = insert_paragraph_after(doc, p, "Данные для построения диаграммы отсутствуют.")
+        if p2.runs:
+            set_run_font(p2.runs[0], bold=False)
+        return
+
+    pic_p = insert_paragraph_after(doc, p, "")
+    run = pic_p.add_run()
+    run.add_picture(str(image_path), width=Cm(width_cm))
+
+
+def render_fn_chart_at_marker(doc: Document, marker: str, fn_rows: list[dict]):
+    points = build_fn_points(fn_rows)
+    if not points:
+        image_path = None
+    else:
+        charts_dir = OUT_PATH.parent / "charts"
+        charts_dir.mkdir(parents=True, exist_ok=True)
+        image_path = charts_dir / "fn.png"
+        save_fn_chart(points, image_path)
+
+    render_chart_at_marker(
+        doc=doc,
+        marker=marker,
+        title="F/N - диаграмма",
+        image_path=image_path,
+        width_cm=16.0,
+    )
+
+
+def render_fg_chart_at_marker(doc: Document, marker: str, fg_rows: list[dict]):
+    points = build_fg_points(fg_rows)
+    if not points:
+        image_path = None
+    else:
+        charts_dir = OUT_PATH.parent / "charts"
+        charts_dir.mkdir(parents=True, exist_ok=True)
+        image_path = charts_dir / "fg.png"
+        save_fg_chart(points, image_path)
+
+    render_chart_at_marker(
+        doc=doc,
+        marker=marker,
+        title="F/G - диаграмма",
+        image_path=image_path,
+        width_cm=16.0,
+    )
+
 
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -544,6 +726,12 @@ def main():
         impact_zones = get_impact_zones(conn)
         casualties = get_personnel_casualties(conn)
         damage_rows = get_damage(conn)
+        collective_risk_rows = get_collective_risk(conn)
+        individual_risk_rows = get_individual_risk(conn)
+        min_f, max_f = get_fatal_accident_frequency_range(conn)
+        max_damage_rows = get_max_damage_by_hazard_component(conn)
+        fn_rows = get_fn_source_rows(conn)
+        fg_rows = get_fg_source_rows(conn)
 
     doc = Document(TEMPLATE_PATH)
 
@@ -605,6 +793,44 @@ def main():
         doc=doc,
         marker="{{DAMAGE_SECTION}}",
         rows=damage_rows,
+    )
+
+    render_collective_risk_table(
+        doc=doc,
+        marker="{{COLLECTIVE_RISK_SECTION}}",
+        rows=collective_risk_rows,
+    )
+
+    render_individual_risk_table(
+        doc=doc,
+        marker="{{INDIVIDUAL_RISK_SECTION}}",
+        rows=individual_risk_rows,
+    )
+
+    render_fatal_accident_frequency_text(
+        doc=doc,
+        marker="{{FATAL_ACCIDENT_FREQUENCY}}",
+        min_freq=min_f,
+        max_freq=max_f,
+    )
+
+    render_max_damage_by_component_table(
+        doc=doc,
+        marker="{{MAX_DAMAGE_BY_COMPONENT_SECTION}}",
+        rows=max_damage_rows,
+    )
+
+    # --- диаграммы ---
+    render_fn_chart_at_marker(
+        doc,
+        "{{FN_CHART}}",
+        fn_rows,
+    )
+
+    render_fg_chart_at_marker(
+        doc,
+        "{{FG_CHART}}",
+        fg_rows,
     )
 
     doc.save(OUT_PATH)

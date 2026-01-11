@@ -197,5 +197,113 @@ def get_damage(conn) -> list[dict]:
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
+def get_collective_risk(conn) -> list[dict]:
+    sql = """
+    SELECT
+        e.hazard_component AS hazard_component,
+        SUM(c.collective_risk_fatalities) AS collective_risk_fatalities,
+        SUM(c.collective_risk_injured) AS collective_risk_injured
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    GROUP BY e.hazard_component
+    ORDER BY e.hazard_component
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+def get_individual_risk(conn) -> list[dict]:
+    sql = """
+    SELECT
+        e.hazard_component AS hazard_component,
+        SUM(c.individual_risk_fatalities) AS individual_risk_fatalities,
+        SUM(c.individual_risk_injured) AS individual_risk_injured
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    GROUP BY e.hazard_component
+    ORDER BY e.hazard_component
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+def get_fatal_accident_frequency_range(conn):
+    """
+    Возвращает (min_freq, max_freq) для сценариев с >= 1 погибшим.
+    Если таких сценариев нет — возвращает (None, None).
+    """
+    sql = """
+    SELECT
+        MIN(c.scenario_frequency) AS min_freq,
+        MAX(c.scenario_frequency) AS max_freq
+    FROM calculations c
+    WHERE c.fatalities_count >= 1
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    row = cur.fetchone()
+    if row is None:
+        return None, None
+    return row[0], row[1]
+
+
+def get_max_damage_by_hazard_component(conn) -> list[dict]:
+    sql = """
+    SELECT
+        e.hazard_component AS hazard_component,
+        MAX(c.total_damage) AS max_total_damage,
+        MAX(c.total_environmental_damage) AS max_total_environmental_damage
+    FROM calculations c
+    JOIN equipment e ON e.id = c.equipment_id
+    GROUP BY e.hazard_component
+    ORDER BY e.hazard_component
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
+
+def get_fn_source_rows(conn) -> list[dict]:
+    """
+    Источник для F/N: (fatalities_count, scenario_frequency) по всем сценариям.
+    Берём только записи, где fatalities_count не NULL и scenario_frequency не NULL.
+    """
+    sql = """
+    SELECT
+        c.fatalities_count AS fatalities_count,
+        c.scenario_frequency AS scenario_frequency
+    FROM calculations c
+    WHERE c.fatalities_count IS NOT NULL
+      AND c.scenario_frequency IS NOT NULL
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
+def get_fg_source_rows(conn) -> list[dict]:
+    """
+    Источник для F/G: (total_damage, scenario_frequency) по всем сценариям.
+    total_damage ожидается в тыс.руб (как в расчётах); далее в графике переводим в млн.руб.
+    Берём только записи, где total_damage и scenario_frequency не NULL.
+    """
+    sql = """
+    SELECT
+        c.total_damage AS total_damage,
+        c.scenario_frequency AS scenario_frequency
+    FROM calculations c
+    WHERE c.total_damage IS NOT NULL
+      AND c.scenario_frequency IS NOT NULL
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
 def open_db(db_path):
     return sqlite3.connect(db_path)
