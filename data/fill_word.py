@@ -1,8 +1,12 @@
 import json
+import math
 from pathlib import Path
 from docx.shared import Cm
 from docx import Document
 
+from report.constants import NGK_BACKGROUND_RISK
+from report.formatters import risk_to_dbr, risk_to_ppm
+from report.constants import SOCIAL_FATALITY_RISKS_DBR
 from report.paths import BASE_DIR, DB_PATH, TEMPLATE_PATH, OUT_PATH
 from report.db import (
     open_db,
@@ -26,6 +30,7 @@ from report.db import (
     get_max_losses_by_hazard_component,
     get_risk_matrix_rows,
     get_risk_matrix_damage_rows,
+    get_top_scenarios_by_hazard_component,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -854,7 +859,6 @@ def render_risk_matrix_chart_at_marker(doc: Document, marker: str, rows: list[di
     )
 
 
-
 def render_risk_matrix_damage_chart_at_marker(doc: Document, marker: str, rows: list[dict]):
     image_path = None
     if rows:
@@ -870,6 +874,224 @@ def render_risk_matrix_damage_chart_at_marker(doc: Document, marker: str, rows: 
         image_path=image_path,
         width_cm=16.0,
     )
+
+def render_top_scenarios_by_component_table(doc, marker: str, rows: list[dict]):
+    """
+    Колонки:
+      1) Составляющая объекта (hazard_component)
+      2) Тип сценария (наиболее опасный / наиболее вероятный)
+      3) Номер сценария (С{scenario_no})
+      4) Оборудование (equipment_name)
+      5) Количество погибших, чел (fatalities_count)
+      6) Ущерб, тыс.руб (total_damage)
+      7) Частота сценария, 1/год (scenario_frequency)
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Наиболее опасные и наиболее вероятные сценарии аварии по составляющим объекта")
+    set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=7, style="Table Grid")
+
+    headers = [
+        "Составляющая объекта",
+        "Тип сценария",
+        "Номер сценария",
+        "Оборудование",
+        "Количество погибших, чел",
+        "Ущерб, тыс.руб",
+        "Частота сценария, 1/год",
+    ]
+    for i, h in enumerate(headers):
+        set_cell_text(table.rows[0].cells[i], h, bold=True)
+
+    type_map = {
+        "dangerous": "Наиболее опасный",
+        "probable": "Наиболее вероятный",
+    }
+
+    for r in rows:
+        row = table.add_row().cells
+        set_cell_text(row[0], r.get("hazard_component", "-"))
+        set_cell_text(row[1], type_map.get(r.get("scenario_type"), str(r.get("scenario_type", "-"))))
+
+        sc_no = r.get("scenario_no")
+        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
+
+        set_cell_text(row[3], r.get("equipment_name", "-"))
+        set_cell_text(row[4], r.get("fatalities_count", 0))
+        set_cell_text(row[5], format_float_1(r.get("total_damage")))
+        set_cell_text(row[6], format_exp(r.get("scenario_frequency")))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+def render_fatality_risk_by_component_table(doc, marker: str, rows: list[dict]):
+    """Сводная таблица: индивидуальный и коллективный риск гибели по составляющим ОПО."""
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Коллективный и индивидуальный риск гибели по составляющим ОПО")
+    set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=3, style="Table Grid")
+
+    headers = [
+        "Составляющая ОПО",
+        "Индивидуальный риск гибели, 1·год⁻¹",
+        "Коллективный риск гибели, чел·год⁻¹",
+    ]
+    for i, h in enumerate(headers):
+        set_cell_text(table.rows[0].cells[i], h, bold=True)
+
+    for r in rows:
+        row = table.add_row().cells
+        set_cell_text(row[0], r.get("hazard_component", "-"))
+        set_cell_text(row[1], format_exp(r.get("individual_risk_fatalities")))
+        set_cell_text(row[2], format_exp(r.get("collective_risk_fatalities")))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+def render_comparative_fatality_risk_table(doc, marker: str, individual_risk_rows: list[dict]):
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    title_p = insert_paragraph_after(
+        doc, p_marker,
+        "Сравнение риска гибели от различных причин и риска гибели при авариях на ОПО"
+    )
+    if title_p.runs:
+        set_run_font(title_p.runs[0], bold=True)
+
+    table = insert_table_after(doc, title_p, rows=1, cols=2, style="Table Grid")
+
+    # Заголовки
+    hdr = table.rows[0].cells
+    hdr[0].text = ""
+    r0 = hdr[0].paragraphs[0].add_run("Вид смертельной опасности")
+    set_run_font(r0, bold=True)
+
+    hdr[1].text = ""
+    r1 = hdr[1].paragraphs[0].add_run("Уровень риска, дБR")
+    set_run_font(r1, bold=True)
+
+    # 1) Социальные риски
+    for name, dbr in SOCIAL_FATALITY_RISKS_DBR:
+        row = table.add_row().cells
+        row[0].paragraphs[0].add_run(str(name))
+        row[1].paragraphs[0].add_run(f"{dbr:+.1f}")
+
+    # 2) ОПО по составляющим (берем уже посчитанный индивидуальный риск)
+    for r in individual_risk_rows:
+        comp = r.get("hazard_component")
+        # поддержка обоих возможных ключей
+        risk = (
+            r.get("individual_risk_fatalities")
+            if r.get("individual_risk_fatalities") is not None
+            else r.get("individual_risk")
+        )
+
+        dbr = risk_to_dbr(risk)
+        dbr_txt = "—" if dbr is None else f"{dbr:+.1f}"
+
+        row = table.add_row().cells
+        row[0].paragraphs[0].add_run(f"Риск гибели при аварии на ОПО ({comp})")
+        row[1].paragraphs[0].add_run(dbr_txt)
+
+
+def render_ngk_background_comparison_table(doc, marker: str, conn):
+    # Локальная функция
+    def get_damage_by_component(conn):
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                hazard_component,
+                MAX(total_damage) AS damage
+            FROM calculations
+            WHERE total_damage IS NOT NULL
+            GROUP BY hazard_component
+        """)
+        return {row[0]: row[1] for row in cur.fetchall()}
+
+    p = find_paragraph_with_marker(doc, marker)
+    if p is None:
+        return
+
+    clear_paragraph(p)
+
+    title = insert_paragraph_after(
+        doc,
+        p,
+        "Сравнение фоновых показателей риска нефтегазового комплекса и показателей ОПО"
+    )
+    if title.runs:
+        set_run_font(title.runs[0], bold=True)
+
+    table = insert_table_after(doc, title, rows=1, cols=2, style="Table Grid")
+
+    # Заголовки
+    hdr = table.rows[0].cells
+    h0 = hdr[0].paragraphs[0].add_run("Параметр")
+    h1 = hdr[1].paragraphs[0].add_run("Значение")
+    set_run_font(h0, bold=True)
+    set_run_font(h1, bold=True)
+
+    # --- A. Фон НГК ---
+    for name, value in NGK_BACKGROUND_RISK:
+        row = table.add_row().cells
+        row[0].paragraphs[0].add_run(name)
+        row[1].paragraphs[0].add_run(value)
+
+    # --- B. ОПО по составляющим ---
+    risks = get_individual_risk(conn)
+    damage_by_comp = get_damage_by_component(conn)
+
+    for r in risks:
+        comp = r["hazard_component"]
+        risk = r["individual_risk_fatalities"]
+
+        if risk is None or risk <= 0:
+            continue
+
+        dbr = risk_to_dbr(risk)
+        ppm = risk * 1e6
+        damage = damage_by_comp.get(comp)
+
+        # Ущерб
+        row = table.add_row().cells
+        row[0].paragraphs[0].add_run(
+            f"Ущерб при аварии на ОПО ({comp}), млн руб"
+        )
+        row[1].paragraphs[0].add_run(
+            f"{damage:.1f}" if damage is not None else "—"
+        )
+
+        # Риск дБR
+        row = table.add_row().cells
+        row[0].paragraphs[0].add_run(
+            f"Риск гибели при аварии на ОПО ({comp}), дБR"
+        )
+        row[1].paragraphs[0].add_run(f"{dbr:+.1f}")
+
+        # Риск ppm
+        row = table.add_row().cells
+        row[0].paragraphs[0].add_run(
+            f"Риск гибели при аварии на ОПО ({comp}), ppm"
+        )
+        row[1].paragraphs[0].add_run(f"{ppm:.2f}")
+
+
 
 
 def main():
@@ -896,6 +1118,20 @@ def main():
         component_damage_rows = get_max_losses_by_hazard_component(conn)
         risk_matrix_rows = get_risk_matrix_rows(conn)
         risk_matrix_damage_rows = get_risk_matrix_damage_rows(conn)
+        top_scenarios_rows = get_top_scenarios_by_hazard_component(conn)
+
+        # Сводная таблица рисков гибели по составляющим (индивидуальный + коллективный)
+        ind_map = {r.get("hazard_component"): r.get("individual_risk_fatalities") for r in individual_risk_rows}
+        coll_map = {r.get("hazard_component"): r.get("collective_risk_fatalities") for r in collective_risk_rows}
+        components = sorted({*ind_map.keys(), *coll_map.keys()}, key=lambda x: str(x))
+        fatality_risk_by_component_rows = [
+            {
+                "hazard_component": comp,
+                "individual_risk_fatalities": ind_map.get(comp),
+                "collective_risk_fatalities": coll_map.get(comp),
+            }
+            for comp in components
+        ]
 
     doc = Document(TEMPLATE_PATH)
 
@@ -983,6 +1219,31 @@ def main():
         marker="{{MAX_DAMAGE_BY_COMPONENT_SECTION}}",
         rows=max_damage_rows,
     )
+
+    render_top_scenarios_by_component_table(
+        doc=doc,
+        marker="{{TOP_SCENARIOS_BY_COMPONENT_SECTION}}",
+        rows=top_scenarios_rows,
+    )
+
+    render_fatality_risk_by_component_table(
+        doc=doc,
+        marker="{{FATALITY_RISK_BY_COMPONENT_SECTION}}",
+        rows=fatality_risk_by_component_rows,
+    )
+
+    render_comparative_fatality_risk_table(
+        doc=doc,
+        marker="{{COMPARATIVE_FATALITY_RISK_TABLE}}",
+        individual_risk_rows=individual_risk_rows,
+    )
+
+    render_ngk_background_comparison_table(
+        doc=doc,
+        marker="{{NGK_BACKGROUND_RISK_COMPARISON}}",
+        conn=conn,
+    )
+
 
     # --- диаграммы ---
     render_fn_chart_at_marker(

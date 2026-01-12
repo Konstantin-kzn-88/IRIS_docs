@@ -1,4 +1,5 @@
 import json
+import math
 
 # ключ -> (русский, единицы)
 FIELD_UNITS = {
@@ -143,3 +144,19 @@ def format_float_1(value):
         return f"{float(value):.1f}"
     except Exception:
         return str(value)
+
+
+def risk_to_dbr(risk):
+    if risk <= 0:
+        return None
+    return 10 * math.log10(risk)
+
+
+def risk_to_ppm(risk):
+    """
+    Перевод индивидуального риска (1/год) в ppm
+    1 ppm = 1e-6 1/год
+    """
+    if risk is None or risk <= 0:
+        return None
+    return risk * 1e6

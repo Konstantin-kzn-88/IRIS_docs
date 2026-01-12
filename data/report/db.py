@@ -413,6 +413,91 @@ def get_risk_matrix_damage_rows(conn) -> list[dict]:
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
+    """
+    Таблица наиболее опасных и наиболее вероятных сценариев аварии по составляющим объекта.
+
+    Наиболее опасный:
+      1) максимум fatalities_count
+      2) при равенстве fatalities_count — максимум total_damage
+
+    Наиболее вероятный:
+      1) максимум scenario_frequency
+
+    Возвращает список строк (по 2 строки на hazard_component):
+      hazard_component, scenario_type, scenario_no, equipment_name, fatalities_count, total_damage, scenario_frequency
+    """
+    sql = """
+    SELECT
+        c.hazard_component,
+        c.scenario_no,
+        c.equipment_name,
+        c.fatalities_count,
+        c.total_damage,
+        c.scenario_frequency
+    FROM calculations c
+    ORDER BY c.hazard_component, c.scenario_no
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    best = {}  # hazard_component -> {"dangerous": row, "probable": row}
+
+    for r in rows:
+        comp = r.get("hazard_component")
+        if comp is None:
+            continue
+
+        if comp not in best:
+            best[comp] = {"dangerous": r, "probable": r}
+            continue
+
+        # most dangerous
+        d = best[comp]["dangerous"]
+        r_f = r.get("fatalities_count") or 0
+        d_f = d.get("fatalities_count") or 0
+        if r_f > d_f:
+            best[comp]["dangerous"] = r
+        elif r_f == d_f:
+            r_dmg = r.get("total_damage") or 0
+            d_dmg = d.get("total_damage") or 0
+            if r_dmg > d_dmg:
+                best[comp]["dangerous"] = r
+
+        # most probable
+        p = best[comp]["probable"]
+        r_fr = r.get("scenario_frequency") or 0
+        p_fr = p.get("scenario_frequency") or 0
+        if r_fr > p_fr:
+            best[comp]["probable"] = r
+
+    out = []
+    for comp in sorted(best.keys(), key=lambda x: str(x)):
+        d = best[comp]["dangerous"]
+        p = best[comp]["probable"]
+
+        out.append({
+            "hazard_component": comp,
+            "scenario_type": "dangerous",
+            "scenario_no": d.get("scenario_no"),
+            "equipment_name": d.get("equipment_name"),
+            "fatalities_count": d.get("fatalities_count"),
+            "total_damage": d.get("total_damage"),
+            "scenario_frequency": d.get("scenario_frequency"),
+        })
+        out.append({
+            "hazard_component": comp,
+            "scenario_type": "probable",
+            "scenario_no": p.get("scenario_no"),
+            "equipment_name": p.get("equipment_name"),
+            "fatalities_count": p.get("fatalities_count"),
+            "total_damage": p.get("total_damage"),
+            "scenario_frequency": p.get("scenario_frequency"),
+        })
+
+    return out
 
 def open_db(db_path):
     return sqlite3.connect(db_path)
