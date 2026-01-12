@@ -31,6 +31,8 @@ from report.db import (
     get_risk_matrix_rows,
     get_risk_matrix_damage_rows,
     get_top_scenarios_by_hazard_component,
+    get_damage_by_component,
+    get_substances_by_component,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS
 from report.formatters import (
@@ -875,6 +877,7 @@ def render_risk_matrix_damage_chart_at_marker(doc: Document, marker: str, rows: 
         width_cm=16.0,
     )
 
+
 def render_top_scenarios_by_component_table(doc, marker: str, rows: list[dict]):
     """
     Колонки:
@@ -892,7 +895,8 @@ def render_top_scenarios_by_component_table(doc, marker: str, rows: list[dict]):
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Наиболее опасные и наиболее вероятные сценарии аварии по составляющим объекта")
+    p = insert_paragraph_after(doc, p_marker,
+                               "Наиболее опасные и наиболее вероятные сценарии аварии по составляющим объекта")
     set_run_font(p.runs[0], bold=True)
 
     table = insert_table_after(doc, p, rows=1, cols=7, style="Table Grid")
@@ -1011,19 +1015,6 @@ def render_comparative_fatality_risk_table(doc, marker: str, individual_risk_row
 
 
 def render_ngk_background_comparison_table(doc, marker: str, conn):
-    # Локальная функция
-    def get_damage_by_component(conn):
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT
-                hazard_component,
-                MAX(total_damage) AS damage
-            FROM calculations
-            WHERE total_damage IS NOT NULL
-            GROUP BY hazard_component
-        """)
-        return {row[0]: row[1] for row in cur.fetchall()}
-
     p = find_paragraph_with_marker(doc, marker)
     if p is None:
         return
@@ -1092,6 +1083,51 @@ def render_ngk_background_comparison_table(doc, marker: str, conn):
         row[1].paragraphs[0].add_run(f"{ppm:.2f}")
 
 
+def render_substances_by_component_table(doc, marker: str, conn):
+    from report.word_utils import (
+        find_paragraph_with_marker,
+        clear_paragraph,
+        insert_paragraph_after,
+        insert_table_after,
+        set_run_font,
+    )
+
+    p = find_paragraph_with_marker(doc, marker)
+    if p is None:
+        return
+
+    clear_paragraph(p)
+
+    title = insert_paragraph_after(
+        doc,
+        p,
+        "Количество веществ по составляющим объекта"
+    )
+    if title.runs:
+        set_run_font(title.runs[0], bold=True)
+
+    table = insert_table_after(doc, title, rows=1, cols=2, style="Table Grid")
+
+    # Заголовки
+    hdr = table.rows[0].cells
+    r0 = hdr[0].paragraphs[0].add_run("Составляющая объекта")
+    r1 = hdr[1].paragraphs[0].add_run("Количество вещества, т")
+    set_run_font(r0, bold=True)
+    set_run_font(r1, bold=True)
+
+    data = get_substances_by_component(conn)
+
+    for comp, items in data.items():
+        row = table.add_row().cells
+        row[0].paragraphs[0].add_run(str(comp))
+
+        p_cell = row[1].paragraphs[0]
+        p_cell.text = ""
+
+        for i, (name, mass) in enumerate(items):
+            if i > 0:
+                p_cell.add_run("\n")
+            p_cell.add_run(f"{name} — {mass:.3f} т")
 
 
 def main():
@@ -1119,6 +1155,7 @@ def main():
         risk_matrix_rows = get_risk_matrix_rows(conn)
         risk_matrix_damage_rows = get_risk_matrix_damage_rows(conn)
         top_scenarios_rows = get_top_scenarios_by_hazard_component(conn)
+        data_substances = get_substances_by_component(conn)
 
         # Сводная таблица рисков гибели по составляющим (индивидуальный + коллективный)
         ind_map = {r.get("hazard_component"): r.get("individual_risk_fatalities") for r in individual_risk_rows}
@@ -1244,6 +1281,11 @@ def main():
         conn=conn,
     )
 
+    render_substances_by_component_table(
+        doc=doc,
+        marker="{{SUBSTANCES_BY_COMPONENT_TABLE}}",
+        conn=conn,
+    )
 
     # --- диаграммы ---
     render_fn_chart_at_marker(

@@ -499,5 +499,53 @@ def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
 
     return out
 
+def get_damage_by_component(conn):
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            hazard_component,
+            MAX(total_damage) AS damage
+        FROM calculations
+        WHERE total_damage IS NOT NULL
+        GROUP BY hazard_component
+    """)
+    return {row[0]: row[1] for row in cur.fetchall()}
+
+def get_substances_by_component(conn):
+    """
+    Количество веществ по составляющим объекта.
+
+    Берем amount_t из calculations, но чтобы не удваивать по сценариям:
+    - агрегируем до уровня (hazard_component, equipment_id)
+    - затем связываем equipment -> substances и суммируем по веществу
+    """
+    cur = conn.cursor()
+    cur.execute("""
+        WITH eq_amount AS (
+            SELECT
+                hazard_component,
+                equipment_id,
+                MAX(amount_t) AS amount_t
+            FROM calculations
+            GROUP BY hazard_component, equipment_id
+        )
+        SELECT
+            ea.hazard_component,
+            s.name AS substance_name,
+            SUM(ea.amount_t) AS mass_t
+        FROM eq_amount ea
+        JOIN equipment e ON e.id = ea.equipment_id
+        JOIN substances s ON s.id = e.substance_id
+        GROUP BY ea.hazard_component, s.name
+        ORDER BY ea.hazard_component, s.name
+    """)
+
+    result = {}
+    for comp, substance_name, mass_t in cur.fetchall():  # tuples
+        result.setdefault(comp, []).append((substance_name, mass_t))
+    return result
+
+
+
 def open_db(db_path):
     return sqlite3.connect(db_path)
