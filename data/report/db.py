@@ -546,6 +546,67 @@ def get_substances_by_component(conn):
     return result
 
 
+def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
+    """
+    Возвращает по каждой hazard_component две строки:
+    - наиболее опасный (fatalities_count desc, tie -> total_damage desc)
+    - наиболее вероятный (scenario_frequency desc)
+
+    Поля:
+    hazard_component, scenario_type, scenario_no, equipment_name,
+    fatalities_count, total_damage, scenario_frequency
+    """
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            c.hazard_component,
+            c.scenario_no,
+            c.fatalities_count,
+            c.total_damage,
+            c.scenario_frequency,
+            e.equipment_name
+        FROM calculations c
+        JOIN equipment e ON e.id = c.equipment_id
+        WHERE c.hazard_component IS NOT NULL
+    """)
+    rows = cur.fetchall()
+
+    best = {}  # comp -> {"dangerous": tuple, "probable": tuple}
+
+    for comp, sc_no, fat, dmg, freq, eq_name in rows:
+        item = {
+            "hazard_component": comp,
+            "scenario_no": sc_no,
+            "equipment_name": eq_name,
+            "fatalities_count": fat if fat is not None else 0,
+            "total_damage": dmg if dmg is not None else 0,
+            "scenario_frequency": freq if freq is not None else 0,
+        }
+
+        if comp not in best:
+            best[comp] = {"dangerous": item, "probable": item}
+            continue
+
+        # наиболее опасный: fatalities desc, tie -> total_damage desc
+        d = best[comp]["dangerous"]
+        if (
+            item["fatalities_count"] > d["fatalities_count"] or
+            (item["fatalities_count"] == d["fatalities_count"] and item["total_damage"] > d["total_damage"])
+        ):
+            best[comp]["dangerous"] = item
+
+        # наиболее вероятный: scenario_frequency desc
+        p = best[comp]["probable"]
+        if item["scenario_frequency"] > p["scenario_frequency"]:
+            best[comp]["probable"] = item
+
+    out = []
+    for comp, vv in best.items():
+        out.append({**vv["dangerous"], "scenario_type": "dangerous"})
+        out.append({**vv["probable"], "scenario_type": "probable"})
+    return out
+
+
 
 def open_db(db_path):
     return sqlite3.connect(db_path)

@@ -1130,6 +1130,109 @@ def render_substances_by_component_table(doc, marker: str, conn):
             p_cell.add_run(f"{name} — {mass:.3f} т")
 
 
+def render_top_scenarios_description_by_component_table(doc: Document, marker: str, conn):
+    """
+    Таблица:
+    - Составляющая объекта
+    - Тип сценария (наиболее опасный / наиболее вероятный)
+    - Номер сценария (Сn)
+    - Наименование оборудования
+    - Краткое описание сценария
+    - Частота, 1/год
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    title_p = insert_paragraph_after(
+        doc,
+        p_marker,
+        "Описание наиболее опасного и наиболее вероятного сценария аварии по составляющим объекта"
+    )
+    if title_p.runs:
+        set_run_font(title_p.runs[0], bold=True)
+
+    table = insert_table_after(doc, title_p, rows=1, cols=6, style="Table Grid")
+
+    headers = [
+        "Составляющая объекта",
+        "Тип сценария",
+        "Номер сценария",
+        "Наименование оборудования",
+        "Краткое описание сценария",
+        "Частота, 1/год",
+    ]
+    for j, h in enumerate(headers):
+        cell = table.rows[0].cells[j]
+        clear_paragraph(cell.paragraphs[0])
+        run = cell.paragraphs[0].add_run(h)
+        set_run_font(run, bold=True)
+
+    # 1) Берем топ-сценарии по составляющим
+    top_rows = get_top_scenarios_by_hazard_component(conn)
+
+    # 2) Берем "строки сценариев" для построения описания как в render_scenarios_table_at_marker
+    scenario_rows = get_scenarios(conn)
+
+    # 3) Строим индекс scenario_no -> local_idx по (equipment_type, kind)
+    idx_map = _build_scenario_index(scenario_rows)
+
+    # 4) Загружаем типовые сценарии
+    typical = _load_typical_scenarios()
+    root = _get_scenarios_root(typical)
+
+    # 5) Мапа scenario_no -> row из get_scenarios (для equipment_type/kind)
+    sc_map = {}
+    for r in scenario_rows:
+        sc_no = r.get("scenario_no")
+        if sc_no is not None and sc_no not in sc_map:
+            sc_map[sc_no] = r
+
+    def _scenario_type_label(st: str) -> str:
+        if st == "dangerous":
+            return "Наиболее опасный"
+        if st == "probable":
+            return "Наиболее вероятный"
+        return st or "-"
+
+    for r in top_rows:
+        comp = r.get("hazard_component")
+        st = r.get("scenario_type")
+        sc_no = r.get("scenario_no")
+        eq_name = r.get("equipment_name")
+        freq = r.get("scenario_frequency")
+
+        # описание
+        desc = "Описание не задано"
+        base = sc_map.get(sc_no)
+        if base:
+            et = base.get("equipment_type")
+            kd = base.get("substance_kind")
+            local_idx = None
+            if (et, kd) in idx_map and sc_no in idx_map[(et, kd)]:
+                local_idx = idx_map[(et, kd)][sc_no]
+
+            desc_list = _get_description_list(root, et, kd)
+            if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
+                desc = _scenario_item_to_text(desc_list[local_idx])
+
+        row = table.add_row().cells
+        set_cell_text(row[0], comp if comp is not None else "-")
+        set_cell_text(row[1], _scenario_type_label(st))
+        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
+        set_cell_text(row[3], eq_name or "-")
+        set_cell_text(row[4], desc)
+        set_cell_text(row[5], format_exp(freq))
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+
+
+
+
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1284,6 +1387,12 @@ def main():
     render_substances_by_component_table(
         doc=doc,
         marker="{{SUBSTANCES_BY_COMPONENT_TABLE}}",
+        conn=conn,
+    )
+
+    render_top_scenarios_description_by_component_table(
+        doc=doc,
+        marker="{{TOP_SCENARIOS_DESC_BY_COMPONENT}}",
         conn=conn,
     )
 
