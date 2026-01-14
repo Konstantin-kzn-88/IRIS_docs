@@ -606,6 +606,37 @@ def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
         out.append({**vv["probable"], "scenario_type": "probable"})
     return out
 
+def get_calculation_row_for_top_scenario(conn, hazard_component, scenario_no, equipment_name):
+    """
+    Возвращает одну (наиболее релевантную) строку calculations для заданного:
+    - hazard_component
+    - scenario_no
+    - equipment_name
+
+    Нужна для извлечения полей поражающих факторов (q_*, p_*, l_f, ...).
+    """
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            c.q_10_5, c.q_7_0, c.q_4_2, c.q_1_4,
+            c.p_70, c.p_28, c.p_14, c.p_5, c.p_2,
+            c.l_f, c.d_f, c.r_nkpr, c.r_vsp, c.l_pt, c.p_pt,
+            c.q_600, c.q_320, c.q_220, c.q_120,
+            c.s_t
+        FROM calculations c
+        JOIN equipment e ON e.id = c.equipment_id
+        WHERE
+            c.hazard_component = ?
+            AND c.scenario_no = ?
+            AND e.equipment_name = ?
+        ORDER BY
+            COALESCE(c.fatalities_count, 0) DESC,
+            COALESCE(c.total_damage, 0) DESC,
+            COALESCE(c.scenario_frequency, 0) DESC
+        LIMIT 1
+    """, (hazard_component, scenario_no, equipment_name))
+
+    return cur.fetchone()  # tuple или None
 
 
 def open_db(db_path):
