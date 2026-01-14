@@ -639,5 +639,66 @@ def get_calculation_row_for_top_scenario(conn, hazard_component, scenario_no, eq
     return cur.fetchone()  # tuple или None
 
 
+def get_fatalities_injured_for_top_scenario(conn, hazard_component, scenario_no, equipment_name):
+    """
+    Возвращает (fatalities_count, injured_count) для заданного:
+    - hazard_component
+    - scenario_no
+    - equipment_name
+
+    Берём одну наиболее релевантную строку calculations.
+    """
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            c.fatalities_count,
+            c.injured_count
+        FROM calculations c
+        JOIN equipment e ON e.id = c.equipment_id
+        WHERE
+            c.hazard_component = ?
+            AND c.scenario_no = ?
+            AND e.equipment_name = ?
+        ORDER BY
+            COALESCE(c.fatalities_count, 0) DESC,
+            COALESCE(c.injured_count, 0) DESC,
+            COALESCE(c.total_damage, 0) DESC,
+            COALESCE(c.scenario_frequency, 0) DESC
+        LIMIT 1
+    """, (hazard_component, scenario_no, equipment_name))
+
+    return cur.fetchone()  # tuple (fatalities, injured) или None
+
+
+def get_total_damage_for_top_scenario(conn, hazard_component, scenario_no, equipment_name):
+    """
+    Возвращает total_damage (тыс. руб) для заданного:
+    - hazard_component
+    - scenario_no
+    - equipment_name
+
+    Берём одну наиболее релевантную строку calculations.
+    """
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            c.total_damage
+        FROM calculations c
+        JOIN equipment e ON e.id = c.equipment_id
+        WHERE
+            c.hazard_component = ?
+            AND c.scenario_no = ?
+            AND e.equipment_name = ?
+        ORDER BY
+            COALESCE(c.total_damage, 0) DESC,
+            COALESCE(c.fatalities_count, 0) DESC,
+            COALESCE(c.scenario_frequency, 0) DESC
+        LIMIT 1
+    """, (hazard_component, scenario_no, equipment_name))
+
+    row = cur.fetchone()  # (total_damage,) или None
+    return row[0] if row is not None else None
+
+
 def open_db(db_path):
     return sqlite3.connect(db_path)

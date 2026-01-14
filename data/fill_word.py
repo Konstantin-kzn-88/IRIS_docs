@@ -34,6 +34,8 @@ from report.db import (
     get_damage_by_component,
     get_substances_by_component,
     get_calculation_row_for_top_scenario,
+    get_fatalities_injured_for_top_scenario,
+    get_total_damage_for_top_scenario,
 )
 from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS, _format_pf_zones
 from report.formatters import (
@@ -1286,6 +1288,124 @@ def render_top_scenarios_pf_by_component_table(doc: Document, marker: str, conn)
     insert_paragraph_after_table(doc, table, "")
 
 
+def render_top_scenarios_fatalities_injured_by_component_table(doc: Document, marker: str, conn):
+    """
+    Таблица:
+    - Составляющая объекта
+    - Тип сценария
+    - Номер сценария (Сn)
+    - Наименование оборудования
+    - Количество погибших и пострадавших
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Количество погибших и пострадавших")
+    if p.runs:
+        set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+    hdr = table.rows[0].cells
+
+    headers = [
+        "Составляющая объекта",
+        "Тип сценария",
+        "Номер сценария",
+        "Наименование оборудования",
+        "Количество погибших и пострадавших",
+    ]
+    for i, h in enumerate(headers):
+        set_cell_text(hdr[i], h, bold=True)
+
+    top_rows = get_top_scenarios_by_hazard_component(conn)
+
+    def _type_label(st):
+        return "Наиболее опасный" if st == "dangerous" else "Наиболее вероятный"
+
+    for r in top_rows:
+        comp = r.get("hazard_component")
+        st = r.get("scenario_type")
+        sc_no = r.get("scenario_no")
+        eq_name = r.get("equipment_name")
+
+        fi = get_fatalities_injured_for_top_scenario(conn, comp, sc_no, eq_name)
+        if fi is None:
+            text = "Погибшие: —; Пострадавшие: —"
+        else:
+            fat, inj = fi
+            fat_txt = str(int(fat)) if fat is not None else "—"
+            inj_txt = str(int(inj)) if inj is not None else "—"
+            text = f"Погибшие: {fat_txt}; Пострадавшие: {inj_txt}"
+
+        row = table.add_row().cells
+        set_cell_text(row[0], comp if comp is not None else "-")
+        set_cell_text(row[1], _type_label(st))
+        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
+        set_cell_text(row[3], eq_name or "-")
+        set_cell_text(row[4], text)
+
+    insert_paragraph_after_table(doc, table, "")
+
+
+def render_top_scenarios_damage_by_component_table(doc: Document, marker: str, conn):
+    """
+    Таблица:
+    - Составляющая объекта
+    - Тип сценария
+    - Номер сценария (Сn)
+    - Наименование оборудования
+    - Ущерб, тыс.руб
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker, "Ущерб, тыс.руб")
+    if p.runs:
+        set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+    hdr = table.rows[0].cells
+
+    headers = [
+        "Составляющая объекта",
+        "Тип сценария",
+        "Номер сценария",
+        "Наименование оборудования",
+        "Ущерб, тыс.руб",
+    ]
+    for i, h in enumerate(headers):
+        set_cell_text(hdr[i], h, bold=True)
+
+    top_rows = get_top_scenarios_by_hazard_component(conn)
+
+    def _type_label(st):
+        return "Наиболее опасный" if st == "dangerous" else "Наиболее вероятный"
+
+    for r in top_rows:
+        comp = r.get("hazard_component")
+        st = r.get("scenario_type")
+        sc_no = r.get("scenario_no")
+        eq_name = r.get("equipment_name")
+
+        dmg = get_total_damage_for_top_scenario(conn, comp, sc_no, eq_name)
+        dmg_txt = f"{float(dmg):.1f}" if dmg is not None else "—"
+
+        row = table.add_row().cells
+        set_cell_text(row[0], comp if comp is not None else "-")
+        set_cell_text(row[1], _type_label(st))
+        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
+        set_cell_text(row[3], eq_name or "-")
+        set_cell_text(row[4], dmg_txt)
+
+    insert_paragraph_after_table(doc, table, "")
+
+
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1311,7 +1431,6 @@ def main():
         risk_matrix_rows = get_risk_matrix_rows(conn)
         risk_matrix_damage_rows = get_risk_matrix_damage_rows(conn)
         top_scenarios_rows = get_top_scenarios_by_hazard_component(conn)
-
 
         # Сводная таблица рисков гибели по составляющим (индивидуальный + коллективный)
         ind_map = {r.get("hazard_component"): r.get("individual_risk_fatalities") for r in individual_risk_rows}
@@ -1452,6 +1571,18 @@ def main():
     render_top_scenarios_pf_by_component_table(
         doc=doc,
         marker="{{TOP_SCENARIOS_PF_BY_COMPONENT}}",
+        conn=conn,
+    )
+
+    render_top_scenarios_fatalities_injured_by_component_table(
+        doc=doc,
+        marker="{{TOP_SCENARIOS_FATALITIES_INJURED}}",
+        conn=conn,
+    )
+
+    render_top_scenarios_damage_by_component_table(
+        doc=doc,
+        marker="{{TOP_SCENARIOS_DAMAGE}}",
         conn=conn,
     )
 
