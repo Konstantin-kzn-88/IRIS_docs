@@ -1,4 +1,4 @@
-# data/report/constants.py
+# data/output/constants.py
 
 SOCIAL_FATALITY_RISKS_DBR = [
     ("Риск смерти от всех причин", 18.4),

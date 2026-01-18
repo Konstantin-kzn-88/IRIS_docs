@@ -1,14 +1,18 @@
 import json
-import math
 from pathlib import Path
 from docx.shared import Cm
 from docx import Document
 
-from report.constants import NGK_BACKGROUND_RISK
-from report.formatters import risk_to_dbr, risk_to_ppm
-from report.constants import SOCIAL_FATALITY_RISKS_DBR
-from report.paths import BASE_DIR, DB_PATH, TEMPLATE_PATH, OUT_PATH
-from report.db import (
+from report.reportgen.constants import NGK_BACKGROUND_RISK
+from report.reportgen.formatters import risk_to_dbr
+from report.reportgen.constants import SOCIAL_FATALITY_RISKS_DBR
+from core.path import DB_PATH, REPORT_TEMPLATE_DOCX, REPORT_OUTPUT_DIR, TYPICAL_SCENARIOS_PATH
+
+# алиасы для минимальных правок ниже по файлу
+TEMPLATE_PATH = REPORT_TEMPLATE_DOCX
+OUT_PATH = REPORT_OUTPUT_DIR / "template_report_out.docx"
+
+from report.reportgen.db import (
     open_db,
     get_used_substances,
     get_used_equipment,
@@ -38,8 +42,8 @@ from report.db import (
     get_total_damage_for_top_scenario,
     get_ov_in_accident_for_top_scenario,
 )
-from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS, _format_pf_zones, _detect_method_text
-from report.formatters import (
+from report.reportgen.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS, _format_pf_zones, _detect_method_text
+from report.reportgen.formatters import (
     format_value,
     pretty_json_substance,
     pretty_json_generic,
@@ -47,7 +51,7 @@ from report.formatters import (
     format_float_3,
     format_float_1,
 )
-from report.word_utils import (
+from report.reportgen.word_utils import (
     find_paragraph_with_marker,
     clear_paragraph,
     insert_paragraph_after,
@@ -57,7 +61,7 @@ from report.word_utils import (
     set_run_font,
 )
 
-from report.charts import (
+from report.reportgen.charts import (
     build_fn_points,
     build_fg_points,
     save_fn_chart,
@@ -308,15 +312,11 @@ def render_personnel_casualties_table_at_marker(doc: Document, marker: str, titl
 
 
 def _load_typical_scenarios() -> dict:
-    """typical_scenarios.json не изменяем; читаем из стандартных мест."""
-    candidates = [
-        BASE_DIR / "calc" / "typical_scenarios.json",
-        BASE_DIR / "typical_scenarios.json",
-    ]
-    for p in candidates:
-        if p.exists():
-            with open(p, "r", encoding="utf-8") as f:
-                return json.load(f)
+    """typical_scenarios.json не изменяем; читаем из data/typical_scenarios.json."""
+    p = TYPICAL_SCENARIOS_PATH
+    if p.exists():
+        with open(p, "r", encoding="utf-8") as f:
+            return json.load(f)
     return {}
 
 
@@ -1088,7 +1088,7 @@ def render_ngk_background_comparison_table(doc, marker: str, conn):
 
 
 def render_substances_by_component_table(doc, marker: str, conn):
-    from report.word_utils import (
+    from report.reportgen.word_utils import (
         find_paragraph_with_marker,
         clear_paragraph,
         insert_paragraph_after,

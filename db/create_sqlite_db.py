@@ -1,15 +1,7 @@
 import json
 import sqlite3
-from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-
-DB_PATH = BASE_DIR / "iris.sqlite3"
-SUBSTANCES_JSON = BASE_DIR / "substances.json"
-EQUIPMENT_JSON = BASE_DIR / "equipment.json"
-
-# Используем отдельный файл схемы, чтобы не дублировать SQL в коде
-SCHEMA_PATH = BASE_DIR / "schema.sql"
+from core.path import DB_PATH, SCHEMA_PATH, SUBSTANCES_JSON, EQUIPMENT_JSON
 
 
 def to_json_text(value):
