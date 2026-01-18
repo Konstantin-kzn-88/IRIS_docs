@@ -9,7 +9,7 @@ def main() -> None:
     from calculations.create_calc import main as run_calc
     run_calc()
 
-    # 3) Формирование отчёта (docx + диаграммы)
+    # 3) Формирование отчёта (docx +  диаграммы)
     from report.fill_word import main as build_report
     build_report()
 
