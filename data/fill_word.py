@@ -36,8 +36,9 @@ from report.db import (
     get_calculation_row_for_top_scenario,
     get_fatalities_injured_for_top_scenario,
     get_total_damage_for_top_scenario,
+    get_ov_in_accident_for_top_scenario,
 )
-from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS, _format_pf_zones
+from report.sections import SUBSTANCE_SECTIONS, EQUIPMENT_SECTIONS, _format_pf_zones, _detect_method_text
 from report.formatters import (
     format_value,
     pretty_json_substance,
@@ -1406,6 +1407,116 @@ def render_top_scenarios_damage_by_component_table(doc: Document, marker: str, c
     insert_paragraph_after_table(doc, table, "")
 
 
+def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn):
+    """
+    Заключительная таблица по наиболее опасному/вероятному сценарию по каждой составляющей.
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    p = insert_paragraph_after(doc, p_marker,
+                               "Заключительная таблица по наиболее опасному и наиболее вероятному сценарию")
+    if p.runs:
+        set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=11, style="Table Grid")
+    hdr = table.rows[0].cells
+
+    headers = [
+        "Составляющая объекта",
+        "Тип сценария",
+        "Номер сценария",
+        "Наименование оборудования",
+        "Краткое описание сценария",
+        "Частота, 1/год",
+        "Количество опасного вещества участвующего в аварии, т",
+        "Зоны действия поражающих факторов",
+        "Метод расчёта",
+        "Количество погибших и пострадавших",
+        "Ущерб, тыс.руб",
+    ]
+    for i, h in enumerate(headers):
+        set_cell_text(hdr[i], h, bold=True)
+
+    # 1) Топ-сценарии
+    top_rows = get_top_scenarios_by_hazard_component(conn)
+
+    # 2) Для описания сценария — как в render_scenarios_table_at_marker
+    scenario_rows = get_scenarios(conn)
+    typical = _load_typical_scenarios()
+    root = _get_scenarios_root(typical)
+    idx_map = _build_scenario_index(scenario_rows)
+
+    # scenario_no -> базовая строка (для equipment_type/substance_kind)
+    sc_map = {}
+    for rr in scenario_rows:
+        no = rr.get("scenario_no")
+        if no is not None and no not in sc_map:
+            sc_map[no] = rr
+
+    def _type_label(st):
+        return "Наиболее опасный" if st == "dangerous" else "Наиболее вероятный"
+
+    for r in top_rows:
+        comp = r.get("hazard_component")
+        st = r.get("scenario_type")
+        sc_no = r.get("scenario_no")
+        eq_name = r.get("equipment_name")
+        freq = r.get("scenario_frequency")
+
+        # --- Описание сценария ---
+        desc = "Описание не задано"
+        base = sc_map.get(sc_no)
+        if base:
+            et = base.get("equipment_type")
+            kd = base.get("substance_kind")
+            local_idx = idx_map.get((et, kd), {}).get(sc_no, None)
+            desc_list = _get_description_list(root, et, kd)
+            if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
+                desc = _scenario_item_to_text(desc_list[local_idx])
+
+        # --- Поражающие факторы + методика ---
+        calc_pf = get_calculation_row_for_top_scenario(conn, comp, sc_no, eq_name)
+        zones_txt = _format_pf_zones(calc_pf)
+        method_txt = _detect_method_text(calc_pf)
+
+        # --- OV in accident ---
+        ov = get_ov_in_accident_for_top_scenario(conn, comp, sc_no, eq_name)
+        ov_txt = f"{float(ov):.2f}" if ov is not None else "—"
+
+        # --- Погибшие/пострадавшие ---
+        fi = get_fatalities_injured_for_top_scenario(conn, comp, sc_no, eq_name)
+        if fi is None:
+            fi_txt = "Погибшие: —; Пострадавшие: —"
+        else:
+            fat, inj = fi
+            fat_txt = str(int(fat)) if fat is not None else "—"
+            inj_txt = str(int(inj)) if inj is not None else "—"
+            fi_txt = f"Погибшие: {fat_txt}; Пострадавшие: {inj_txt}"
+
+        # --- Ущерб ---
+        dmg = get_total_damage_for_top_scenario(conn, comp, sc_no, eq_name)
+        dmg_txt = f"{float(dmg):.1f}" if dmg is not None else "—"
+
+        row = table.add_row().cells
+        set_cell_text(row[0], comp if comp is not None else "-")
+        set_cell_text(row[1], _type_label(st))
+        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
+        set_cell_text(row[3], eq_name or "-")
+        set_cell_text(row[4], desc)
+        set_cell_text(row[5], format_exp(freq))
+        set_cell_text(row[6], ov_txt)
+        set_cell_text(row[7], zones_txt)
+        set_cell_text(row[8], method_txt)
+        set_cell_text(row[9], fi_txt)
+        set_cell_text(row[10], dmg_txt)
+
+    insert_paragraph_after_table(doc, table, "")
+
+
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1583,6 +1694,12 @@ def main():
     render_top_scenarios_damage_by_component_table(
         doc=doc,
         marker="{{TOP_SCENARIOS_DAMAGE}}",
+        conn=conn,
+    )
+
+    render_top_scenarios_final_conclusion_table(
+        doc=doc,
+        marker="{{TOP_SCENARIOS_FINAL_CONCLUSION}}",
         conn=conn,
     )
 

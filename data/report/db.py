@@ -700,5 +700,34 @@ def get_total_damage_for_top_scenario(conn, hazard_component, scenario_no, equip
     return row[0] if row is not None else None
 
 
+def get_ov_in_accident_for_top_scenario(conn, hazard_component, scenario_no, equipment_name):
+    """
+    Возвращает ov_in_accident_t (тонн) из calculations для заданного:
+    - hazard_component
+    - scenario_no
+    - equipment_name
+    Берём одну наиболее релевантную строку.
+    """
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            c.ov_in_accident_t
+        FROM calculations c
+        JOIN equipment e ON e.id = c.equipment_id
+        WHERE
+            c.hazard_component = ?
+            AND c.scenario_no = ?
+            AND e.equipment_name = ?
+        ORDER BY
+            COALESCE(c.fatalities_count, 0) DESC,
+            COALESCE(c.total_damage, 0) DESC,
+            COALESCE(c.scenario_frequency, 0) DESC
+        LIMIT 1
+    """, (hazard_component, scenario_no, equipment_name))
+
+    row = cur.fetchone()  # (ov_in_accident_t,) или None
+    return row[0] if row is not None else None
+
+
 def open_db(db_path):
     return sqlite3.connect(db_path)
