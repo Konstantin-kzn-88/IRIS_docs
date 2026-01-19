@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "name": "Пример вещества (ЛВЖ)",
+    "kind": 0,
+
+    "formula": "Смесь углеводородов C4–C12",
+
+    "composition": {
+      "components": [
+        {
+          "name": "Углеводороды",
+          "mass_fraction": 1.0
+        }
+      ]
+    },
+
+    "notes": "Типовая легковоспламеняющаяся жидкость",
+
+    "physical": {
+      "molar_mass_kg_per_mol": 0.1,
+      "density_liquid_kg_per_m3": 750,
+      "density_gas_kg_per_m3": null,
+      "evaporation_heat_J_per_kg": 3.5e5,
+      "boiling_point_C": 80
+    },
+
+    "explosion": {
+      "explosion_hazard_class": 2,
+      "flash_point_C": -20,
+      "lel_percent": 1.2,
+      "autoignition_temp_C": 250,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 4,
+      "heat_of_combustion_kJ_per_kg": 43000,
+      "burning_rate_kg_per_s_m2": 0.03
+    },
+
+    "toxicity": {
+      "hazard_class": 4,
+      "pdk_mg_per_m3": 300,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+
+    "reactivity": "Стабильно",
+    "odor": "Характерный",
+    "corrosiveness": "Отсутствует",
+
+    "precautions": "Исключить источники зажигания, обеспечить вентиляцию",
+    "impact": "Пожар, тепловое излучение",
+    "protection": "Пена, порошковые огнетушители",
+    "neutralization_methods": "Сорбенты",
+    "first_aid": "Свежий воздух, при необходимости обратиться к врачу"
+  }
+]

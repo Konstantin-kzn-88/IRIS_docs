@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "substance_id": 1,
+    "equipment_name": "EXAMPLE-PIPE-01",
+
+    "phase_state": "ж.ф.",
+
+    "coord_type": 0,
+    "equipment_type": 0,
+    "coordinates": [0, 0, 80, 0],
+
+    "length_m": 80,
+    "diameter_mm": 150,
+    "wall_thickness_mm": 6,
+
+    "volume_m3": null,
+    "fill_fraction": null,
+
+    "pressure_mpa": 0.6,
+
+    "spill_coefficient": 1.0,
+    "spill_area_m2": 120,
+
+    "substance_temperature_c": 20,
+
+    "shutdown_time_s": 60,
+    "evaporation_time_s": 1800,
+
+    "hazard_component": "Трубопроводная система (без КМ)",
+
+    "clutter_degree": 2,
+
+    "possible_dead": 4,
+    "possible_injured": 1
+  }
+]
