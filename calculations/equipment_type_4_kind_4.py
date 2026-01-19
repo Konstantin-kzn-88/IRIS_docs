@@ -7,6 +7,7 @@ from calculations.app._liquid_flow import liquid_leak_mass_flow
 from calculations.app._lower_concentration import LCLP
 from calculations.app._strait_fire import Strait_fire
 from calculations.app._base_damage_line import damage
+from calculations.app._tvs_explosion import Explosion
 from core.config import (
     KG_TO_T,
     MASS_IN_CLOUDE,
@@ -16,7 +17,7 @@ from core.config import (
     Pa_TO_kPa,
     P0,
     PEOPLE_COUNT,
-    D_MM_JET_LIQUID, DAMAGE_SIX_SC,
+    D_MM_JET_LIQUID, DAMAGE_SIX_SC, T_TO_KG,
 )
 
 # Включение/отключение отладочного вывода
@@ -175,6 +176,34 @@ def calc_for_scenario(
     result["p_5"] = None
     result["p_2"] = None
 
+    if scenario["scenario_line"] in (5,):  # взрыв
+        class_substance = int(explosion["explosion_hazard_class"])
+        heat_of_combustion = int(explosion["heat_of_combustion_kJ_per_kg"])
+        sigma = int(explosion["expansion_degree"])
+        energy_level = int(explosion["energy_reserve_factor"])
+        view_space = equipment["clutter_degree"]
+        mass = result["ov_in_hazard_factor_t"] * T_TO_KG
+
+        zone = Explosion().explosion_class_zone(
+            class_substance,
+            view_space,
+            mass,
+            heat_of_combustion,
+            sigma,
+            energy_level,
+        )
+
+        result["p_70"] = int(zone[1])
+        result["p_28"] = int(zone[2])
+        result["p_14"] = int(zone[3])
+        result["p_5"] = int(zone[4])
+        result["p_2"] = int(zone[5])
+
+        if DEBUG:
+            print(zone)
+            print(20 * "-")
+
+
     # -------------------------------------------------------------------------
     # Зоны поражения
     # -------------------------------------------------------------------------
@@ -193,19 +222,6 @@ def calc_for_scenario(
 
     result["r_nkpr"] = None
     result["r_vsp"] = None
-
-    if scenario["scenario_line"] in (5,):  # вспышка
-        mass = result["ov_in_hazard_factor_t"]
-        lower_concentration = float(explosion["lel_percent"])
-
-        zone = LCLP().lower_concentration_limit(mass, mol_mass, t_boiling, lower_concentration)
-
-        result["r_nkpr"] = int(zone[0])
-        result["r_vsp"] = int(zone[1])
-
-        if DEBUG:
-            print(zone)
-            print(20 * "-")
 
     result["l_pt"] = None
     result["p_pt"] = None
@@ -226,9 +242,18 @@ def calc_for_scenario(
     result["fatalities_count"] = None
     result["injured_count"] = None
 
-    if scenario["scenario_line"] in (1, 2, 4, 5):  # с ПФ
-        result["fatalities_count"] = 0
+    if scenario["scenario_line"] in (1, 4):  # с ПФ
+        result["fatalities_count"] = 1
         result["injured_count"] = 1
+
+    elif scenario["scenario_line"] in (2,):  # с ПФ
+        result["fatalities_count"] = max(0, equipment["possible_dead"] - 3)
+        result["injured_count"] = max(0, equipment["possible_injured"] - 4)
+
+    elif scenario["scenario_line"] in (5,):  # с ПФ
+        result["fatalities_count"] = max(0, equipment["possible_dead"] - 2)
+        result["injured_count"] = max(0, equipment["possible_injured"] - 3)
+
     elif scenario["scenario_line"] in (3, 6):
         result["fatalities_count"] = 0
         result["injured_count"] = 0

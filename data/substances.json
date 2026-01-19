@@ -1,396 +1,154 @@
 [
   {
     "id": 1,
-    "name": "Нефть",
-    "kind": 0,
-    "formula": "Смесь углеводородов C5–C30",
+    "name": "Дивинил",
+    "kind": 4,
+    "formula": "C4H6",
     "composition": {
-      "components": [{ "name": "Углеводороды", "mass_fraction": 1.0 }],
-      "notes": "ЛВЖ, многокомпонентная смесь"
+      "components": [
+        { "name": "Дивинил (1,3-бутадиен)", "mass_fraction": 1.0 }
+      ]
     },
+    "notes": "Дивинил — легковоспламеняющийся газ, широко применяемый в химической промышленности. Образует с воздухом взрывоопасные смеси в широком диапазоне концентраций.",
     "physical": {
-      "molar_mass_kg_per_mol": 0.200,
-      "density_liquid_kg_per_m3": 850,
-      "density_gas_kg_per_m3": 3.33,
-      "evaporation_heat_J_per_kg": 300000,
-      "boiling_point_C": 150
+      "molar_mass_kg_per_mol": 0.054,
+      "density_liquid_kg_per_m3": 620,
+      "density_gas_kg_per_m3": 2.5,
+      "evaporation_heat_J_per_kg": 430000.0,
+      "boiling_point_C": -4.4
     },
     "explosion": {
-      "explosion_hazard_class": 1,
-      "flash_point_C": 30,
-      "lel_percent": 1.0,
-      "autoignition_temp_C": 250,
-      "energy_reserve_factor": 1,
-      "expansion_degree": 4,
-      "heat_of_combustion_kJ_per_kg": 42000,
-      "burning_rate_kg_per_s_m2": 0.03
+      "explosion_hazard_class": 2,
+      "flash_point_C": -85,
+      "lel_percent": 2.0,
+      "autoignition_temp_C": 420,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 7,
+      "heat_of_combustion_kJ_per_kg": 45000,
+      "burning_rate_kg_per_s_m2": 0.04
     },
     "toxicity": {
       "hazard_class": 3,
-      "pdk_mg_per_m3": 300,
+      "pdk_mg_per_m3": 100,
       "lethal_tox_dose_mg_min_per_L": null,
       "threshold_tox_dose_mg_min_per_L": null
     },
-    "reactivity": "Низкая",
-    "odor": "Нефтяной",
-    "corrosiveness": "Низкая",
-    "precautions": "Исключить источники зажигания",
-    "impact": "Пожар пролива",
-    "protection": "Пена",
-    "neutralization_methods": "Сорбенты",
-    "first_aid": "Свежий воздух"
+    "reactivity": "Химически активен, склонен к полимеризации при нагреве.",
+    "odor": "Слабый сладковатый запах",
+    "corrosiveness": "Неагрессивен",
+    "precautions": "Герметичность оборудования, вентиляция.",
+    "impact": "Пожар, взрыв",
+    "protection": "Пена, порошковые средства",
+    "neutralization_methods": "Факельное сжигание",
+    "first_aid": "Свежий воздух, медицинская помощь"
   },
   {
     "id": 2,
-    "name": "Толуилендиизоцианат",
-    "kind": 1,
-    "formula": "C9H6N2O2",
+    "name": "Ацетонитрил",
+    "kind": 0,
+    "formula": "C2H3N",
     "composition": {
-      "components": [{ "name": "Толуилендиизоцианат", "mass_fraction": 1.0 }],
-      "notes": "Высокотоксичная ЛВЖ"
+      "components": [
+        { "name": "Ацетонитрил", "mass_fraction": 1.0 }
+      ]
     },
+    "notes": "Легковоспламеняющаяся токсичная жидкость, широко применяемая как растворитель.",
     "physical": {
-      "molar_mass_kg_per_mol": 0.174,
-      "density_liquid_kg_per_m3": 1220,
-      "density_gas_kg_per_m3": null,
-      "evaporation_heat_J_per_kg": 400000,
-      "boiling_point_C": 250
+      "molar_mass_kg_per_mol": 0.041,
+      "density_liquid_kg_per_m3": 786,
+      "density_gas_kg_per_m3": 2.12,
+      "evaporation_heat_J_per_kg": 740000.0,
+      "boiling_point_C": 81.6
     },
     "explosion": {
-      "explosion_hazard_class": 1,
-      "flash_point_C": 127,
-      "lel_percent": 0.9,
-      "autoignition_temp_C": 430,
-      "energy_reserve_factor": 1,
-      "expansion_degree": 4,
-      "heat_of_combustion_kJ_per_kg": 28000,
-      "burning_rate_kg_per_s_m2": 0.015
-    },
-    "toxicity": {
-      "hazard_class": 1,
-      "pdk_mg_per_m3": 0.035,
-      "lethal_tox_dose_mg_min_per_L": 5,
-      "threshold_tox_dose_mg_min_per_L": 0.5
-    },
-    "reactivity": "Высокая",
-    "odor": "Резкий",
-    "corrosiveness": "Средняя",
-    "precautions": "СИЗОД, герметичность",
-    "impact": "Токсическое поражение",
-    "protection": "Изоляция",
-    "neutralization_methods": "Гидролиз",
-    "first_aid": "Немедленно врач"
-  },
-  {
-    "id": 3,
-    "name": "Пропан (газ)",
-    "kind": 2,
-    "formula": "C3H8",
-    "composition": {
-      "components": [{ "name": "Пропан", "mass_fraction": 1.0 }],
-      "notes": "Горючий газ"
-    },
-    "physical": {
-      "molar_mass_kg_per_mol": 0.044,
-      "density_liquid_kg_per_m3": null,
-      "density_gas_kg_per_m3": 1.9,
-      "evaporation_heat_J_per_kg": null,
-      "boiling_point_C": -42
-    },
-    "explosion": {
-      "explosion_hazard_class": 4,
-      "flash_point_C": null,
-      "lel_percent": 2.1,
-      "autoignition_temp_C": 470,
+      "explosion_hazard_class": 3,
+      "flash_point_C": 2,
+      "lel_percent": 4.4,
+      "autoignition_temp_C": 524,
       "energy_reserve_factor": 2,
-      "expansion_degree": 7,
-      "heat_of_combustion_kJ_per_kg": 46000,
-      "burning_rate_kg_per_s_m2": null
+      "expansion_degree": 5,
+      "heat_of_combustion_kJ_per_kg": 29500,
+      "burning_rate_kg_per_s_m2": 0.025
     },
     "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": null,
+      "hazard_class": 3,
+      "pdk_mg_per_m3": 70,
       "lethal_tox_dose_mg_min_per_L": null,
       "threshold_tox_dose_mg_min_per_L": null
     },
-    "reactivity": "Стабилен",
-    "odor": "Одорирован",
-    "corrosiveness": "Низкая",
+    "reactivity": "Стабилен, разлагается при горении.",
+    "odor": "Слабый эфирный",
+    "corrosiveness": "Слабоагрессивен",
+    "precautions": "Вентиляция, исключить зажигание",
+    "impact": "Пожар, токсическое воздействие",
+    "protection": "Пена, CO2",
+    "neutralization_methods": "Сорбенты",
+    "first_aid": "Свежий воздух, врач"
+  },
+  {
+    "id": 3,
+    "name": "Меркаптан",
+    "kind": 4,
+    "formula": "R–SH",
+    "composition": {
+      "components": [
+        { "name": "Алкилмеркаптаны", "mass_fraction": 1.0 }
+      ]
+    },
+    "notes": "Легковоспламеняющееся вещество с резко выраженным запахом.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.048,
+      "density_liquid_kg_per_m3": 840,
+      "density_gas_kg_per_m3": 2.1,
+      "evaporation_heat_J_per_kg": 380000.0,
+      "boiling_point_C": 6
+    },
+    "explosion": {
+      "explosion_hazard_class": 3,
+      "flash_point_C": -40,
+      "lel_percent": 2.2,
+      "autoignition_temp_C": 300,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 6,
+      "heat_of_combustion_kJ_per_kg": 38000,
+      "burning_rate_kg_per_s_m2": 0.035
+    },
+    "toxicity": {
+      "hazard_class": 2,
+      "pdk_mg_per_m3": 1,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Легко окисляется.",
+    "odor": "Резкий",
+    "corrosiveness": "Коррозия меди",
     "precautions": "Контроль утечек",
-    "impact": "Взрыв, факел",
-    "protection": "Газоанализ",
-    "neutralization_methods": "Вентиляция",
+    "impact": "Отравление, пожар",
+    "protection": "Пена, вода",
+    "neutralization_methods": "Окисление",
     "first_aid": "Свежий воздух"
   },
   {
     "id": 4,
-    "name": "Этилен (газ)",
-    "kind": 3,
-    "formula": "C2H4",
-    "composition": {
-      "components": [{ "name": "Этилен", "mass_fraction": 1.0 }],
-      "notes": "Горючий газ"
-    },
+    "name": "Оксанол",
+    "kind": 0,
+    "formula": "C8H18O",
+    "composition": { "components": [ { "name": "Оксанол", "mass_fraction": 1.0 } ] },
+    "notes": "Органическая горючая жидкость.",
     "physical": {
-      "molar_mass_kg_per_mol": 0.028,
-      "density_liquid_kg_per_m3": null,
-      "density_gas_kg_per_m3": 1.18,
-      "evaporation_heat_J_per_kg": null,
-      "boiling_point_C": -104
+      "molar_mass_kg_per_mol": 0.13,
+      "density_liquid_kg_per_m3": 830,
+      "density_gas_kg_per_m3": 1.76,
+      "evaporation_heat_J_per_kg": 320000.0,
+      "boiling_point_C": 165
     },
     "explosion": {
       "explosion_hazard_class": 4,
-      "flash_point_C": null,
-      "lel_percent": 2.7,
-      "autoignition_temp_C": 450,
-      "energy_reserve_factor": null,
-      "expansion_degree": 7,
-      "heat_of_combustion_kJ_per_kg": 47000,
-      "burning_rate_kg_per_s_m2": null
-    },
-    "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": null,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Активен",
-    "odor": "Слабый",
-    "corrosiveness": "Отсутствует",
-    "precautions": "Контроль концентрации",
-    "impact": "Взрыв",
-    "protection": "Вентиляция",
-    "neutralization_methods": "Разбавление",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 5,
-    "name": "Пропан (СУГ)",
-    "kind": 4,
-    "formula": "C3H8",
-    "composition": {
-      "components": [{ "name": "Пропан", "mass_fraction": 1.0 }],
-      "notes": "Сжиженный горючий газ"
-    },
-    "physical": {
-      "molar_mass_kg_per_mol": 0.044,
-      "density_liquid_kg_per_m3": 510,
-      "density_gas_kg_per_m3": 1.9,
-      "evaporation_heat_J_per_kg": 360000,
-      "boiling_point_C": -42
-    },
-    "explosion": {
-      "explosion_hazard_class": 4,
-      "flash_point_C": null,
-      "lel_percent": 2.1,
-      "autoignition_temp_C": 470,
+      "flash_point_C": 55,
+      "lel_percent": 1.1,
+      "autoignition_temp_C": 280,
       "energy_reserve_factor": 2,
-      "expansion_degree": 7,
-      "heat_of_combustion_kJ_per_kg": 46000,
-      "burning_rate_kg_per_s_m2": null
-    },
-    "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": null,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Стабилен",
-    "odor": "Одорирован",
-    "corrosiveness": "Низкая",
-    "precautions": "Орошение",
-    "impact": "BLEVE",
-    "protection": "Водяные завесы",
-    "neutralization_methods": "Отключение подачи",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 6,
-    "name": "Этилен (СУГ)",
-    "kind": 5,
-    "formula": "C2H4",
-    "composition": {
-      "components": [{ "name": "Этилен", "mass_fraction": 1.0 }],
-      "notes": "Сжиженный горючий газ"
-    },
-    "physical": {
-      "molar_mass_kg_per_mol": 0.028,
-      "density_liquid_kg_per_m3": 570,
-      "density_gas_kg_per_m3": 1.18,
-      "evaporation_heat_J_per_kg": 480000,
-      "boiling_point_C": -104
-    },
-    "explosion": {
-      "explosion_hazard_class": 4,
-      "flash_point_C": null,
-      "lel_percent": 2.7,
-      "autoignition_temp_C": 450,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 7,
-      "heat_of_combustion_kJ_per_kg": 47000,
-      "burning_rate_kg_per_s_m2": null
-    },
-    "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": null,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Активен",
-    "odor": "Слабый",
-    "corrosiveness": "Низкая",
-    "precautions": "Контроль давления",
-    "impact": "BLEVE",
-    "protection": "Орошение",
-    "neutralization_methods": "Отключение подачи",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 7,
-    "name": "Гидроксид натрия",
-    "kind": 6,
-    "formula": "NaOH",
-    "composition": {
-      "components": [{ "name": "NaOH", "mass_fraction": 1.0 }],
-      "notes": "Токсичная неиспаряемая жидкость"
-    },
-    "physical": {
-      "molar_mass_kg_per_mol": 0.040,
-      "density_liquid_kg_per_m3": 2130,
-      "density_gas_kg_per_m3": null,
-      "evaporation_heat_J_per_kg": null,
-      "boiling_point_C": 1388
-    },
-    "explosion": {
-      "explosion_hazard_class": 0,
-      "flash_point_C": null,
-      "lel_percent": null,
-      "autoignition_temp_C": null,
-      "energy_reserve_factor": null,
-      "expansion_degree": null,
-      "heat_of_combustion_kJ_per_kg": null,
-      "burning_rate_kg_per_s_m2": null
-    },
-    "toxicity": {
-      "hazard_class": 2,
-      "pdk_mg_per_m3": 0.5,
-      "lethal_tox_dose_mg_min_per_L": 20,
-      "threshold_tox_dose_mg_min_per_L": 2
-    },
-    "reactivity": "Высокая",
-    "odor": "Отсутствует",
-    "corrosiveness": "Очень высокая",
-    "precautions": "СИЗ",
-    "impact": "Химические ожоги",
-    "protection": "Локализация",
-    "neutralization_methods": "Кислоты",
-    "first_aid": "Врач"
-  },
-  {
-    "id": 8,
-    "name": "Хлор (газ)",
-    "kind": 7,
-    "formula": "Cl2",
-    "composition": {
-      "components": [{ "name": "Хлор", "mass_fraction": 1.0 }],
-      "notes": "Токсичный газ"
-    },
-    "physical": {
-      "molar_mass_kg_per_mol": 0.071,
-      "density_liquid_kg_per_m3": null,
-      "density_gas_kg_per_m3": 3.2,
-      "evaporation_heat_J_per_kg": null,
-      "boiling_point_C": -34
-    },
-    "explosion": {
-      "explosion_hazard_class": 0,
-      "flash_point_C": null,
-      "lel_percent": null,
-      "autoignition_temp_C": null,
-      "energy_reserve_factor": null,
-      "expansion_degree": null,
-      "heat_of_combustion_kJ_per_kg": null,
-      "burning_rate_kg_per_s_m2": null
-    },
-    "toxicity": {
-      "hazard_class": 2,
-      "pdk_mg_per_m3": 1.0,
-      "lethal_tox_dose_mg_min_per_L": 30,
-      "threshold_tox_dose_mg_min_per_L": 3
-    },
-    "reactivity": "Сильный окислитель",
-    "odor": "Резкий",
-    "corrosiveness": "Высокая",
-    "precautions": "Герметичность",
-    "impact": "Токсическое облако",
-    "protection": "Вентиляция",
-    "neutralization_methods": "Щёлочи",
-    "first_aid": "Врач"
-  },
-  {
-    "id": 9,
-    "name": "Хлор (жидкий)",
-    "kind": 8,
-    "formula": "Cl2",
-    "composition": {
-      "components": [{ "name": "Хлор", "mass_fraction": 1.0 }],
-      "notes": "Сжиженный токсичный газ"
-    },
-    "physical": {
-      "molar_mass_kg_per_mol": 0.071,
-      "density_liquid_kg_per_m3": 1460,
-      "density_gas_kg_per_m3": 3.2,
-      "evaporation_heat_J_per_kg": 287000,
-      "boiling_point_C": -34
-    },
-    "explosion": {
-      "explosion_hazard_class": 0,
-      "flash_point_C": null,
-      "lel_percent": null,
-      "autoignition_temp_C": null,
-      "energy_reserve_factor": null,
-      "expansion_degree": null,
-      "heat_of_combustion_kJ_per_kg": null,
-      "burning_rate_kg_per_s_m2": null
-    },
-    "toxicity": {
-      "hazard_class": 2,
-      "pdk_mg_per_m3": 1.0,
-      "lethal_tox_dose_mg_min_per_L": 30,
-      "threshold_tox_dose_mg_min_per_L": 3
-    },
-    "reactivity": "Окислитель",
-    "odor": "Резкий",
-    "corrosiveness": "Высокая",
-    "precautions": "СИЗОД",
-    "impact": "Массовое поражение",
-    "protection": "Водяные завесы",
-    "neutralization_methods": "Щёлочи",
-    "first_aid": "Врач"
-  },
-  {
-    "id": 10,
-    "name": "Масло трансформаторное",
-    "kind": 9,
-    "formula": "Смесь углеводородов C15–C40",
-    "composition": {
-      "components": [{ "name": "Углеводороды", "mass_fraction": 1.0 }],
-      "notes": "Практически неиспаряемая горючая жидкость"
-    },
-    "physical": {
-      "molar_mass_kg_per_mol": 0.300,
-      "density_liquid_kg_per_m3": 890,
-      "density_gas_kg_per_m3": null,
-      "evaporation_heat_J_per_kg": 200000,
-      "boiling_point_C": 300
-    },
-    "explosion": {
-      "explosion_hazard_class": 1,
-      "flash_point_C": 140,
-      "lel_percent": 0.6,
-      "autoignition_temp_C": 320,
-      "energy_reserve_factor": 1,
-      "expansion_degree": 4,
+      "expansion_degree": 3,
       "heat_of_combustion_kJ_per_kg": 42000,
       "burning_rate_kg_per_s_m2": 0.02
     },
@@ -400,13 +158,369 @@
       "lethal_tox_dose_mg_min_per_L": null,
       "threshold_tox_dose_mg_min_per_L": null
     },
-    "reactivity": "Низкая",
-    "odor": "Нефтяной",
-    "corrosiveness": "Низкая",
-    "precautions": "Противопожарные меры",
-    "impact": "Пожар пролива",
+    "reactivity": "Стабилен",
+    "odor": "Слабый",
+    "corrosiveness": "Отсутствует",
+    "precautions": "Исключить нагрев",
+    "impact": "Пожар",
     "protection": "Пена",
     "neutralization_methods": "Сорбенты",
+    "first_aid": "Промыть водой"
+  },
+  {
+    "id": 5,
+    "name": "Дизельное топливо",
+    "kind": 0,
+    "formula": "C10–C22",
+    "composition": { "components": [ { "name": "Углеводороды", "mass_fraction": 1.0 } ] },
+    "notes": "Горючая жидкость нефтяного происхождения.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.19,
+      "density_liquid_kg_per_m3": 830,
+      "density_gas_kg_per_m3": 2.33,
+      "evaporation_heat_J_per_kg": 270000.0,
+      "boiling_point_C": 180
+    },
+    "explosion": {
+      "explosion_hazard_class": 4,
+      "flash_point_C": 62,
+      "lel_percent": 0.6,
+      "autoignition_temp_C": 250,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 3,
+      "heat_of_combustion_kJ_per_kg": 43000,
+      "burning_rate_kg_per_s_m2": 0.015
+    },
+    "toxicity": {
+      "hazard_class": 4,
+      "pdk_mg_per_m3": 300,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Стабильно",
+    "odor": "Нефтяной",
+    "corrosiveness": "Нет",
+    "precautions": "Исключить пламя",
+    "impact": "Пожар",
+    "protection": "Пена",
+    "neutralization_methods": "Сорбенты",
+    "first_aid": "Свежий воздух"
+  },
+  {
+    "id": 6,
+    "name": "Толуол",
+    "kind": 0,
+    "formula": "C7H8",
+    "composition": { "components": [ { "name": "Толуол", "mass_fraction": 1.0 } ] },
+    "notes": "Легковоспламеняющаяся ароматическая жидкость.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.092,
+      "density_liquid_kg_per_m3": 867,
+      "density_gas_kg_per_m3": 1.88,
+      "evaporation_heat_J_per_kg": 360000.0,
+      "boiling_point_C": 110.6
+    },
+    "explosion": {
+      "explosion_hazard_class": 4,
+      "flash_point_C": 4,
+      "lel_percent": 1.2,
+      "autoignition_temp_C": 480,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 5,
+      "heat_of_combustion_kJ_per_kg": 41000,
+      "burning_rate_kg_per_s_m2": 0.03
+    },
+    "toxicity": {
+      "hazard_class": 3,
+      "pdk_mg_per_m3": 100,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Реагирует с окислителями",
+    "odor": "Ароматический",
+    "corrosiveness": "Нет",
+    "precautions": "Вентиляция",
+    "impact": "Пожар",
+    "protection": "Пена",
+    "neutralization_methods": "Сорбенты",
+    "first_aid": "Свежий воздух"
+  },
+  {
+    "id": 7,
+    "name": "Изопентан",
+    "kind": 0,
+    "formula": "C5H12",
+    "composition": { "components": [ { "name": "Изопентан", "mass_fraction": 1.0 } ] },
+    "notes": "Легковоспламеняющаяся летучая жидкость.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.072,
+      "density_liquid_kg_per_m3": 620,
+      "density_gas_kg_per_m3": 2.41,
+      "evaporation_heat_J_per_kg": 310000.0,
+      "boiling_point_C": 27.8
+    },
+    "explosion": {
+      "explosion_hazard_class": 3,
+      "flash_point_C": -51,
+      "lel_percent": 1.4,
+      "autoignition_temp_C": 420,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 6,
+      "heat_of_combustion_kJ_per_kg": 46000,
+      "burning_rate_kg_per_s_m2": 0.04
+    },
+    "toxicity": {
+      "hazard_class": 4,
+      "pdk_mg_per_m3": 300,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Стабилен",
+    "odor": "Углеводородный",
+    "corrosiveness": "Нет",
+    "precautions": "Герметичность",
+    "impact": "Взрыв",
+    "protection": "Пена",
+    "neutralization_methods": "Испарение",
+    "first_aid": "Свежий воздух"
+  },
+  {
+    "id": 8,
+    "name": "Альфаметилстирол",
+    "kind": 0,
+    "formula": "C9H10",
+    "composition": { "components": [ { "name": "Альфаметилстирол", "mass_fraction": 1.0 } ] },
+    "notes": "Горючая органическая жидкость, склонна к полимеризации.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.118,
+      "density_liquid_kg_per_m3": 909,
+      "density_gas_kg_per_m3": 1.67,
+      "evaporation_heat_J_per_kg": 350000.0,
+      "boiling_point_C": 165
+    },
+    "explosion": {
+      "explosion_hazard_class": 3,
+      "flash_point_C": 52,
+      "lel_percent": 0.9,
+      "autoignition_temp_C": 440,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 4,
+      "heat_of_combustion_kJ_per_kg": 40500,
+      "burning_rate_kg_per_s_m2": 0.02
+    },
+    "toxicity": {
+      "hazard_class": 3,
+      "pdk_mg_per_m3": 50,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Полимеризация",
+    "odor": "Ароматический",
+    "corrosiveness": "Нет",
+    "precautions": "Ингибиторы",
+    "impact": "Пожар",
+    "protection": "Пена",
+    "neutralization_methods": "Сжигание",
+    "first_aid": "Свежий воздух"
+  },
+  {
+    "id": 9,
+    "name": "Изобутан-изобутиленовая фракция",
+    "kind": 4,
+    "formula": "C4H10 / C4H8",
+    "composition": {
+      "components": [
+        { "name": "Изобутан", "mass_fraction": 0.6 },
+        { "name": "Изобутилен", "mass_fraction": 0.4 }
+      ]
+    },
+    "notes": "Смесь лёгких углеводородов с высокой взрывоопасностью.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.057,
+      "density_liquid_kg_per_m3": 580,
+      "density_gas_kg_per_m3": 2.3,
+      "evaporation_heat_J_per_kg": 340000.0,
+      "boiling_point_C": -7
+    },
+    "explosion": {
+      "explosion_hazard_class": 3,
+      "flash_point_C": -80,
+      "lel_percent": 1.8,
+      "autoignition_temp_C": 460,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 7,
+      "heat_of_combustion_kJ_per_kg": 46000,
+      "burning_rate_kg_per_s_m2": 0.045
+    },
+    "toxicity": {
+      "hazard_class": 4,
+      "pdk_mg_per_m3": 300,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Олефины",
+    "odor": "Углеводородный",
+    "corrosiveness": "Нет",
+    "precautions": "Контроль утечек",
+    "impact": "Взрыв",
+    "protection": "Вода, пена",
+    "neutralization_methods": "Факел",
+    "first_aid": "Свежий воздух"
+  },
+  {
+    "id": 10,
+    "name": "Триметилкарбинол",
+    "kind": 0,
+    "formula": "C4H10O",
+    "composition": { "components": [ { "name": "Трет-бутанол", "mass_fraction": 1.0 } ] },
+    "notes": "Горючий спирт.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.074,
+      "density_liquid_kg_per_m3": 781,
+      "density_gas_kg_per_m3": 2.07,
+      "evaporation_heat_J_per_kg": 530000.0,
+      "boiling_point_C": 82.4
+    },
+    "explosion": {
+      "explosion_hazard_class": 4,
+      "flash_point_C": 11,
+      "lel_percent": 2.4,
+      "autoignition_temp_C": 470,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 5,
+      "heat_of_combustion_kJ_per_kg": 36000,
+      "burning_rate_kg_per_s_m2": 0.025
+    },
+    "toxicity": {
+      "hazard_class": 3,
+      "pdk_mg_per_m3": 100,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Стабилен",
+    "odor": "Спиртовой",
+    "corrosiveness": "Нет",
+    "precautions": "Вентиляция",
+    "impact": "Пожар",
+    "protection": "Пена",
+    "neutralization_methods": "Сорбенты",
+    "first_aid": "Свежий воздух"
+  },
+  {
+    "id": 11,
+    "name": "Изопрен",
+    "kind": 0,
+    "formula": "C5H8",
+    "composition": { "components": [ { "name": "Изопрен", "mass_fraction": 1.0 } ] },
+    "notes": "Легковоспламеняющаяся жидкость.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.068,
+      "density_liquid_kg_per_m3": 681,
+      "density_gas_kg_per_m3": 1.93,
+      "evaporation_heat_J_per_kg": 360000.0,
+      "boiling_point_C": 34
+    },
+    "explosion": {
+      "explosion_hazard_class": 3,
+      "flash_point_C": -48,
+      "lel_percent": 1.5,
+      "autoignition_temp_C": 220,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 6,
+      "heat_of_combustion_kJ_per_kg": 45000,
+      "burning_rate_kg_per_s_m2": 0.04
+    },
+    "toxicity": {
+      "hazard_class": 4,
+      "pdk_mg_per_m3": 300,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Полимеризация",
+    "odor": "Углеводородный",
+    "corrosiveness": "Нет",
+    "precautions": "Ингибиторы",
+    "impact": "Взрыв",
+    "protection": "Пена",
+    "neutralization_methods": "Факел",
+    "first_aid": "Свежий воздух"
+  },
+  {
+    "id": 12,
+    "name": "Деметилдиоксан",
+    "kind": 0,
+    "formula": "C6H12O2",
+    "composition": { "components": [ { "name": "Деметилдиоксан", "mass_fraction": 1.0 } ] },
+    "notes": "Горючая кислородсодержащая жидкость.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.116,
+      "density_liquid_kg_per_m3": 1030,
+      "density_gas_kg_per_m3": 2.22,
+      "evaporation_heat_J_per_kg": 450000.0,
+      "boiling_point_C": 101
+    },
+    "explosion": {
+      "explosion_hazard_class": 4,
+      "flash_point_C": 18,
+      "lel_percent": 1.8,
+      "autoignition_temp_C": 230,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 4,
+      "heat_of_combustion_kJ_per_kg": 28000,
+      "burning_rate_kg_per_s_m2": 0.02
+    },
+    "toxicity": {
+      "hazard_class": 4,
+      "pdk_mg_per_m3": 300,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Стабилен",
+    "odor": "Эфирный",
+    "corrosiveness": "Нет",
+    "precautions": "Вентиляция",
+    "impact": "Пожар",
+    "protection": "Пена",
+    "neutralization_methods": "Сорбенты",
+    "first_aid": "Свежий воздух"
+  },
+  {
+    "id": 13,
+    "name": "Изобутилен",
+    "kind": 4,
+    "formula": "C4H8",
+    "composition": { "components": [ { "name": "Изобутилен", "mass_fraction": 1.0 } ] },
+    "notes": "Легковоспламеняющийся сжиженный газ.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.056,
+      "density_liquid_kg_per_m3": 590,
+      "density_gas_kg_per_m3": 2.5,
+      "evaporation_heat_J_per_kg": 360000.0,
+      "boiling_point_C": -6.9
+    },
+    "explosion": {
+      "explosion_hazard_class": 3,
+      "flash_point_C": -80,
+      "lel_percent": 1.8,
+      "autoignition_temp_C": 460,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 7,
+      "heat_of_combustion_kJ_per_kg": 46000,
+      "burning_rate_kg_per_s_m2": 0.045
+    },
+    "toxicity": {
+      "hazard_class": 4,
+      "pdk_mg_per_m3": 300,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Полимеризация",
+    "odor": "Слабый",
+    "corrosiveness": "Нет",
+    "precautions": "Герметичность",
+    "impact": "Взрыв",
+    "protection": "Вода, пена",
+    "neutralization_methods": "Факел",
     "first_aid": "Свежий воздух"
   }
 ]
