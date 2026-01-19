@@ -1,5 +1,5 @@
 import math
-from calculations.config import CD
+from core.config import CD
 
 def liquid_leak_mass_flow(p_mpa, d_mm, rho):
     p = p_mpa * 1e6          # МПа → Па

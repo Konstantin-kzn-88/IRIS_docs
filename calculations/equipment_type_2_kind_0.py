@@ -10,7 +10,7 @@ from calculations.app._tvs_explosion import Explosion
 from calculations.app._jet_fire import Torch
 from calculations.app._fireball import Fireball
 from calculations.app._base_damage_state import damage
-from calculations.config import (
+from core.config import (
     KG_TO_T,
     MASS_IN_CLOUDE,
     MSG,

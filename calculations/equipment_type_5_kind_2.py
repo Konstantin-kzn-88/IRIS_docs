@@ -6,7 +6,7 @@ from calculations.app._gas_flow import gas_leak_mass_flow
 from calculations.app._lower_concentration import LCLP
 from calculations.app._base_damage_line import damage
 from calculations.app._tvs_explosion import Explosion
-from calculations.config import (
+from core.config import (
     KG_TO_T,
     MASS_IN_CLOUDE,
     PEOPLE_COUNT,

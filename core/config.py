@@ -18,3 +18,6 @@ EF = 350  # ср.поверхностная плотность тепловог�
 DAMAGE_SIX_SC = [0.8, 1.3, 0.5, 0.25, 0.3, 0.1]
 DAMAGE_NINE_SC = [0.8, 1.3, 0.5, 0.3, 0.1, 0.2, 0.15, 0.1, 0.6]
 DAMAGE_EIGHT_SC = [0.8, 1.3, 0.6, 0.3, 0.25, 0.2, 0.15, 0.1]
+
+WITHOUT_ACTIVITES_COMPENSATOIRES = 1.25
+WITH_ACTIVITES_COMPENSATOIRES = 0.6

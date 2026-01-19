@@ -1,5 +1,5 @@
 import math
-from calculations.config import P0, R
+from core.config import P0, R
 
 
 def saturated_vapor_pressure_pa(

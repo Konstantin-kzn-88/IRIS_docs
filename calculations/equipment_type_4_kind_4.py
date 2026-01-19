@@ -7,7 +7,7 @@ from calculations.app._liquid_flow import liquid_leak_mass_flow
 from calculations.app._lower_concentration import LCLP
 from calculations.app._strait_fire import Strait_fire
 from calculations.app._base_damage_line import damage
-from calculations.config import (
+from core.config import (
     KG_TO_T,
     MASS_IN_CLOUDE,
     MSG,

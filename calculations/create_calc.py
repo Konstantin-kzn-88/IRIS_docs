@@ -8,6 +8,7 @@ from calculations import equipment_type_0_kind_0, equipment_type_1_kind_0, equip
 
 
 from core.path import DB_PATH, TYPICAL_SCENARIOS_PATH
+from calculations.app._frequency import apply_ac_multiplier
 
 def is_pair_allowed(allowed_pairs: dict, equipment_type: int, kind: int) -> bool:
     """Если для пары есть явный запрет — запрещено. Если записи нет — считаем допустимым."""
@@ -113,6 +114,8 @@ def main(db_path: Path = DB_PATH, typical_scenarios_path: Path = TYPICAL_SCENARI
                 scenario_no_global = cur.execute(
                     "SELECT COALESCE(MAX(scenario_no), 0) + 1 FROM calculations;"
                 ).fetchone()[0]
+                # Проверяем есть ли компенсирующие мероприятия
+                sc = apply_ac_multiplier(sc, hazard_component)
                 # если вам нужно сохранять исходные частоты из json — можно собирать payload уже тут
                 # а расчёт потом расширить
                 if equipment["equipment_type"] == 0 and substance["kind"] == 0:

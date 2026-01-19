@@ -1,5 +1,5 @@
 import math
-from calculations.config import CD, R, K_ADIABAT
+from core.config import CD, R, K_ADIABAT
 
 
 def gas_leak_mass_flow(

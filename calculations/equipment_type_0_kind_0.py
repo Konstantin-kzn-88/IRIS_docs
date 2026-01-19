@@ -8,7 +8,7 @@ from calculations.app._pipeline_volume_m3 import pipeline_internal_volume_m3
 from calculations.app._strait_fire import Strait_fire
 from calculations.app._tvs_explosion import Explosion
 from calculations.app._base_damage_line import damage
-from calculations.config import KG_TO_T, MASS_IN_CLOUDE, MASS_TO_PART, MSG, WIND, SPILL_TO_PART, T_TO_KG, Pa_TO_kPa, P0, \
+from core.config import KG_TO_T, MASS_IN_CLOUDE, MASS_TO_PART, MSG, WIND, SPILL_TO_PART, T_TO_KG, Pa_TO_kPa, P0, \
     PEOPLE_COUNT, DAMAGE_SIX_SC
 
 

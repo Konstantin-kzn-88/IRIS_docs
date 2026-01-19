@@ -10,7 +10,7 @@ from calculations.app._tvs_explosion import Explosion
 from calculations.app._jet_fire import Torch
 from calculations.app._fireball import Fireball
 from calculations.app._base_damage_state import damage
-from calculations.config import KG_TO_T, MASS_IN_CLOUDE, MSG, WIND, SPILL_TO_PART, T_TO_KG, Pa_TO_kPa, P0, \
+from core.config import KG_TO_T, MASS_IN_CLOUDE, MSG, WIND, SPILL_TO_PART, T_TO_KG, Pa_TO_kPa, P0, \
     PEOPLE_COUNT, D_MM_JET_LIQUID, D_MM_JET_GAS, MASS_IN_BLEVE, EF, DAMAGE_NINE_SC
 
 # Включение/отключение отладочного вывода
