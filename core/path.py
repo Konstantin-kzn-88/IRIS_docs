@@ -27,3 +27,6 @@ REPORT_CHARTS_DIR = REPORT_OUTPUT_DIR / "charts"
 
 # --- INFO ---
 INFO_DIR = PROJECT_DIR / "info"
+
+ORGANIZATION_PATH = Path("data/organizations/tatneft/organization.json")
+ORGANIZATION_SITE_ID = "opo_0866"

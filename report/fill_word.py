@@ -6,7 +6,8 @@ from docx import Document
 from report.reportgen.constants import NGK_BACKGROUND_RISK
 from report.reportgen.formatters import risk_to_dbr
 from report.reportgen.constants import SOCIAL_FATALITY_RISKS_DBR
-from core.path import DB_PATH, REPORT_TEMPLATE_DOCX, REPORT_OUTPUT_DIR, TYPICAL_SCENARIOS_PATH
+from core.path import DB_PATH, REPORT_TEMPLATE_DOCX, REPORT_OUTPUT_DIR, TYPICAL_SCENARIOS_PATH, ORGANIZATION_PATH, \
+    ORGANIZATION_SITE_ID
 
 # алиасы для минимальных правок ниже по файлу
 TEMPLATE_PATH = REPORT_TEMPLATE_DOCX
@@ -1517,6 +1518,164 @@ def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn
     insert_paragraph_after_table(doc, table, "")
 
 
+def load_organization_root() -> dict:
+    """Возвращает первый элемент массива из organization.json или {}."""
+    p = ORGANIZATION_PATH
+    if not p.exists():
+        return {}
+    with open(p, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if isinstance(data, list) and data:
+        return data[0]
+    if isinstance(data, dict):
+        return data
+    return {}
+
+
+def _replace_in_paragraph_runs(paragraph, replacements: dict) -> bool:
+    """
+    Пытаемся заменить в runs (сохраняет форматирование run'ов).
+    Возвращает True если хотя бы одна замена прошла по runs.
+    """
+    changed = False
+    for run in paragraph.runs:
+        txt = run.text
+        if not txt:
+            continue
+        new_txt = txt
+        for k, v in replacements.items():
+            if k in new_txt:
+                new_txt = new_txt.replace(k, v)
+        if new_txt != txt:
+            run.text = new_txt
+            changed = True
+    return changed
+
+
+def _replace_in_paragraph_text(paragraph, replacements: dict):
+    """
+    Фолбэк: замена на уровне paragraph.text (если плейсхолдер "разбит" на несколько runs).
+    Важно: это может упростить форматирование внутри абзаца (run-форматирование).
+    """
+    txt = paragraph.text
+    if not txt:
+        return
+    new_txt = txt
+    for k, v in replacements.items():
+        if k in new_txt:
+            new_txt = new_txt.replace(k, v)
+    if new_txt != txt:
+        paragraph.text = new_txt
+
+
+def replace_placeholders_in_doc(doc: Document, replacements: dict):
+    """
+    Заменяет плейсхолдеры во всем документе: абзацы + таблицы (включая вложенные).
+    """
+    # 1) обычные абзацы
+    for p in doc.paragraphs:
+        changed = _replace_in_paragraph_runs(p, replacements)
+        if not changed:
+            _replace_in_paragraph_text(p, replacements)
+
+    # 2) таблицы (ячейки содержат свои paragraphs)
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    changed = _replace_in_paragraph_runs(p, replacements)
+                    if not changed:
+                        _replace_in_paragraph_text(p, replacements)
+
+
+def select_site_by_id(sites: list[dict], site_id: str) -> dict:
+    """
+    Возвращает площадку с заданным site_id.
+    Если не найдено — пустой dict.
+    """
+    for s in sites or []:
+        if isinstance(s, dict) and s.get("site_id") == site_id:
+            return s
+    return {}
+
+
+def build_org_replacements(org_root: dict) -> dict:
+    org_root = org_root or {}
+
+    org = org_root.get("organization", {}) or {}
+    ids = org.get("ids", {}) or {}
+    contacts = org.get("contacts", {}) or {}
+    head = org.get("head", {}) or {}
+
+    permits = org_root.get("permits", {}) or {}
+    management_docs = org_root.get("management_docs", {}) or {}
+    security = org_root.get("security_and_response", {}) or {}
+    reserves = org_root.get("reserves", {}) or {}
+
+    sites = org_root.get("sites", []) or []
+
+    # <<< ВОТ ЗДЕСЬ ВЫБОР >>>
+    site0 = select_site_by_id(sites, ORGANIZATION_SITE_ID)
+    personnel = site0.get("personnel", {}) or {}
+
+    def s(x):
+        return "" if x is None else str(x)
+
+    return {
+        # --- organization ---
+        "{{ FULL_NAME }}": s(org.get("full_name")),
+        "{{ SHORT_NAME }}": s(org.get("short_name")),
+
+        "{{ OGRN }}": s(ids.get("ogrn")),
+        "{{ INN }}": s(ids.get("inn")),
+        "{{ KPP }}": s(ids.get("kpp")),
+
+        "{{ ORG_ADDRESS }}": s(org.get("address")),
+
+        "{{ ORG_EMAIL }}": s(contacts.get("email")),
+        "{{ ORG_PHONE }}": s(contacts.get("phone")),
+        "{{ ORG_FAX }}": s(contacts.get("fax")),
+
+        "{{ HEAD_POSITION }}": s(head.get("position")),
+        "{{ HEAD_FULL_NAME }}": s(head.get("full_name")),
+        "{{ HEAD_SHORT_NAME }}": s(head.get("short_name")),
+
+        # --- permits ---
+        "{{ LICENSE_NUMBER }}": s(permits.get("license_number")),
+
+        # --- management_docs ---
+        "{{ INDUSTRIAL_SAFETY_MANAGEMENT_SYSTEM }}": s(management_docs.get("industrial_safety_management_system")),
+        "{{ INDUSTRIAL_CONTROL_REGULATION }}": s(management_docs.get("industrial_control_regulation")),
+        "{{ ACCIDENT_INVESTIGATION_REGULATION }}": s(management_docs.get("accident_investigation_regulation")),
+
+        # --- security_and_response ---
+        "{{ OPO_SECURITY }}": s(security.get("opo_security")),
+        "{{ NASF_INFORMATION }}": s(security.get("nasf_information")),
+        "{{ PASF_INFORMATION }}": s(security.get("pasf_information")),
+
+        # --- reserves ---
+        "{{ FINANCIAL_RESERVE_ORDER }}": s(reserves.get("financial_reserve_order")),
+        "{{ MATERIAL_RESERVE_ORDER }}": s(reserves.get("material_reserve_order")),
+
+        # --- site[0] ---
+        "{{ SITE_ID }}": s(site0.get("site_id")),
+        "{{ SITE_NAME }}": s(site0.get("name")),
+        "{{ SITE_REG_NUMBER }}": s(site0.get("reg_number")),
+        "{{ SITE_OBJECT_ID }}": s(site0.get("object_id")),
+
+        "{{ SITE_OBJECT_ADDRESS }}": s(site0.get("object_address")),
+        "{{ SITE_SANITARY_PROTECTION_ZONE_M }}": s(site0.get("sanitary_protection_zone_m")),
+
+        "{{ SITE_DESCRIPTION }}": s(site0.get("description")),
+        "{{ SITE_AREA_CHARACTERISTICS }}": s(site0.get("area_characteristics")),
+
+        "{{ SITE_EMPLOYEES_COUNT }}": s(personnel.get("employees_count")),
+        "{{ SITE_EMPLOYEES_OTHER_OPO_COUNT }}": s(personnel.get("employees_other_opo_count")),
+
+        "{{ SITE_EMERGENCY_RESPONSE_PLAN }}": s(site0.get("emergency_response_plan")),
+    }
+
+
 def main():
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1558,6 +1717,12 @@ def main():
 
     doc = Document(TEMPLATE_PATH)
 
+    # Текстовые данные
+    org_root = load_organization_root()
+    repl = build_org_replacements(org_root)
+    replace_placeholders_in_doc(doc, repl)
+
+    # Таблицы
     render_section_at_marker(
         doc=doc,
         marker="{{SUBSTANCES_SECTION}}",
