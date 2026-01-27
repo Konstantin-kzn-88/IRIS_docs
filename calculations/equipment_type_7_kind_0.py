@@ -52,7 +52,8 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     result["base_frequency"] = scenario.get("base_frequency", 1)
     result["accident_event_probability"] = scenario.get("accident_event_probability", 1)
-    result["scenario_frequency"] = scenario.get("scenario_frequency", 1)
+    # Надо умножить частоту на количество оборудования
+    result["scenario_frequency"] = scenario.get("scenario_frequency", 1) * equipment["quantity_equipment"]
 
     # -------------------------------------------------------------------------
     # Свойства вещества
