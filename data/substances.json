@@ -1,232 +1,138 @@
 [
   {
     "id": 1,
-    "name": "Дивинил",
-    "kind": 4,
-    "formula": "C4H6",
+    "name": "Нефть",
+    "kind": 0,
+    "formula": "Углеводороды CnH₂n₊₂ и циклоалканы CnH₂n",
     "composition": {
       "components": [
-        { "name": "Дивинил (1,3-бутадиен)", "mass_fraction": 1.0 }
+        { "name": "Метан", "mass_fraction": 0.05 },
+        { "name": "Этан", "mass_fraction": 0.03 },
+        { "name": "Пропан", "mass_fraction": 0.02 },
+        { "name": "Бутаны", "mass_fraction": 0.02 },
+        { "name": "Пентан-нафтеновая фракция", "mass_fraction": 0.10 },
+        { "name": "Лёгкие бензины (C6–C8)", "mass_fraction": 0.15 },
+        { "name": "Тяжёлые бензины (C8–C12)", "mass_fraction": 0.20 },
+        { "name": "Керосиновая фракция", "mass_fraction": 0.15 },
+        { "name": "Газойлевая фракция", "mass_fraction": 0.15 },
+        { "name": "Мазут / тяжёлые остатки", "mass_fraction": 0.13 }
       ]
     },
-    "notes": "Дивинил — легковоспламеняющийся газ, широко применяемый в химической промышленности. Образует с воздухом взрывоопасные смеси в широком диапазоне концентраций.",
+    "notes": "Нефть — сложная смесь углеводородов, включающая парафиновые, нафтеновые и ароматические соединения. Относится к легковоспламеняющимся жидкостям, способным образовывать с воздухом взрывоопасные паровоздушные смеси. При перегреве или утечке пары нефти могут распространяться на значительные расстояния и воспламеняться от источников зажигания.",
     "physical": {
-      "molar_mass_kg_per_mol": 0.054,
-      "density_liquid_kg_per_m3": 620,
-      "density_gas_kg_per_m3": 2.5,
-      "evaporation_heat_J_per_kg": 430000.0,
-      "boiling_point_C": -4.4
+      "molar_mass_kg_per_mol": 0.200,
+      "density_liquid_kg_per_m3": 920,
+      "density_gas_kg_per_m3": 3.59,
+      "evaporation_heat_J_per_kg": 250000.0,
+      "boiling_point_C": 150
     },
     "explosion": {
-      "explosion_hazard_class": 2,
-      "flash_point_C": -85,
-      "lel_percent": 2.0,
-      "autoignition_temp_C": 420,
+      "explosion_hazard_class": 3,
+      "flash_point_C": 21,
+      "lel_percent": 1.0,
+      "autoignition_temp_C": 250,
       "energy_reserve_factor": 2,
       "expansion_degree": 7,
-      "heat_of_combustion_kJ_per_kg": 45000,
+      "heat_of_combustion_kJ_per_kg": 42000,
+      "burning_rate_kg_per_s_m2": 0.03
+    },
+    "toxicity": {
+      "hazard_class": 3,
+      "pdk_mg_per_m3": 300,
+      "lethal_tox_dose_mg_min_per_L": null,
+      "threshold_tox_dose_mg_min_per_L": null
+    },
+    "reactivity": "Химически умеренно активна: может окисляться, взаимодействовать с сильными окислителями и образовывать продукты термического разложения. Пары нефти образуют с воздухом взрывоопасные смеси.",
+    "odor": "Специфический запах углеводородов, зависит от состава нефти (обусловлен наличием сернистых и ароматических соединений).",
+    "corrosiveness": "Коррозионное воздействие оказывают сернистые соединения, содержащиеся в нефти; эффект воздействия зависит от их концентрации.",
+    "precautions": "Герметизация оборудования и трубопроводов. Приточно-вытяжная вентиляция помещений. Исключение появления источников огня. Применение средств индивидуальной защиты. При загорании нефти применяют средства пожаротушения: распыленную воду, химическую и механическую пену; при объёмном тушении применяют порошковые огнетушители, углекислый газ, при тушении жидкостью – бромэтиловые составы (СЖБ), перегретый пар, песок, асбестовые покрывала, кошму и другие средства.",
+    "impact": "При утечке или аварийном разливе нефти происходит выброс летучих органических соединений, которые токсичны и негативно влияют на окружающую среду и здоровье человека. При проливе нефти нарушается состояние почвенных покровов, разрушается структура почвенных биоценозов и вызывается изменение видового разнообразия экосистемы. В качестве поражающих факторов можно рассматривать: тепловое излучение при пожарах пролива и избыточное давление взрыва паров нефти.",
+    "protection": "К индивидуальным средствам защиты на промыслах относятся: спецодежда, спецобувь, головные уборы, рукавицы, перчатки, приспособления для защиты органов дыхания, зрения и слуха (противогазы, респираторы, очки различных типов, антифоны), предохранительные пояса и др.",
+    "neutralization_methods": "Сбор нефти сорбентами с последующей утилизацией. Грунты и песок, загрязнённые нефтью, подлежат утилизации.",
+    "first_aid": "Освободить от стесняющей одежды, обеспечить покой, тепло. Крепкий сладкий чай, настойка валерианы или пустырника, ингаляция увлажнённого кислорода, промывание глаз 2 % раствором соды. При потере сознания – вдыхание нашатырного спирта. В тяжёлых случаях при резком ослаблении или остановке дыхания немедленно начать искусственное дыхание. При ожогах дополнительно: прекратить воздействие высокой температуры на пострадавшего, погасить пламя на его одежде, удалить пострадавшего из зоны поражения. Одежду в местах ожога лучше разрезать и наложить вокруг ожога асептическую повязку; вату при этом накладывать нельзя. При воздействии избыточного давления взрыва дополнительно: противошоковая терапия, нормализация витальных функций. Прекращение наружного кровотечения посредством наложения тугой давящей повязки, закруткой или жгутом."
+  },
+
+  {
+    "id": 2,
+    "name": "Газовый конденсат",
+    "kind": 0,
+    "formula": "СnН2n+2 и СnН2n",
+    "composition": {
+      "components": [
+        { "name": "Метан", "mass_fraction": 0.01 },
+        { "name": "Этан", "mass_fraction": 0.01 },
+        { "name": "Пропан", "mass_fraction": 0.02 },
+        { "name": "Бутаны (i/n-C4)", "mass_fraction": 0.04 },
+        { "name": "Пентаны (i/n-C5)", "mass_fraction": 0.12 },
+        { "name": "Гексановая фракция (C6)", "mass_fraction": 0.14 },
+        { "name": "Гептановая фракция (C7)", "mass_fraction": 0.14 },
+        { "name": "Октан-нонановая фракция (C8–C9)", "mass_fraction": 0.20 },
+        { "name": "Декан-ундекановая фракция (C10–C11)", "mass_fraction": 0.18 },
+        { "name": "Тяжёлая фракция (C12+)", "mass_fraction": 0.14 }
+      ]
+    },
+    "notes": "Газовый конденсат — смесь лёгких жидких углеводородов (преимущественно C5–C12), выделяющаяся из природного газа при снижении давления и/или температуры. Легковоспламеняющаяся жидкость; пары образуют с воздухом взрывоопасные смеси. При разливе быстро испаряется, образуя опасную паровоздушную зону.",
+    "physical": {
+      "molar_mass_kg_per_mol": 0.120,
+      "density_liquid_kg_per_m3": 740,
+      "density_gas_kg_per_m3": 1.5,
+      "evaporation_heat_J_per_kg": 300000.0,
+      "boiling_point_C": 35
+    },
+    "explosion": {
+      "explosion_hazard_class": 3,
+      "flash_point_C": -5,
+      "lel_percent": 1.2,
+      "autoignition_temp_C": 260,
+      "energy_reserve_factor": 2,
+      "expansion_degree": 7,
+      "heat_of_combustion_kJ_per_kg": 44000,
       "burning_rate_kg_per_s_m2": 0.04
     },
     "toxicity": {
       "hazard_class": 3,
-      "pdk_mg_per_m3": 100,
+      "pdk_mg_per_m3": 300,
       "lethal_tox_dose_mg_min_per_L": null,
       "threshold_tox_dose_mg_min_per_L": null
     },
-    "reactivity": "Химически активен, склонен к полимеризации при нагреве.",
-    "odor": "Слабый сладковатый запах",
-    "corrosiveness": "Неагрессивен",
-    "precautions": "Герметичность оборудования, вентиляция.",
-    "impact": "Пожар, взрыв",
-    "protection": "Пена, порошковые средства",
-    "neutralization_methods": "Факельное сжигание",
-    "first_aid": "Свежий воздух, медицинская помощь"
+    "reactivity": "Химически относительно инертен при обычных условиях. Опасность связана с испарением: пары газового конденсата образуют взрывоопасные смеси с воздухом; возможны реакции с сильными окислителями.",
+    "odor": "Характерный углеводородный запах; интенсивность и оттенок зависят от состава (ароматические компоненты, сернистые соединения, меркаптаны).",
+    "corrosiveness": "Сам по себе низкокоррозионен; коррозионность определяется примесями и содержанием воды.",
+    "precautions": "Герметизация аппаратов и трубопроводов, постоянный контроль утечек и газоанализ. Эффективная приточно-вытяжная вентиляция. Исключение источников зажигания; заземление и предотвращение накопления статического электричества. Применение взрывозащищённого оборудования. Использование средств индивидуальной защиты; при превышении ПДК — фильтрующие или изолирующие СИЗОД.",
+    "impact": "При утечке быстро испаряется, формируя взрывоопасную паровоздушную смесь; возможна миграция паров по понижениям рельефа. Ингаляция вызывает наркотическое действие и раздражение; при наличии H2S — дополнительная токсичность. Экологический ущерб включает загрязнение почвы и воды и воздействие на биоту.",
+    "protection": "Индивидуальная защита: спецодежда, антистатическая спецобувь, перчатки, очки; при риске ингаляции — СИЗОД. Коллективная защита: вентиляция, газоанализ, искробезопасное оборудование.",
+    "neutralization_methods": "Локализация разлива, предотвращение попадания в водоёмы. Сбор свободной жидкости, использование сорбентов и утилизация. Для уменьшения испарения — пенообразующее покрытие.",
+    "first_aid": "При вдыхании — вывести на свежий воздух, обеспечить покой. При затруднении дыхания — кислород; при потере сознания — уложить на бок, обеспечить проходимость дыхательных путей, при отсутствии дыхания начать ИВЛ. При попадании в глаза — промывать водой 10–15 минут. На кожу — промыть водой с мылом. При проглатывании — не вызывать рвоту, обратиться за медицинской помощью. При ожогах — прекратить воздействие высокой температуры, погасить пламя на одежде, удалить пострадавшего из зоны воздействия, разрезать одежду и наложить асептическую повязку. При воздействии избыточного давления — противошоковая терапия и остановка кровотечения."
   },
-  {
-    "id": 2,
-    "name": "Ацетонитрил",
-    "kind": 0,
-    "formula": "C2H3N",
-    "composition": {
-      "components": [
-        { "name": "Ацетонитрил", "mass_fraction": 1.0 }
-      ]
-    },
-    "notes": "Легковоспламеняющаяся токсичная жидкость, широко применяемая как растворитель.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.041,
-      "density_liquid_kg_per_m3": 786,
-      "density_gas_kg_per_m3": 2.12,
-      "evaporation_heat_J_per_kg": 740000.0,
-      "boiling_point_C": 81.6
-    },
-    "explosion": {
-      "explosion_hazard_class": 3,
-      "flash_point_C": 2,
-      "lel_percent": 4.4,
-      "autoignition_temp_C": 524,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 5,
-      "heat_of_combustion_kJ_per_kg": 29500,
-      "burning_rate_kg_per_s_m2": 0.025
-    },
-    "toxicity": {
-      "hazard_class": 3,
-      "pdk_mg_per_m3": 70,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Стабилен, разлагается при горении.",
-    "odor": "Слабый эфирный",
-    "corrosiveness": "Слабоагрессивен",
-    "precautions": "Вентиляция, исключить зажигание",
-    "impact": "Пожар, токсическое воздействие",
-    "protection": "Пена, CO2",
-    "neutralization_methods": "Сорбенты",
-    "first_aid": "Свежий воздух, врач"
-  },
+
   {
     "id": 3,
-    "name": "Меркаптан",
-    "kind": 4,
-    "formula": "R–SH",
+    "name": "Деэмульгатор",
+    "kind": 0,
+    "formula": "Органические поверхностно-активные вещества (ПАВ) в растворе органических растворителей",
     "composition": {
       "components": [
-        { "name": "Алкилмеркаптаны", "mass_fraction": 1.0 }
+        { "name": "Поверхностно-активные вещества (ПАВ)", "mass_fraction": 0.20 },
+        { "name": "Ароматические растворители (C7–C10)", "mass_fraction": 0.40 },
+        { "name": "Алифатические растворители (C9–C12)", "mass_fraction": 0.35 },
+        { "name": "Функциональные добавки (ингибиторы, стабилизаторы)", "mass_fraction": 0.05 }
       ]
     },
-    "notes": "Легковоспламеняющееся вещество с резко выраженным запахом.",
+    "notes": "Деэмульгатор — смесь ПАВ и органических растворителей, предназначенная для разрушения водонефтяных эмульсий. Легковоспламеняющаяся жидкость с выраженной растворяющей способностью; пары образуют взрывоопасные смеси.",
     "physical": {
-      "molar_mass_kg_per_mol": 0.048,
-      "density_liquid_kg_per_m3": 840,
-      "density_gas_kg_per_m3": 2.1,
-      "evaporation_heat_J_per_kg": 380000.0,
-      "boiling_point_C": 6
+      "molar_mass_kg_per_mol": 0.1,
+      "density_liquid_kg_per_m3": 850,
+      "density_gas_kg_per_m3": 1.25,
+      "evaporation_heat_J_per_kg": 260000.0,
+      "boiling_point_C": 150
     },
     "explosion": {
       "explosion_hazard_class": 3,
-      "flash_point_C": -40,
-      "lel_percent": 2.2,
-      "autoignition_temp_C": 300,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 6,
-      "heat_of_combustion_kJ_per_kg": 38000,
-      "burning_rate_kg_per_s_m2": 0.035
-    },
-    "toxicity": {
-      "hazard_class": 2,
-      "pdk_mg_per_m3": 1,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Легко окисляется.",
-    "odor": "Резкий",
-    "corrosiveness": "Коррозия меди",
-    "precautions": "Контроль утечек",
-    "impact": "Отравление, пожар",
-    "protection": "Пена, вода",
-    "neutralization_methods": "Окисление",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 4,
-    "name": "Оксанол",
-    "kind": 0,
-    "formula": "C8H18O",
-    "composition": { "components": [ { "name": "Оксанол", "mass_fraction": 1.0 } ] },
-    "notes": "Органическая горючая жидкость.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.13,
-      "density_liquid_kg_per_m3": 830,
-      "density_gas_kg_per_m3": 1.76,
-      "evaporation_heat_J_per_kg": 320000.0,
-      "boiling_point_C": 165
-    },
-    "explosion": {
-      "explosion_hazard_class": 4,
-      "flash_point_C": 55,
-      "lel_percent": 1.1,
-      "autoignition_temp_C": 280,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 3,
-      "heat_of_combustion_kJ_per_kg": 42000,
-      "burning_rate_kg_per_s_m2": 0.02
-    },
-    "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": 300,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Стабилен",
-    "odor": "Слабый",
-    "corrosiveness": "Отсутствует",
-    "precautions": "Исключить нагрев",
-    "impact": "Пожар",
-    "protection": "Пена",
-    "neutralization_methods": "Сорбенты",
-    "first_aid": "Промыть водой"
-  },
-  {
-    "id": 5,
-    "name": "Дизельное топливо",
-    "kind": 0,
-    "formula": "C10–C22",
-    "composition": { "components": [ { "name": "Углеводороды", "mass_fraction": 1.0 } ] },
-    "notes": "Горючая жидкость нефтяного происхождения.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.19,
-      "density_liquid_kg_per_m3": 830,
-      "density_gas_kg_per_m3": 2.33,
-      "evaporation_heat_J_per_kg": 270000.0,
-      "boiling_point_C": 180
-    },
-    "explosion": {
-      "explosion_hazard_class": 4,
-      "flash_point_C": 62,
-      "lel_percent": 0.6,
+      "flash_point_C": 30,
+      "lel_percent": 0.8,
       "autoignition_temp_C": 250,
       "energy_reserve_factor": 2,
-      "expansion_degree": 3,
-      "heat_of_combustion_kJ_per_kg": 43000,
-      "burning_rate_kg_per_s_m2": 0.015
-    },
-    "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": 300,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Стабильно",
-    "odor": "Нефтяной",
-    "corrosiveness": "Нет",
-    "precautions": "Исключить пламя",
-    "impact": "Пожар",
-    "protection": "Пена",
-    "neutralization_methods": "Сорбенты",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 6,
-    "name": "Толуол",
-    "kind": 0,
-    "formula": "C7H8",
-    "composition": { "components": [ { "name": "Толуол", "mass_fraction": 1.0 } ] },
-    "notes": "Легковоспламеняющаяся ароматическая жидкость.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.092,
-      "density_liquid_kg_per_m3": 867,
-      "density_gas_kg_per_m3": 1.88,
-      "evaporation_heat_J_per_kg": 360000.0,
-      "boiling_point_C": 110.6
-    },
-    "explosion": {
-      "explosion_hazard_class": 4,
-      "flash_point_C": 4,
-      "lel_percent": 1.2,
-      "autoignition_temp_C": 480,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 5,
+      "expansion_degree": 7,
       "heat_of_combustion_kJ_per_kg": 41000,
       "burning_rate_kg_per_s_m2": 0.03
     },
@@ -236,237 +142,45 @@
       "lethal_tox_dose_mg_min_per_L": null,
       "threshold_tox_dose_mg_min_per_L": null
     },
-    "reactivity": "Реагирует с окислителями",
-    "odor": "Ароматический",
-    "corrosiveness": "Нет",
-    "precautions": "Вентиляция",
-    "impact": "Пожар",
-    "protection": "Пена",
-    "neutralization_methods": "Сорбенты",
-    "first_aid": "Свежий воздух"
+    "reactivity": "Химически активен в отношении водонефтяных эмульсий. Может взаимодействовать с сильными окислителями. Пары образуют взрывоопасные смеси с воздухом.",
+    "odor": "Специфический запах органических растворителей и ПАВ.",
+    "corrosiveness": "Слабо коррозионноактивен; может вызывать набухание некоторых полимеров.",
+    "precautions": "Герметизация и вентиляция оборудования. Исключение источников огня. Применение взрывозащищённой аппаратуры, защитных перчаток, очков и спецодежды. При повышенных концентрациях — респираторы.",
+    "impact": "При утечке образует пары органических растворителей, вызывающие раздражение дыхательных путей, кожи и глаз. Загрязняет почву и воду.",
+    "protection": "Спецодежда, защитные очки, химически стойкие перчатки; при необходимости — респиратор для органических паров.",
+    "neutralization_methods": "Ограничение зоны разлива, использование сорбентов для органических жидкостей, сбор и утилизация. Недопущение попадания в водоёмы.",
+    "first_aid": "При вдыхании — вывести на свежий воздух. При раздражении глаз — промывать водой 10–15 минут. На кожу — промыть водой с мылом. При проглатывании — не вызывать рвоту, обратиться за медицинской помощью. При ожогах — прекратить воздействие высокой температуры, погасить пламя на одежде, разрезать одежду и наложить асептическую повязку."
   },
+
   {
-    "id": 7,
-    "name": "Изопентан",
-    "kind": 0,
-    "formula": "C5H12",
-    "composition": { "components": [ { "name": "Изопентан", "mass_fraction": 1.0 } ] },
-    "notes": "Легковоспламеняющаяся летучая жидкость.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.072,
-      "density_liquid_kg_per_m3": 620,
-      "density_gas_kg_per_m3": 2.41,
-      "evaporation_heat_J_per_kg": 310000.0,
-      "boiling_point_C": 27.8
-    },
-    "explosion": {
-      "explosion_hazard_class": 3,
-      "flash_point_C": -51,
-      "lel_percent": 1.4,
-      "autoignition_temp_C": 420,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 6,
-      "heat_of_combustion_kJ_per_kg": 46000,
-      "burning_rate_kg_per_s_m2": 0.04
-    },
-    "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": 300,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Стабилен",
-    "odor": "Углеводородный",
-    "corrosiveness": "Нет",
-    "precautions": "Герметичность",
-    "impact": "Взрыв",
-    "protection": "Пена",
-    "neutralization_methods": "Испарение",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 8,
-    "name": "Альфаметилстирол",
-    "kind": 0,
-    "formula": "C9H10",
-    "composition": { "components": [ { "name": "Альфаметилстирол", "mass_fraction": 1.0 } ] },
-    "notes": "Горючая органическая жидкость, склонна к полимеризации.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.118,
-      "density_liquid_kg_per_m3": 909,
-      "density_gas_kg_per_m3": 1.67,
-      "evaporation_heat_J_per_kg": 350000.0,
-      "boiling_point_C": 165
-    },
-    "explosion": {
-      "explosion_hazard_class": 3,
-      "flash_point_C": 52,
-      "lel_percent": 0.9,
-      "autoignition_temp_C": 440,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 4,
-      "heat_of_combustion_kJ_per_kg": 40500,
-      "burning_rate_kg_per_s_m2": 0.02
-    },
-    "toxicity": {
-      "hazard_class": 3,
-      "pdk_mg_per_m3": 50,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Полимеризация",
-    "odor": "Ароматический",
-    "corrosiveness": "Нет",
-    "precautions": "Ингибиторы",
-    "impact": "Пожар",
-    "protection": "Пена",
-    "neutralization_methods": "Сжигание",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 9,
-    "name": "Изобутан-изобутиленовая фракция",
-    "kind": 4,
-    "formula": "C4H10 / C4H8",
+    "id": 4,
+    "name": "Масло компрессорное",
+    "kind": 9,
+    "formula": "Смесь минеральных и/или синтетических углеводородов (C15–C40) с функциональными присадками",
     "composition": {
       "components": [
-        { "name": "Изобутан", "mass_fraction": 0.6 },
-        { "name": "Изобутилен", "mass_fraction": 0.4 }
+        { "name": "Базовые масла (минеральные или синтетические)", "mass_fraction": 0.85 },
+        { "name": "Антиоксидантные присадки", "mass_fraction": 0.05 },
+        { "name": "Антикоррозионные и противоизносные присадки", "mass_fraction": 0.05 },
+        { "name": "Депрессорные и моюще-диспергирующие компоненты", "mass_fraction": 0.05 }
       ]
     },
-    "notes": "Смесь лёгких углеводородов с высокой взрывоопасностью.",
+    "notes": "Компрессорное масло — смесь высокоочищенных базовых масел и присадок, предназначенная для смазки и охлаждения компрессоров. Обладает высокой термоокислительной стабильностью, низкой летучестью и антикоррозионными свойствами. Относится к горючим жидкостям с высокой температурой вспышки.",
     "physical": {
-      "molar_mass_kg_per_mol": 0.057,
-      "density_liquid_kg_per_m3": 580,
-      "density_gas_kg_per_m3": 2.3,
-      "evaporation_heat_J_per_kg": 340000.0,
-      "boiling_point_C": -7
+      "molar_mass_kg_per_mol": 0.25,
+      "density_liquid_kg_per_m3": 860,
+      "density_gas_kg_per_m3": null,
+      "evaporation_heat_J_per_kg": 560000.0,
+      "boiling_point_C": 300
     },
     "explosion": {
       "explosion_hazard_class": 3,
-      "flash_point_C": -80,
-      "lel_percent": 1.8,
-      "autoignition_temp_C": 460,
+      "flash_point_C": 200,
+      "lel_percent": null,
+      "autoignition_temp_C": 350,
       "energy_reserve_factor": 2,
       "expansion_degree": 7,
-      "heat_of_combustion_kJ_per_kg": 46000,
-      "burning_rate_kg_per_s_m2": 0.045
-    },
-    "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": 300,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Олефины",
-    "odor": "Углеводородный",
-    "corrosiveness": "Нет",
-    "precautions": "Контроль утечек",
-    "impact": "Взрыв",
-    "protection": "Вода, пена",
-    "neutralization_methods": "Факел",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 10,
-    "name": "Триметилкарбинол",
-    "kind": 0,
-    "formula": "C4H10O",
-    "composition": { "components": [ { "name": "Трет-бутанол", "mass_fraction": 1.0 } ] },
-    "notes": "Горючий спирт.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.074,
-      "density_liquid_kg_per_m3": 781,
-      "density_gas_kg_per_m3": 2.07,
-      "evaporation_heat_J_per_kg": 530000.0,
-      "boiling_point_C": 82.4
-    },
-    "explosion": {
-      "explosion_hazard_class": 4,
-      "flash_point_C": 11,
-      "lel_percent": 2.4,
-      "autoignition_temp_C": 470,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 5,
-      "heat_of_combustion_kJ_per_kg": 36000,
-      "burning_rate_kg_per_s_m2": 0.025
-    },
-    "toxicity": {
-      "hazard_class": 3,
-      "pdk_mg_per_m3": 100,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Стабилен",
-    "odor": "Спиртовой",
-    "corrosiveness": "Нет",
-    "precautions": "Вентиляция",
-    "impact": "Пожар",
-    "protection": "Пена",
-    "neutralization_methods": "Сорбенты",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 11,
-    "name": "Изопрен",
-    "kind": 0,
-    "formula": "C5H8",
-    "composition": { "components": [ { "name": "Изопрен", "mass_fraction": 1.0 } ] },
-    "notes": "Легковоспламеняющаяся жидкость.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.068,
-      "density_liquid_kg_per_m3": 681,
-      "density_gas_kg_per_m3": 1.93,
-      "evaporation_heat_J_per_kg": 360000.0,
-      "boiling_point_C": 34
-    },
-    "explosion": {
-      "explosion_hazard_class": 3,
-      "flash_point_C": -48,
-      "lel_percent": 1.5,
-      "autoignition_temp_C": 220,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 6,
-      "heat_of_combustion_kJ_per_kg": 45000,
-      "burning_rate_kg_per_s_m2": 0.04
-    },
-    "toxicity": {
-      "hazard_class": 4,
-      "pdk_mg_per_m3": 300,
-      "lethal_tox_dose_mg_min_per_L": null,
-      "threshold_tox_dose_mg_min_per_L": null
-    },
-    "reactivity": "Полимеризация",
-    "odor": "Углеводородный",
-    "corrosiveness": "Нет",
-    "precautions": "Ингибиторы",
-    "impact": "Взрыв",
-    "protection": "Пена",
-    "neutralization_methods": "Факел",
-    "first_aid": "Свежий воздух"
-  },
-  {
-    "id": 12,
-    "name": "Деметилдиоксан",
-    "kind": 0,
-    "formula": "C6H12O2",
-    "composition": { "components": [ { "name": "Деметилдиоксан", "mass_fraction": 1.0 } ] },
-    "notes": "Горючая кислородсодержащая жидкость.",
-    "physical": {
-      "molar_mass_kg_per_mol": 0.116,
-      "density_liquid_kg_per_m3": 1030,
-      "density_gas_kg_per_m3": 2.22,
-      "evaporation_heat_J_per_kg": 450000.0,
-      "boiling_point_C": 101
-    },
-    "explosion": {
-      "explosion_hazard_class": 4,
-      "flash_point_C": 18,
-      "lel_percent": 1.8,
-      "autoignition_temp_C": 230,
-      "energy_reserve_factor": 2,
-      "expansion_degree": 4,
-      "heat_of_combustion_kJ_per_kg": 28000,
+      "heat_of_combustion_kJ_per_kg": 42000,
       "burning_rate_kg_per_s_m2": 0.02
     },
     "toxicity": {
@@ -475,52 +189,66 @@
       "lethal_tox_dose_mg_min_per_L": null,
       "threshold_tox_dose_mg_min_per_L": null
     },
-    "reactivity": "Стабилен",
-    "odor": "Эфирный",
-    "corrosiveness": "Нет",
-    "precautions": "Вентиляция",
-    "impact": "Пожар",
-    "protection": "Пена",
-    "neutralization_methods": "Сорбенты",
-    "first_aid": "Свежий воздух"
+    "reactivity": "Химически стабильно. При высоких температурах возможно образование продуктов окисления. Совместимо с большинством металлов, может разлагаться при контакте с сильными окислителями.",
+    "odor": "Слабый характерный запах нефтяных масел, выраженность зависит от состава базового масла.",
+    "corrosiveness": "Низкая коррозионная активность. Способность вызывать коррозию зависит от наличия воды, температуры и содержания продуктов окисления.",
+    "precautions": "Избегать нагрева свыше рабочих температур, не допускать контакта с открытым пламенем. Обеспечить вентиляцию при работе с аэрозолями. Использовать защитные перчатки и очки. Предотвращать попадание в горячие поверхности компрессоров в виде тумана.",
+    "impact": "При утечке растекается тонким слоем, может загрязнять почву и водные объекты. В форме аэрозоля вызывает раздражение дыхательных путей. Продукты окисления могут быть токсичнее исходного масла.",
+    "protection": "Спецодежда, перчатки, защитные очки. При работе с аэрозольными выбросами — респиратор для органических туманов.",
+    "neutralization_methods": "Локализация разлива, применение сорбентов для нефтепродуктов. Загрязнённые материалы подлежат утилизации как нефтесодержащие отходы.",
+    "first_aid": "При попадании в глаза промыть водой. При контакте с кожей — удалить масло и промыть водой с мылом. При вдыхании аэрозоля — вывести на свежий воздух. При проглатывании — не вызывать рвоту, обратиться за медицинской помощью. При ожогах — прекратить воздействие высокой температуры, погасить пламя на одежде, разрезать одежду и наложить асептическую повязку."
   },
+
   {
-    "id": 13,
-    "name": "Изобутилен",
-    "kind": 4,
-    "formula": "C4H8",
-    "composition": { "components": [ { "name": "Изобутилен", "mass_fraction": 1.0 } ] },
-    "notes": "Легковоспламеняющийся сжиженный газ.",
+    "id": 5,
+    "name": "Попутно-нефтяной газ",
+    "kind": 2,
+    "formula": "Смесь углеводородов C1–C6 и неуглеводородных компонентов",
+    "composition": {
+      "components": [
+        { "name": "Метан", "mass_fraction": 0.50 },
+        { "name": "Этан", "mass_fraction": 0.10 },
+        { "name": "Пропан", "mass_fraction": 0.08 },
+        { "name": "Бутаны (i/n-C4)", "mass_fraction": 0.07 },
+        { "name": "Пентан-гексановая фракция (C5–C6)", "mass_fraction": 0.05 },
+        { "name": "Азот", "mass_fraction": 0.05 },
+        { "name": "Углекислый газ", "mass_fraction": 0.03 },
+        { "name": "Сероводород (H2S)", "mass_fraction": 0.00 },
+        { "name": "Гелий и инертные газы", "mass_fraction": 0.01 },
+        { "name": "Прочие примеси", "mass_fraction": 0.11 }
+      ]
+    },
+    "notes": "Попутно-нефтяной газ — смесь углеводородов (C1–C6) и неуглеводородных примесей, выделяющаяся из нефти при добыче. Легковоспламеняющийся газ, образующий с воздухом взрывоопасные смеси в широком диапазоне концентраций.",
     "physical": {
-      "molar_mass_kg_per_mol": 0.056,
-      "density_liquid_kg_per_m3": 590,
-      "density_gas_kg_per_m3": 2.5,
-      "evaporation_heat_J_per_kg": 360000.0,
-      "boiling_point_C": -6.9
+      "molar_mass_kg_per_mol": 0.022,
+      "density_liquid_kg_per_m3": null,
+      "density_gas_kg_per_m3": 1.1,
+      "evaporation_heat_J_per_kg": null,
+      "boiling_point_C": null
     },
     "explosion": {
       "explosion_hazard_class": 3,
-      "flash_point_C": -80,
-      "lel_percent": 1.8,
-      "autoignition_temp_C": 460,
+      "flash_point_C": null,
+      "lel_percent": 2.5,
+      "autoignition_temp_C": 540,
       "energy_reserve_factor": 2,
       "expansion_degree": 7,
-      "heat_of_combustion_kJ_per_kg": 46000,
-      "burning_rate_kg_per_s_m2": 0.045
+      "heat_of_combustion_kJ_per_kg": 50000,
+      "burning_rate_kg_per_s_m2": null
     },
     "toxicity": {
-      "hazard_class": 4,
+      "hazard_class": 3,
       "pdk_mg_per_m3": 300,
       "lethal_tox_dose_mg_min_per_L": null,
       "threshold_tox_dose_mg_min_per_L": null
     },
-    "reactivity": "Полимеризация",
-    "odor": "Слабый",
-    "corrosiveness": "Нет",
-    "precautions": "Герметичность",
-    "impact": "Взрыв",
-    "protection": "Вода, пена",
-    "neutralization_methods": "Факел",
-    "first_aid": "Свежий воздух"
+    "reactivity": "Химически инертен при нормальных условиях. Опасность связана с образованием взрывоопасных смесей с воздухом. Может реагировать с сильными окислителями. При наличии H2S увеличивается коррозионная активность.",
+    "odor": "В зависимости от состава: слабый углеводородный запах; при наличии H2S — характерный резкий запах сероводорода.",
+    "corrosiveness": "Коррозионность зависит от содержания H2S, CO2 и воды. В присутствии сероводорода возможна сульфидная коррозия металлов.",
+    "precautions": "Контроль герметичности оборудования, газоанализаторы, взрывозащищённое исполнение аппаратуры, заземление и предотвращение статического электричества. Исключение источников воспламенения. Применение СИЗОД при работе в газоопасных зонах.",
+    "impact": "При утечках образует взрывоопасные облака. Метан не имеет запаха, поэтому выявление утечек требует газоанализаторов. Вдыхание высоких концентраций приводит к вытеснению кислорода и риску удушья. При наличии H2S возможны острые токсические поражения. Поражающими факторами являются тепловое излучение при горении и избыточное давление взрыва.",
+    "protection": "Средства защиты органов дыхания, спецодежда, защитные очки. Для газоопасных помещений — фильтрующие или изолирующие дыхательные аппараты.",
+    "neutralization_methods": "Локализация утечки, контролируемый отвод газа к факелу или в систему утилизации. Удаление H2S путём аминового или сорбционного удаления.",
+    "first_aid": "При вдыхании — вывести пострадавшего на свежий воздух. При отсутствии дыхания — искусственная вентиляция лёгких. При потере сознания — уложить на бок, контролировать дыхание и пульс. При ожогах — прекратить воздействие высокой температуры, погасить пламя на одежде, разрезать одежду и наложить асептическую повязку."
   }
 ]
