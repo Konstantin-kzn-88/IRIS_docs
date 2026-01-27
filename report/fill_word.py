@@ -10,6 +10,7 @@ from core.path import DB_PATH, REPORT_TEMPLATE_DOCX, REPORT_OUTPUT_DIR, TYPICAL_
     ORGANIZATION_SITE_ID
 
 # алиасы для минимальных правок ниже по файлу
+TEMPLATE_DIR = REPORT_TEMPLATE_DOCX.parent
 TEMPLATE_PATH = REPORT_TEMPLATE_DOCX
 OUT_PATH = REPORT_OUTPUT_DIR / "template_report_out.docx"
 
@@ -73,6 +74,22 @@ from report.reportgen.charts import (
     save_risk_matrix_chart,
     save_risk_matrix_chart_damage,
 )
+
+
+def iter_variant_templates(template_dir: Path) -> list[Path]:
+    """Все .docx в папке варианта, стабильно отсортировано."""
+    if not template_dir.exists():
+        return []
+    return sorted([p for p in template_dir.glob("*.docx") if p.is_file()])
+
+
+def clear_output_docx(output_dir: Path):
+    """Удаляет только .docx в output_dir. Папки (charts) и прочее не трогает."""
+    if not output_dir.exists():
+        return
+    for p in output_dir.glob("*.docx"):
+        if p.is_file():
+            p.unlink()
 
 
 def set_cell_text(cell, text, bold: bool = False):
@@ -1676,47 +1693,34 @@ def build_org_replacements(org_root: dict) -> dict:
     }
 
 
-def main():
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    with open_db(DB_PATH) as conn:
-        substances = get_used_substances(conn)
-        equipment = get_used_equipment(conn)
-        distribution = get_hazard_distribution(conn)
-        scenarios = get_scenarios(conn)
-        ov_amounts = get_ov_amounts_in_accident(conn)
-        impact_zones = get_impact_zones(conn)
-        casualties = get_personnel_casualties(conn)
-        damage_rows = get_damage(conn)
-        collective_risk_rows = get_collective_risk(conn)
-        individual_risk_rows = get_individual_risk(conn)
-        min_f, max_f = get_fatal_accident_frequency_range(conn)
-        max_damage_rows = get_max_damage_by_hazard_component(conn)
-        fn_rows = get_fn_source_rows(conn)
-        fg_rows = get_fg_source_rows(conn)
-        pareto_rows = get_pareto_risk_source_rows(conn)
-        pareto_damage_rows = get_pareto_damage_source_rows(conn)
-        pareto_env_rows = get_pareto_environmental_damage_source_rows(conn)
-        component_damage_rows = get_max_losses_by_hazard_component(conn)
-        risk_matrix_rows = get_risk_matrix_rows(conn)
-        risk_matrix_damage_rows = get_risk_matrix_damage_rows(conn)
-        top_scenarios_rows = get_top_scenarios_by_hazard_component(conn)
-
-        # Сводная таблица рисков гибели по составляющим (индивидуальный + коллективный)
-        ind_map = {r.get("hazard_component"): r.get("individual_risk_fatalities") for r in individual_risk_rows}
-        coll_map = {r.get("hazard_component"): r.get("collective_risk_fatalities") for r in collective_risk_rows}
-        components = sorted({*ind_map.keys(), *coll_map.keys()}, key=lambda x: str(x))
-        fatality_risk_by_component_rows = [
-            {
-                "hazard_component": comp,
-                "individual_risk_fatalities": ind_map.get(comp),
-                "collective_risk_fatalities": coll_map.get(comp),
-            }
-            for comp in components
-        ]
-
-    doc = Document(TEMPLATE_PATH)
-
+def fill_doc(
+    doc: Document,
+    *,
+    substances,
+    equipment,
+    distribution,
+    scenarios,
+    ov_amounts,
+    impact_zones,
+    casualties,
+    damage_rows,
+    collective_risk_rows,
+    individual_risk_rows,
+    min_f,
+    max_f,
+    max_damage_rows,
+    top_scenarios_rows,
+    fatality_risk_by_component_rows,
+    conn,
+    fn_rows,
+    fg_rows,
+    pareto_rows,
+    pareto_damage_rows,
+    pareto_env_rows,
+    component_damage_rows,
+    risk_matrix_rows,
+    risk_matrix_damage_rows,
+):
     # Текстовые данные
     org_root = load_organization_root()
     repl = build_org_replacements(org_root)
@@ -1764,11 +1768,7 @@ def main():
         rows=ov_amounts,
     )
 
-    render_impact_zones_table(
-        doc,
-        "{{IMPACT_ZONES_SECTION}}",
-        impact_zones
-    )
+    render_impact_zones_table(doc, "{{IMPACT_ZONES_SECTION}}", impact_zones)
 
     render_personnel_casualties_table_at_marker(
         doc=doc,
@@ -1777,23 +1777,10 @@ def main():
         rows=casualties,
     )
 
-    render_damage_table_at_marker(
-        doc=doc,
-        marker="{{DAMAGE_SECTION}}",
-        rows=damage_rows,
-    )
+    render_damage_table_at_marker(doc=doc, marker="{{DAMAGE_SECTION}}", rows=damage_rows)
 
-    render_collective_risk_table(
-        doc=doc,
-        marker="{{COLLECTIVE_RISK_SECTION}}",
-        rows=collective_risk_rows,
-    )
-
-    render_individual_risk_table(
-        doc=doc,
-        marker="{{INDIVIDUAL_RISK_SECTION}}",
-        rows=individual_risk_rows,
-    )
+    render_collective_risk_table(doc=doc, marker="{{COLLECTIVE_RISK_SECTION}}", rows=collective_risk_rows)
+    render_individual_risk_table(doc=doc, marker="{{INDIVIDUAL_RISK_SECTION}}", rows=individual_risk_rows)
 
     render_fatal_accident_frequency_text(
         doc=doc,
@@ -1802,11 +1789,7 @@ def main():
         max_freq=max_f,
     )
 
-    render_max_damage_by_component_table(
-        doc=doc,
-        marker="{{MAX_DAMAGE_BY_COMPONENT_SECTION}}",
-        rows=max_damage_rows,
-    )
+    render_max_damage_by_component_table(doc=doc, marker="{{MAX_DAMAGE_BY_COMPONENT_SECTION}}", rows=max_damage_rows)
 
     render_top_scenarios_by_component_table(
         doc=doc,
@@ -1826,96 +1809,116 @@ def main():
         individual_risk_rows=individual_risk_rows,
     )
 
-    render_ngk_background_comparison_table(
-        doc=doc,
-        marker="{{NGK_BACKGROUND_RISK_COMPARISON}}",
-        conn=conn,
-    )
+    # Эти функции используют conn
+    render_ngk_background_comparison_table(doc=doc, marker="{{NGK_BACKGROUND_RISK_COMPARISON}}", conn=conn)
+    render_substances_by_component_table(doc=doc, marker="{{SUBSTANCES_BY_COMPONENT_TABLE}}", conn=conn)
 
-    render_substances_by_component_table(
-        doc=doc,
-        marker="{{SUBSTANCES_BY_COMPONENT_TABLE}}",
-        conn=conn,
-    )
-
-    render_top_scenarios_description_by_component_table(
-        doc=doc,
-        marker="{{TOP_SCENARIOS_DESC_BY_COMPONENT}}",
-        conn=conn,
-    )
-
-    render_top_scenarios_pf_by_component_table(
-        doc=doc,
-        marker="{{TOP_SCENARIOS_PF_BY_COMPONENT}}",
-        conn=conn,
-    )
-
+    render_top_scenarios_description_by_component_table(doc=doc, marker="{{TOP_SCENARIOS_DESC_BY_COMPONENT}}", conn=conn)
+    render_top_scenarios_pf_by_component_table(doc=doc, marker="{{TOP_SCENARIOS_PF_BY_COMPONENT}}", conn=conn)
     render_top_scenarios_fatalities_injured_by_component_table(
-        doc=doc,
-        marker="{{TOP_SCENARIOS_FATALITIES_INJURED}}",
-        conn=conn,
+        doc=doc, marker="{{TOP_SCENARIOS_FATALITIES_INJURED}}", conn=conn
     )
+    render_top_scenarios_damage_by_component_table(doc=doc, marker="{{TOP_SCENARIOS_DAMAGE}}", conn=conn)
+    render_top_scenarios_final_conclusion_table(doc=doc, marker="{{TOP_SCENARIOS_FINAL_CONCLUSION}}", conn=conn)
 
-    render_top_scenarios_damage_by_component_table(
-        doc=doc,
-        marker="{{TOP_SCENARIOS_DAMAGE}}",
-        conn=conn,
-    )
-
-    render_top_scenarios_final_conclusion_table(
-        doc=doc,
-        marker="{{TOP_SCENARIOS_FINAL_CONCLUSION}}",
-        conn=conn,
-    )
-
-    # --- диаграммы ---
-    render_fn_chart_at_marker(
-        doc,
-        "{{FN_CHART}}",
-        fn_rows,
-    )
-
-    render_fg_chart_at_marker(
-        doc,
-        "{{FG_CHART}}",
-        fg_rows,
-    )
-
-    render_pareto_damage_chart_at_marker(
-        doc,
-        "{{PARETO_DAMAGE_CHART}}",
-        pareto_damage_rows,
-    )
-
+    # Диаграммы (используют OUT_PATH.parent/"charts")
+    render_fn_chart_at_marker(doc, "{{FN_CHART}}", fn_rows)
+    render_fg_chart_at_marker(doc, "{{FG_CHART}}", fg_rows)
+    render_pareto_damage_chart_at_marker(doc, "{{PARETO_DAMAGE_CHART}}", pareto_damage_rows)
     render_pareto_fatalities_chart_at_marker(doc, "{{PARETO_FATALITIES_CHART}}", pareto_rows)
     render_pareto_injured_chart_at_marker(doc, "{{PARETO_INJURED_CHART}}", pareto_rows)
+    render_pareto_environmental_damage_chart_at_marker(doc, "{{PARETO_ENV_DAMAGE_CHART}}", pareto_env_rows)
+    render_component_damage_chart_at_marker(doc, "{{DAMAGE_BY_COMPONENT_CHART}}", component_damage_rows)
+    render_risk_matrix_chart_at_marker(doc, "{{RISK_MATRIX_CHART}}", risk_matrix_rows)
+    render_risk_matrix_damage_chart_at_marker(doc, "{{RISK_MATRIX_DAMAGE_CHART}}", risk_matrix_damage_rows)
 
-    render_pareto_environmental_damage_chart_at_marker(
-        doc,
-        "{{PARETO_ENV_DAMAGE_CHART}}",
-        pareto_env_rows,
-    )
 
-    render_component_damage_chart_at_marker(
-        doc,
-        "{{DAMAGE_BY_COMPONENT_CHART}}",
-        component_damage_rows,
-    )
+def main():
+    REPORT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    render_risk_matrix_chart_at_marker(
-        doc,
-        "{{RISK_MATRIX_CHART}}",
-        risk_matrix_rows,
-    )
+    # 1) очищаем output от старых .docx
+    clear_output_docx(REPORT_OUTPUT_DIR)
 
-    render_risk_matrix_damage_chart_at_marker(
-        doc,
-        "{{RISK_MATRIX_DAMAGE_CHART}}",
-        risk_matrix_damage_rows,
-    )
+    # 2) берём все шаблоны текущего VARIANT
+    templates = iter_variant_templates(TEMPLATE_DIR)
+    if not templates:
+        # fallback: старое поведение
+        templates = [REPORT_TEMPLATE_DOCX]
 
-    doc.save(OUT_PATH)
-    print("Отчёт сформирован:", OUT_PATH)
+    with open_db(DB_PATH) as conn:
+        # 3) собираем данные ОДИН РАЗ
+        substances = get_used_substances(conn)
+        equipment = get_used_equipment(conn)
+        distribution = get_hazard_distribution(conn)
+        scenarios = get_scenarios(conn)
+        ov_amounts = get_ov_amounts_in_accident(conn)
+        impact_zones = get_impact_zones(conn)
+        casualties = get_personnel_casualties(conn)
+        damage_rows = get_damage(conn)
+        collective_risk_rows = get_collective_risk(conn)
+        individual_risk_rows = get_individual_risk(conn)
+        min_f, max_f = get_fatal_accident_frequency_range(conn)
+        max_damage_rows = get_max_damage_by_hazard_component(conn)
+        fn_rows = get_fn_source_rows(conn)
+        fg_rows = get_fg_source_rows(conn)
+        pareto_rows = get_pareto_risk_source_rows(conn)
+        pareto_damage_rows = get_pareto_damage_source_rows(conn)
+        pareto_env_rows = get_pareto_environmental_damage_source_rows(conn)
+        component_damage_rows = get_max_losses_by_hazard_component(conn)
+        risk_matrix_rows = get_risk_matrix_rows(conn)
+        risk_matrix_damage_rows = get_risk_matrix_damage_rows(conn)
+        top_scenarios_rows = get_top_scenarios_by_hazard_component(conn)
+
+        # Сводная таблица рисков гибели по составляющим
+        ind_map = {r.get("hazard_component"): r.get("individual_risk_fatalities") for r in individual_risk_rows}
+        coll_map = {r.get("hazard_component"): r.get("collective_risk_fatalities") for r in collective_risk_rows}
+        components = sorted({*ind_map.keys(), *coll_map.keys()}, key=lambda x: str(x))
+        fatality_risk_by_component_rows = [
+            {
+                "hazard_component": comp,
+                "individual_risk_fatalities": ind_map.get(comp),
+                "collective_risk_fatalities": coll_map.get(comp),
+            }
+            for comp in components
+        ]
+
+        # 4) генерим все документы
+        global OUT_PATH
+        for template_path in templates:
+            OUT_PATH = REPORT_OUTPUT_DIR / f"{template_path.stem}_out.docx"
+            doc = Document(str(template_path))
+
+            fill_doc(
+                doc,
+                substances=substances,
+                equipment=equipment,
+                distribution=distribution,
+                scenarios=scenarios,
+                ov_amounts=ov_amounts,
+                impact_zones=impact_zones,
+                casualties=casualties,
+                damage_rows=damage_rows,
+                collective_risk_rows=collective_risk_rows,
+                individual_risk_rows=individual_risk_rows,
+                min_f=min_f,
+                max_f=max_f,
+                max_damage_rows=max_damage_rows,
+                top_scenarios_rows=top_scenarios_rows,
+                fatality_risk_by_component_rows=fatality_risk_by_component_rows,
+                conn=conn,
+                fn_rows=fn_rows,
+                fg_rows=fg_rows,
+                pareto_rows=pareto_rows,
+                pareto_damage_rows=pareto_damage_rows,
+                pareto_env_rows=pareto_env_rows,
+                component_damage_rows=component_damage_rows,
+                risk_matrix_rows=risk_matrix_rows,
+                risk_matrix_damage_rows=risk_matrix_damage_rows,
+            )
+
+            doc.save(str(OUT_PATH))
+            print("Отчёт сформирован:", OUT_PATH)
+
 
 
 if __name__ == "__main__":
