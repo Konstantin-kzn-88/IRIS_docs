@@ -64,7 +64,9 @@ def get_hazard_distribution(conn) -> list[dict]:
 def get_scenarios(conn) -> list[dict]:
     sql = """
     SELECT
+        e.id AS equipment_id,
         c.scenario_no,
+        (ROW_NUMBER() OVER (PARTITION BY e.id ORDER BY c.scenario_no) - 1) AS scenario_idx,
         c.base_frequency,
         c.accident_event_probability,
         c.scenario_frequency,
@@ -76,7 +78,7 @@ def get_scenarios(conn) -> list[dict]:
     FROM calculations c
     JOIN equipment e ON e.id = c.equipment_id
     JOIN substances s ON s.id = e.substance_id
-    ORDER BY e.equipment_name, e.equipment_type, s.kind, c.scenario_no
+    ORDER BY c.scenario_no, e.equipment_name
     """
     cur = conn.cursor()
     cur.execute(sql)
@@ -142,7 +144,7 @@ def get_impact_zones(conn) -> list[dict]:
         c.s_t
     FROM calculations c
     JOIN equipment e ON e.id = c.equipment_id
-    ORDER BY e.equipment_name, c.scenario_no
+    ORDER BY c.scenario_no, e.equipment_name
     """
     cur = conn.cursor()
     cur.execute(sql)
@@ -213,6 +215,7 @@ def get_collective_risk(conn) -> list[dict]:
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+
 def get_individual_risk(conn) -> list[dict]:
     sql = """
     SELECT
@@ -228,6 +231,7 @@ def get_individual_risk(conn) -> list[dict]:
     cur.execute(sql)
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
+
 
 def get_fatal_accident_frequency_range(conn):
     """
@@ -264,7 +268,6 @@ def get_max_damage_by_hazard_component(conn) -> list[dict]:
     cur.execute(sql)
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
-
 
 
 def get_fn_source_rows(conn) -> list[dict]:
@@ -413,6 +416,7 @@ def get_risk_matrix_damage_rows(conn) -> list[dict]:
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+
 def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
     """
     Таблица наиболее опасных и наиболее вероятных сценариев аварии по составляющим объекта.
@@ -499,6 +503,7 @@ def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
 
     return out
 
+
 def get_damage_by_component(conn):
     cur = conn.cursor()
     cur.execute("""
@@ -510,6 +515,7 @@ def get_damage_by_component(conn):
         GROUP BY hazard_component
     """)
     return {row[0]: row[1] for row in cur.fetchall()}
+
 
 def get_substances_by_component(conn):
     """
@@ -590,8 +596,8 @@ def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
         # наиболее опасный: fatalities desc, tie -> total_damage desc
         d = best[comp]["dangerous"]
         if (
-            item["fatalities_count"] > d["fatalities_count"] or
-            (item["fatalities_count"] == d["fatalities_count"] and item["total_damage"] > d["total_damage"])
+                item["fatalities_count"] > d["fatalities_count"] or
+                (item["fatalities_count"] == d["fatalities_count"] and item["total_damage"] > d["total_damage"])
         ):
             best[comp]["dangerous"] = item
 
@@ -605,6 +611,7 @@ def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
         out.append({**vv["dangerous"], "scenario_type": "dangerous"})
         out.append({**vv["probable"], "scenario_type": "probable"})
     return out
+
 
 def get_calculation_row_for_top_scenario(conn, hazard_component, scenario_no, equipment_name):
     """

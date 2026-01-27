@@ -421,7 +421,7 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
 
     typical = _load_typical_scenarios()
     root = _get_scenarios_root(typical)
-    idx_map = _build_scenario_index(rows)
+    # idx_map = _build_scenario_index(rows)
 
     # Порядок: С1..Сn, внутри — по оборудованию
     rows_sorted = sorted(
@@ -436,8 +436,8 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
         et = r.get("equipment_type")
         kd = r.get("substance_kind")
         sc_no = r.get("scenario_no")
-
-        local_idx = idx_map.get((et, kd), {}).get(sc_no, None)
+        # Ключевое: локальный индекс сценария внутри конкретного оборудования (0..N-1)
+        local_idx = r.get("scenario_idx")
         desc_list = _get_description_list(root, et, kd)
         if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
             desc = _scenario_item_to_text(desc_list[local_idx])
