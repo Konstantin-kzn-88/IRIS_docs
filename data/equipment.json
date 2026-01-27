@@ -336,7 +336,7 @@
     "possible_injured": 2
   },
   {
-    "id": 12,
+    "id": 13,
     "substance_id": 1,
     "equipment_name": "Аварийная емкость сброса с ППК печей П-1/1…4, Е-7/3",
     "quantity_equipment": 1,
@@ -364,7 +364,7 @@
     "possible_injured": 2
   },
   {
-    "id": 12,
+    "id": 14,
     "substance_id": 1,
     "equipment_name": "Дренажные емкости ППСН",
     "quantity_equipment": 1,
@@ -392,7 +392,7 @@
     "possible_injured": 2
   },
   {
-    "id": 12,
+    "id": 15,
     "substance_id": 1,
     "equipment_name": "Конденсатосборник факельной системы КС-1,2",
     "quantity_equipment": 2,

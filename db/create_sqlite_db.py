@@ -153,7 +153,7 @@ def main():
         conn.executemany(
             '''
             INSERT INTO equipment (
-              id, substance_id, equipment_name,
+              id, substance_id, equipment_name, quantity_equipment,
               hazard_component, clutter_degree, phase_state,
               coord_type, equipment_type, coordinates_json,
               length_m, diameter_mm, wall_thickness_mm,
@@ -163,7 +163,7 @@ def main():
               shutdown_time_s, evaporation_time_s,
               possible_dead, possible_injured
             ) VALUES (
-              :id, :substance_id, :equipment_name,
+              :id, :substance_id, :equipment_name, :quantity_equipment,
               :hazard_component, :clutter_degree, :phase_state,
               :coord_type, :equipment_type, :coordinates_json,
               :length_m, :diameter_mm, :wall_thickness_mm,
@@ -179,6 +179,7 @@ def main():
                     "id": e.get("id"),
                     "substance_id": e.get("substance_id"),
                     "equipment_name": e.get("equipment_name"),
+                    "quantity_equipment": e.get("quantity_equipment", 1),
                     "hazard_component": e.get("hazard_component"),
                     "clutter_degree": e.get("clutter_degree"),
                     "phase_state": e.get("phase_state"),

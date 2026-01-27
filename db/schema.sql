@@ -53,6 +53,10 @@ CREATE TABLE IF NOT EXISTS equipment (
     substance_id            INTEGER NOT NULL,
     equipment_name          TEXT NOT NULL,
 
+    -- Количество единиц оборудования данного типа/позиции
+    quantity_equipment      INTEGER NOT NULL DEFAULT 1
+                             CHECK (quantity_equipment >= 1),
+
     -- Составляющая опасного объекта
     hazard_component        TEXT NOT NULL,
 
