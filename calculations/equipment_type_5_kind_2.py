@@ -58,7 +58,10 @@ def calc_for_scenario(
 
     density_gas = float(physical["density_gas_kg_per_m3"])
     mol_mass = float(physical["molar_mass_kg_per_mol"])
-    t_boiling = float(physical["boiling_point_C"])
+    if physical["boiling_point_C"] != None:
+        t_boiling = float(physical["boiling_point_C"])
+    else:
+        t_boiling = 0  # случай газа
     substance_temperature_c = float(equipment["substance_temperature_c"])
 
     # -------------------------------------------------------------------------
@@ -201,11 +204,14 @@ def calc_for_scenario(
     result["fatalities_count"] = None
     result["injured_count"] = None
 
-    if scenario["scenario_line"] in (1, 2, 3):  # с ПФ
+    if scenario["scenario_line"] in (1,):  # с ПФ
+        result["fatalities_count"] = max(0, equipment["possible_dead"] - 1)
+        result["injured_count"] = max(0, equipment["possible_injured"] - 1)
+    elif scenario["scenario_line"] in (2,):  # с ПФ
+        result["fatalities_count"] = max(0, equipment["possible_dead"])
+        result["injured_count"] = max(0, equipment["possible_injured"])
+    elif scenario["scenario_line"] in (3, 5, 6, 7):  # с ПФ
         result["fatalities_count"] = 1
-        result["injured_count"] = 1
-    if scenario["scenario_line"] in (5, 6, 7):  # с ПФ
-        result["fatalities_count"] = 0
         result["injured_count"] = 1
     elif scenario["scenario_line"] in (4, 8):
         result["fatalities_count"] = 0

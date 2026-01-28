@@ -1872,7 +1872,19 @@ def main():
         # Сводная таблица рисков гибели по составляющим
         ind_map = {r.get("hazard_component"): r.get("individual_risk_fatalities") for r in individual_risk_rows}
         coll_map = {r.get("hazard_component"): r.get("collective_risk_fatalities") for r in collective_risk_rows}
-        components = sorted({*ind_map.keys(), *coll_map.keys()}, key=lambda x: str(x))
+
+        # ВАЖНО: без сортировок. Берём порядок как в исходных выборках из БД (первое появление).
+        components = []
+        seen = set()
+        for src in (individual_risk_rows, collective_risk_rows):
+            for rr in src:
+                comp = rr.get("hazard_component")
+                if comp is None or comp in seen:
+                    continue
+                seen.add(comp)
+                components.append(comp)
+
+
         fatality_risk_by_component_rows = [
             {
                 "hazard_component": comp,

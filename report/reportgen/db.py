@@ -53,7 +53,7 @@ def get_hazard_distribution(conn) -> list[dict]:
     JOIN equipment e ON e.id = c.equipment_id
     JOIN substances s ON s.id = e.substance_id
     GROUP BY e.id, e.equipment_name, s.name, e.phase_state, e.pressure_mpa, e.substance_temperature_c
-    ORDER BY e.equipment_name
+    ORDER BY e.id
     """
     cur = conn.cursor()
     cur.execute(sql)
@@ -208,7 +208,7 @@ def get_collective_risk(conn) -> list[dict]:
     FROM calculations c
     JOIN equipment e ON e.id = c.equipment_id
     GROUP BY e.hazard_component
-    ORDER BY e.hazard_component
+    ORDER BY MIN(e.id)
     """
     cur = conn.cursor()
     cur.execute(sql)
@@ -225,7 +225,7 @@ def get_individual_risk(conn) -> list[dict]:
     FROM calculations c
     JOIN equipment e ON e.id = c.equipment_id
     GROUP BY e.hazard_component
-    ORDER BY e.hazard_component
+    ORDER BY MIN(e.id)
     """
     cur = conn.cursor()
     cur.execute(sql)
@@ -440,7 +440,7 @@ def get_top_scenarios_by_hazard_component(conn) -> list[dict]:
         c.total_damage,
         c.scenario_frequency
     FROM calculations c
-    ORDER BY c.hazard_component, c.scenario_no
+    ORDER BY c.hazard_component
     """
     cur = conn.cursor()
     cur.execute(sql)
