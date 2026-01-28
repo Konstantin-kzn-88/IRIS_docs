@@ -1198,19 +1198,18 @@ def render_top_scenarios_description_by_component_table(doc: Document, marker: s
     # 2) Берем "строки сценариев" для построения описания как в render_scenarios_table_at_marker
     scenario_rows = get_scenarios(conn)
 
-    # 3) Строим индекс scenario_no -> local_idx по (equipment_type, kind)
-    idx_map = _build_scenario_index(scenario_rows)
-
     # 4) Загружаем типовые сценарии
     typical = _load_typical_scenarios()
     root = _get_scenarios_root(typical)
 
-    # 5) Мапа scenario_no -> row из get_scenarios (для equipment_type/kind)
+    # Мапа по КОНКРЕТНОМУ оборудованию: (equipment_name, scenario_no) -> row
     sc_map = {}
-    for r in scenario_rows:
-        sc_no = r.get("scenario_no")
-        if sc_no is not None and sc_no not in sc_map:
-            sc_map[sc_no] = r
+    for rr in scenario_rows:
+        key = (rr.get("equipment_name"), rr.get("scenario_no"))
+        if key[0] is None or key[1] is None:
+            continue
+        # если дубликаты — оставляем первое попадание, но уже в рамках оборудования
+        sc_map.setdefault(key, rr)
 
     def _scenario_type_label(st: str) -> str:
         if st == "dangerous":
@@ -1228,17 +1227,18 @@ def render_top_scenarios_description_by_component_table(doc: Document, marker: s
 
         # описание
         desc = "Описание не задано"
-        base = sc_map.get(sc_no)
+        base = sc_map.get((eq_name, sc_no))
         if base:
             et = base.get("equipment_type")
             kd = base.get("substance_kind")
-            local_idx = None
-            if (et, kd) in idx_map and sc_no in idx_map[(et, kd)]:
-                local_idx = idx_map[(et, kd)][sc_no]
+
+            # локальный индекс сценария внутри оборудования (0..N-1)
+            local_idx = base.get("scenario_idx")
 
             desc_list = _get_description_list(root, et, kd)
             if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
                 desc = _scenario_item_to_text(desc_list[local_idx])
+
 
         row = table.add_row().cells
         set_cell_text(row[0], comp if comp is not None else "-")
@@ -1435,8 +1435,10 @@ def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker,
-                               "Заключительная таблица по наиболее опасному и наиболее вероятному сценарию")
+    p = insert_paragraph_after(
+        doc, p_marker,
+        "Заключительная таблица по наиболее опасному и наиболее вероятному сценарию"
+    )
     if p.runs:
         set_run_font(p.runs[0], bold=True)
 
@@ -1462,20 +1464,19 @@ def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn
     # 1) Топ-сценарии
     top_rows = get_top_scenarios_by_hazard_component(conn)
 
-    # 2) Для описания сценария — как в render_scenarios_table_at_marker
+    # 2) Для описания сценария — используем (equipment_name, scenario_no) + scenario_idx
     scenario_rows = get_scenarios(conn)
     typical = _load_typical_scenarios()
     root = _get_scenarios_root(typical)
-    idx_map = _build_scenario_index(scenario_rows)
 
-    # scenario_no -> базовая строка (для equipment_type/substance_kind)
     sc_map = {}
     for rr in scenario_rows:
-        no = rr.get("scenario_no")
-        if no is not None and no not in sc_map:
-            sc_map[no] = rr
+        key = (rr.get("equipment_name"), rr.get("scenario_no"))
+        if key[0] is None or key[1] is None:
+            continue
+        sc_map.setdefault(key, rr)
 
-    def _type_label(st):
+    def _type_label(st: str) -> str:
         return "Наиболее опасный" if st == "dangerous" else "Наиболее вероятный"
 
     for r in top_rows:
@@ -1487,11 +1488,12 @@ def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn
 
         # --- Описание сценария ---
         desc = "Описание не задано"
-        base = sc_map.get(sc_no)
+        base = sc_map.get((eq_name, sc_no))
         if base:
             et = base.get("equipment_type")
             kd = base.get("substance_kind")
-            local_idx = idx_map.get((et, kd), {}).get(sc_no, None)
+            local_idx = base.get("scenario_idx")  # 0..N-1 внутри оборудования
+
             desc_list = _get_description_list(root, et, kd)
             if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
                 desc = _scenario_item_to_text(desc_list[local_idx])
@@ -1533,6 +1535,7 @@ def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn
         set_cell_text(row[10], dmg_txt)
 
     insert_paragraph_after_table(doc, table, "")
+
 
 
 def load_organization_root() -> dict:
