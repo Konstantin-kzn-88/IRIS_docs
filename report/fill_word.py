@@ -6,12 +6,19 @@ from docx import Document
 from report.reportgen.constants import NGK_BACKGROUND_RISK
 from report.reportgen.formatters import risk_to_dbr
 from report.reportgen.constants import SOCIAL_FATALITY_RISKS_DBR
-from core.path import DB_PATH, REPORT_TEMPLATE_DOCX, REPORT_OUTPUT_DIR, TYPICAL_SCENARIOS_PATH, ORGANIZATION_PATH, \
-    ORGANIZATION_SITE_ID
+from core.path import (
+    DB_PATH,
+    REPORT_TEMPLATE_DIR,
+    REPORT_OUTPUT_DIR,
+    TYPICAL_SCENARIOS_PATH,
+    ORGANIZATION_PATH,
+    ORGANIZATION_SITE_ID,
+)
+
+TEMPLATE_DIR = REPORT_TEMPLATE_DIR
 
 # алиасы для минимальных правок ниже по файлу
-TEMPLATE_DIR = REPORT_TEMPLATE_DOCX.parent
-TEMPLATE_PATH = REPORT_TEMPLATE_DOCX
+
 OUT_PATH = REPORT_OUTPUT_DIR / "template_report_out.docx"
 
 from report.reportgen.db import (
@@ -1844,9 +1851,9 @@ def main():
 
     # 2) берём все шаблоны текущего VARIANT
     templates = iter_variant_templates(TEMPLATE_DIR)
-    if not templates:
-        # fallback: старое поведение
-        templates = [REPORT_TEMPLATE_DOCX]
+    # if not templates:
+    #     # fallback: старое поведение
+    #     templates = [REPORT_TEMPLATE_DOCX]
 
     with open_db(DB_PATH) as conn:
         # 3) собираем данные ОДИН РАЗ
