@@ -29,6 +29,7 @@ ORGANIZATION_SITE_ID = "opo_0521"
 INFO_DIR = PROJECT_DIR / "info"
 
 ORGANIZATION_PATH = Path(f"data/organizations/{VARIANT_ORG}/organization.json")
+PROJECT_COMMON_PATH = PROJECT_DIR / "data" / "project_common.json"
 
 
 # --- REPORT ---

@@ -4,7 +4,7 @@ from docx.shared import Cm
 from docx import Document
 
 from report.reportgen.constants import NGK_BACKGROUND_RISK
-from report.reportgen.formatters import risk_to_dbr
+from report.reportgen.formatters import risk_to_dbr, format_float_2
 from report.reportgen.constants import SOCIAL_FATALITY_RISKS_DBR
 from core.path import (
     DB_PATH,
@@ -13,6 +13,7 @@ from core.path import (
     TYPICAL_SCENARIOS_PATH,
     ORGANIZATION_PATH,
     ORGANIZATION_SITE_ID,
+    PROJECT_COMMON_PATH,
 )
 
 TEMPLATE_DIR = REPORT_TEMPLATE_DIR
@@ -83,6 +84,16 @@ from report.reportgen.charts import (
 )
 
 
+def load_project_common() -> dict:
+    """Читает data/project_common.json или возвращает {}."""
+    p = PROJECT_COMMON_PATH
+    if not p.exists():
+        return {}
+    with open(p, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data if isinstance(data, dict) else {}
+
+
 def iter_variant_templates(template_dir: Path) -> list[Path]:
     """Все .docx в папке варианта, стабильно отсортировано."""
     if not template_dir.exists():
@@ -97,6 +108,67 @@ def clear_output_docx(output_dir: Path):
     for p in output_dir.glob("*.docx"):
         if p.is_file():
             p.unlink()
+
+
+def delete_paragraph(paragraph):
+    """Удаляет paragraph из документа (чтобы не оставался пустой разрыв строки)."""
+    p = paragraph._element
+    p.getparent().remove(p)
+    paragraph._p = paragraph._element = None
+
+
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Length
+
+
+def set_table_full_width(doc: Document, table, cols: int = 2, left_ratio: float = 0.5):
+    """
+    Растягивает таблицу по ширине рабочей области страницы и фиксирует layout,
+    чтобы Word реально применил ширину (аналог "Автоподбор по ширине окна").
+
+    left_ratio: доля ширины для левого столбца (0..1). Например 0.35 => 35/65.
+    """
+    # 1) фиксированный layout (иначе Word может игнорировать widths)
+    tbl = table._tbl
+    tblPr = tbl.tblPr
+
+    tblLayout = tblPr.find(qn("w:tblLayout"))
+    if tblLayout is None:
+        tblLayout = OxmlElement("w:tblLayout")
+        tblPr.append(tblLayout)
+    tblLayout.set(qn("w:type"), "fixed")
+
+    # 2) ширина таблицы = 100% (pct). 5000 = 100% в OOXML (1/50 процента)
+    tblW = tblPr.find(qn("w:tblW"))
+    if tblW is None:
+        tblW = OxmlElement("w:tblW")
+        tblPr.append(tblW)
+    tblW.set(qn("w:type"), "pct")
+    tblW.set(qn("w:w"), "5000")
+
+    # 3) дополнительно выставим ширины колонок в twips по рабочей области страницы
+    section = doc.sections[0]
+    total_width = section.page_width - section.left_margin - section.right_margin
+
+    # защита
+    left_ratio = max(0.05, min(0.95, float(left_ratio)))
+
+    left_w = int(total_width * left_ratio)
+    right_w = int(total_width - left_w)
+
+    table.autofit = False  # важно
+    if cols >= 1:
+        table.columns[0].width = left_w
+    if cols >= 2:
+        table.columns[1].width = right_w
+
+    # (опционально) пробежимся по уже созданным ячейкам, чтобы Word не "плавал"
+    for row in table.rows:
+        if cols >= 1:
+            row.cells[0].width = left_w
+        if cols >= 2:
+            row.cells[1].width = right_w
 
 
 def set_cell_text(cell, text, bold: bool = False):
@@ -186,9 +258,122 @@ def render_section_at_marker(
         cur = insert_paragraph_after_table(doc, table, "")
 
 
-def render_distribution_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
+def render_substances_one_table_at_marker(
+        doc: Document,
+        marker: str,
+        items: list[dict],
+        item_title_field: str,
+        sections,
+        json_formatter,
+):
     """
-    Горизонтальная таблица:
+    Одна таблица на все вещества без лишних абзацев:
+    - Шапка "Параметр / Значение" (1 раз)
+    - Разделитель между веществами: строка с названием вещества (merge 2 ячейки)
+    - Параграф с маркером удаляем, чтобы не было пустой строки перед таблицей
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    # очищаем маркер (на всякий случай)
+    clear_paragraph(p_marker)
+
+    # вставляем таблицу сразу "после маркера"
+    table = insert_table_after(doc, p_marker, rows=1, cols=2, style="Table Grid")
+
+    # удаляем параграф-маркер, чтобы не было пустой строки между "Таблица 1 ..." и таблицей
+    delete_paragraph(p_marker)
+    # растянуть таблицу по ширине
+    set_table_full_width(doc, table, cols=2)
+
+    # шапка
+    hdr = table.rows[0].cells
+    set_cell_text(hdr[0], "Параметр", bold=True)
+    set_cell_text(hdr[1], "Значение", bold=True)
+
+    for item in items or []:
+        # разделитель вещества
+        item_title = item.get(item_title_field, "—")
+        sep = table.add_row().cells
+        merged = sep[0].merge(sep[1])
+        set_cell_text(merged, str(item_title), bold=True)
+
+        # наполнение (те же секции/поля)
+        fill_table(table, item, sections, json_formatter)
+
+
+def render_equipment_one_table_at_marker(
+        doc: Document,
+        marker: str,
+        items: list[dict],
+        item_title_field: str,
+        sections,
+        json_formatter,
+):
+    """
+    Одна таблица на всё оборудование без лишних абзацев:
+    - "Параметр / Значение" 1 раз
+    - разделитель между единицами: строка с названием оборудования (merge 2 cells)
+    - жирные заголовки секций ОСТАЮТСЯ
+    - исключаем внутренние параметры расчета по LABEL
+    - параграф с маркером удаляем, чтобы не было пустой строки перед таблицей
+    - таблицу растягиваем по ширине страницы
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    table = insert_table_after(doc, p_marker, rows=1, cols=2, style="Table Grid")
+
+    # убираем пустую строку (маркерный абзац)
+    delete_paragraph(p_marker)
+
+    # растянуть таблицу по ширине
+    set_table_full_width(doc, table, cols=2)
+
+    # шапка
+    hdr = table.rows[0].cells
+    set_cell_text(hdr[0], "Параметр", bold=True)
+    set_cell_text(hdr[1], "Значение", bold=True)
+
+    excluded_labels = {
+        "Тип оборудования",
+        "Тип координат",
+        "Координаты",
+        "Поражение персонала",
+        "Возможные погибшие, чел.",
+        "Возможные пострадавшие, чел.",
+    }
+
+    filtered_sections = []
+    for section_title_i, fields in sections:
+        new_fields = [(field, label) for (field, label) in fields if label not in excluded_labels]
+        filtered_sections.append((section_title_i, new_fields))
+
+    for item in items or []:
+        item_title = item.get(item_title_field, "—")
+
+        # разделитель оборудования
+        sep = table.add_row().cells
+        merged = sep[0].merge(sep[1])
+        set_cell_text(merged, str(item_title), bold=True)
+
+        # заполняем (заголовки секций остаются)
+        fill_table(table, item, filtered_sections, json_formatter)
+
+
+def render_distribution_table_at_marker(
+        doc: Document,
+        marker: str,
+        title: str,
+        rows: list[dict],
+        *,
+        equipment_items: list[dict] | None = None,):
+    """
+    Горизонтальная таблица (одна):
     1) Наименование оборудования
     2) Наименование вещества
     3) Количество опасного вещества, т
@@ -197,6 +382,12 @@ def render_distribution_table_at_marker(doc: Document, marker: str, title: str, 
     6) Температура, °C
 
     Требование: округление чисел до 3 знаков после запятой.
+
+    ВАЖНО (как для SUBSTANCES/EQUIPMENT):
+    - НЕ вставляем title отдельным абзацем (если подпись "Таблица ..." есть в шаблоне)
+    - удаляем параграф с маркером, чтобы не было пустой строки
+    - растягиваем таблицу по ширине страницы ("по ширине окна")
+    - не добавляем пустой абзац после таблицы
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -204,29 +395,41 @@ def render_distribution_table_at_marker(doc: Document, marker: str, title: str, 
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, title)
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
+    table = insert_table_after(doc, p_marker, rows=1, cols=7, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=6, style="Table Grid")
+    # (если у тебя уже есть set_table_full_width, можно оставить)
+    set_table_full_width(doc, table, cols=7, left_ratio=1 / 7)
+
+    # Мапа: equipment_name -> hazard_component
+    eq_map = {}
+    for e in (equipment_items or []):
+        name = e.get("equipment_name")
+        comp = e.get("hazard_component")
+        if name and comp is not None:
+            eq_map[str(name)] = str(comp)
+
     hdr = table.rows[0].cells
-    set_cell_text(hdr[0], "Наименование оборудования", bold=True)
-    set_cell_text(hdr[1], "Наименование вещества", bold=True)
-    set_cell_text(hdr[2], "Количество опасного вещества, т", bold=True)
-    set_cell_text(hdr[3], "Агрегатное состояние", bold=True)
-    set_cell_text(hdr[4], "Давление, МПа", bold=True)
-    set_cell_text(hdr[5], "Температура, °C", bold=True)
+    set_cell_text(hdr[0], "Составляющая ОПО", bold=True)
+    set_cell_text(hdr[1], "Наименование оборудования", bold=True)
+    set_cell_text(hdr[2], "Наименование вещества", bold=True)
+    set_cell_text(hdr[3], "Количество опасного вещества, т", bold=True)
+    set_cell_text(hdr[4], "Агрегатное состояние", bold=True)
+    set_cell_text(hdr[5], "Давление, МПа", bold=True)
+    set_cell_text(hdr[6], "Температура, °C", bold=True)
 
     for r in rows:
-        row = table.add_row().cells
-        set_cell_text(row[0], r.get("equipment_name") or "-")
-        set_cell_text(row[1], r.get("substance_name") or "-")
-        set_cell_text(row[2], format_float_3(r.get("amount_t")))
-        set_cell_text(row[3], r.get("phase_state") if r.get("phase_state") is not None else "-")
-        set_cell_text(row[4], format_float_3(r.get("pressure_mpa")))
-        set_cell_text(row[5], format_float_3(r.get("substance_temperature_c")))
+        eq_name = r.get("equipment_name") or "-"
+        comp = eq_map.get(str(eq_name), "-")
 
-    insert_paragraph_after_table(doc, table, "")
+        row = table.add_row().cells
+        set_cell_text(row[0], comp)
+        set_cell_text(row[1], eq_name)
+        set_cell_text(row[2], r.get("substance_name") or "-")
+        set_cell_text(row[3], format_float_3(r.get("amount_t")))
+        set_cell_text(row[4], r.get("phase_state") if r.get("phase_state") is not None else "-")
+        set_cell_text(row[5], format_float_2(r.get("pressure_mpa")))
+        set_cell_text(row[6], format_float_1(r.get("substance_temperature_c")))
 
 
 def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
@@ -1246,7 +1449,6 @@ def render_top_scenarios_description_by_component_table(doc: Document, marker: s
             if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
                 desc = _scenario_item_to_text(desc_list[local_idx])
 
-
         row = table.add_row().cells
         set_cell_text(row[0], comp if comp is not None else "-")
         set_cell_text(row[1], _scenario_type_label(st))
@@ -1544,7 +1746,6 @@ def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn
     insert_paragraph_after_table(doc, table, "")
 
 
-
 def load_organization_root() -> dict:
     """Возвращает первый элемент массива из organization.json или {}."""
     p = ORGANIZATION_PATH
@@ -1579,20 +1780,35 @@ def _replace_in_paragraph_runs(paragraph, replacements: dict) -> bool:
     return changed
 
 
-def _replace_in_paragraph_text(paragraph, replacements: dict):
+def _replace_in_paragraph_joined_runs(paragraph, replacements: dict) -> bool:
     """
-    Фолбэк: замена на уровне paragraph.text (если плейсхолдер "разбит" на несколько runs).
-    Важно: это может упростить форматирование внутри абзаца (run-форматирование).
+    Замена плейсхолдеров, если они разбиты на несколько runs.
+    Сохраняем форматирование первого run: результат кладём в первый run,
+    остальные runs очищаем.
+
+    Возвращает True, если были изменения.
     """
-    txt = paragraph.text
-    if not txt:
-        return
-    new_txt = txt
+    if not paragraph.runs:
+        return False
+
+    full = "".join(run.text or "" for run in paragraph.runs)
+    if not full:
+        return False
+
+    new_full = full
     for k, v in replacements.items():
-        if k in new_txt:
-            new_txt = new_txt.replace(k, v)
-    if new_txt != txt:
-        paragraph.text = new_txt
+        if k in new_full:
+            new_full = new_full.replace(k, v)
+
+    if new_full == full:
+        return False
+
+    # Важно: сохраняем стиль/форматирование первого run
+    paragraph.runs[0].text = new_full
+    for run in paragraph.runs[1:]:
+        run.text = ""
+
+    return True
 
 
 def replace_placeholders_in_doc(doc: Document, replacements: dict):
@@ -1603,7 +1819,7 @@ def replace_placeholders_in_doc(doc: Document, replacements: dict):
     for p in doc.paragraphs:
         changed = _replace_in_paragraph_runs(p, replacements)
         if not changed:
-            _replace_in_paragraph_text(p, replacements)
+            _replace_in_paragraph_joined_runs(p, replacements)
 
     # 2) таблицы (ячейки содержат свои paragraphs)
     for table in doc.tables:
@@ -1612,7 +1828,7 @@ def replace_placeholders_in_doc(doc: Document, replacements: dict):
                 for p in cell.paragraphs:
                     changed = _replace_in_paragraph_runs(p, replacements)
                     if not changed:
-                        _replace_in_paragraph_text(p, replacements)
+                        _replace_in_paragraph_joined_runs(p, replacements)
 
 
 def select_site_by_id(sites: list[dict], site_id: str) -> dict:
@@ -1703,54 +1919,85 @@ def build_org_replacements(org_root: dict) -> dict:
     }
 
 
+def build_project_common_replacements(common: dict) -> dict:
+    common = common or {}
+    ex = common.get("executor", {}) or {}
+
+    def s(x):
+        return "" if x is None else str(x)
+
+    return {
+        # --- project ---
+        "{{ PROJECT_YEAR }}": s(common.get("year")),
+        "{{ PROJECT_NAME }}": s(common.get("project_name")),
+        "{{ PROJECT_CODE }}": s(common.get("project_code")),
+        "{{ DPB_CODE }}": s(common.get("dpb_code")),
+        "{{ GOCHS_CODE }}": s(common.get("gochs_code")),
+        "{{ PB_CODE }}": s(common.get("pb_code")),
+
+        # --- executor ---
+        "{{ EXECUTOR_NAME }}": s(ex.get("name")),
+        "{{ EXECUTOR_ADDRESS }}": s(ex.get("address")),
+        "{{ EXECUTOR_SRO }}": s(ex.get("sro")),
+        "{{ EXECUTOR_INN }}": s(ex.get("inn")),
+        "{{ EXECUTOR_OGRN }}": s(ex.get("ogrn")),
+        "{{ EXECUTOR_TEL }}": s(ex.get("tel")),
+        "{{ EXECUTOR_EMAIL }}": s(ex.get("email")),
+        "{{ EXECUTOR_WEBSITE }}": s(ex.get("website")),
+        "{{ EXECUTOR_HEAD_POSITION }}": s(ex.get("head_position")),
+        "{{ EXECUTOR_HEAD_FULL_NAME }}": s(ex.get("head_full_name")),
+        "{{ EXECUTOR_SPECIALIST_INFO }}": s(ex.get("specialist_info")),
+    }
+
+
 def fill_doc(
-    doc: Document,
-    *,
-    substances,
-    equipment,
-    distribution,
-    scenarios,
-    ov_amounts,
-    impact_zones,
-    casualties,
-    damage_rows,
-    collective_risk_rows,
-    individual_risk_rows,
-    min_f,
-    max_f,
-    max_damage_rows,
-    top_scenarios_rows,
-    fatality_risk_by_component_rows,
-    conn,
-    fn_rows,
-    fg_rows,
-    pareto_rows,
-    pareto_damage_rows,
-    pareto_env_rows,
-    component_damage_rows,
-    risk_matrix_rows,
-    risk_matrix_damage_rows,
+        doc: Document,
+        *,
+        substances,
+        equipment,
+        distribution,
+        scenarios,
+        ov_amounts,
+        impact_zones,
+        casualties,
+        damage_rows,
+        collective_risk_rows,
+        individual_risk_rows,
+        min_f,
+        max_f,
+        max_damage_rows,
+        top_scenarios_rows,
+        fatality_risk_by_component_rows,
+        conn,
+        fn_rows,
+        fg_rows,
+        pareto_rows,
+        pareto_damage_rows,
+        pareto_env_rows,
+        component_damage_rows,
+        risk_matrix_rows,
+        risk_matrix_damage_rows,
 ):
     # Текстовые данные
     org_root = load_organization_root()
+    proj_common = load_project_common()
     repl = build_org_replacements(org_root)
+    repl.update(build_project_common_replacements(proj_common))
     replace_placeholders_in_doc(doc, repl)
 
     # Таблицы
-    render_section_at_marker(
+    render_substances_one_table_at_marker(
         doc=doc,
         marker="{{SUBSTANCES_SECTION}}",
-        section_title="Сведения о веществах",
         items=substances,
         item_title_field="name",
         sections=SUBSTANCE_SECTIONS,
         json_formatter=pretty_json_substance,
     )
 
-    render_section_at_marker(
+    render_equipment_one_table_at_marker(
         doc=doc,
         marker="{{EQUIPMENT_SECTION}}",
-        section_title="Сведения об оборудовании",
         items=equipment,
         item_title_field="equipment_name",
         sections=EQUIPMENT_SECTIONS,
@@ -1762,6 +2009,7 @@ def fill_doc(
         marker="{{DISTRIBUTION_SECTION}}",
         title="Распределение опасного вещества по оборудованию",
         rows=distribution,
+        equipment_items=equipment,
     )
 
     render_scenarios_table_at_marker(
@@ -1823,7 +2071,8 @@ def fill_doc(
     render_ngk_background_comparison_table(doc=doc, marker="{{NGK_BACKGROUND_RISK_COMPARISON}}", conn=conn)
     render_substances_by_component_table(doc=doc, marker="{{SUBSTANCES_BY_COMPONENT_TABLE}}", conn=conn)
 
-    render_top_scenarios_description_by_component_table(doc=doc, marker="{{TOP_SCENARIOS_DESC_BY_COMPONENT}}", conn=conn)
+    render_top_scenarios_description_by_component_table(doc=doc, marker="{{TOP_SCENARIOS_DESC_BY_COMPONENT}}",
+                                                        conn=conn)
     render_top_scenarios_pf_by_component_table(doc=doc, marker="{{TOP_SCENARIOS_PF_BY_COMPONENT}}", conn=conn)
     render_top_scenarios_fatalities_injured_by_component_table(
         doc=doc, marker="{{TOP_SCENARIOS_FATALITIES_INJURED}}", conn=conn
@@ -1894,7 +2143,6 @@ def main():
                 seen.add(comp)
                 components.append(comp)
 
-
         fatality_risk_by_component_rows = [
             {
                 "hazard_component": comp,
@@ -1940,7 +2188,6 @@ def main():
 
             doc.save(str(OUT_PATH))
             print("Отчёт сформирован:", OUT_PATH)
-
 
 
 if __name__ == "__main__":

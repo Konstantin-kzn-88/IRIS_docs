@@ -133,6 +133,19 @@ def format_float_3(value):
     except Exception:
         return str(value)
 
+def format_float_2(value):
+    """
+    Округление до 2 знаков после запятой.
+    None -> '-'
+    """
+    if value is None:
+        return "-"
+
+    try:
+        return f"{float(value):.2f}"
+    except Exception:
+        return str(value)
+
 def format_float_1(value):
     """
     Округление до 1 знака после запятой.
