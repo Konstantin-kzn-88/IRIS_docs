@@ -372,59 +372,89 @@ def limit_pareto_series(series, top_n=20):
     return head
 
 
-def save_component_damage_chart(rows, path: Path, title: str = "Распределение ущерба по составляющим ОПО"):
+def save_component_damage_chart(rows: list[dict], path: Path):
+    import textwrap
     """
-    rows: list of dicts with keys:
-      - hazard_component
-      - max_direct_losses
-      - max_total_environmental_damage
+    Понятный график ущерба по составляющим ОПО:
+
+    - Горизонтальные столбцы (barh)
+    - Логарифмическая шкала по оси X (ущерб)
+    - Два ряда: Прямой и Экологический (НЕ stack)
+    - Сортировка по сумме (Прямой+Экологический) по убыванию
     """
     if not rows:
         return
 
-    # подготовка + сортировка по сумме
+    def pick(d: dict, keys: list[str], default=0.0) -> float:
+        for k in keys:
+            if k in d and d.get(k) is not None:
+                try:
+                    return float(d.get(k))
+                except Exception:
+                    return default
+        return default
+
+    # Под разные схемы именования в твоих данных
+    direct_keys = ["max_direct_losses", "direct_losses", "max_total_damage", "total_damage"]
+    env_keys = ["max_environmental_losses", "environmental_losses",
+                "max_total_environmental_damage", "total_environmental_damage"]
+
     data = []
     for r in rows:
         comp = r.get("hazard_component")
-        d = r.get("max_direct_losses")
-        e = r.get("max_total_environmental_damage")
-        if comp is None:
+        if not comp:
             continue
-        d = float(d) if d is not None else 0.0
-        e = float(e) if e is not None else 0.0
-        data.append((str(comp), d, e))
+        direct = pick(r, direct_keys, 0.0)
+        env = pick(r, env_keys, 0.0)
+        total = max(0.0, direct) + max(0.0, env)
+        # если вообще ноль — можно не показывать
+        if total <= 0:
+            continue
+        data.append((str(comp), max(0.0, direct), max(0.0, env), total))
 
     if not data:
         return
 
-    data.sort(key=lambda x: (x[1] + x[2]), reverse=True)
+    # сортировка: самые большие сверху
+    data.sort(key=lambda x: x[3], reverse=True)
 
-    labels = [x[0] for x in data]
-    direct = [x[1] for x in data]
-    env = [x[2] for x in data]
+    labels = [textwrap.fill(x[0], width=28) for x in data]
+    direct_vals = [x[1] for x in data]
+    env_vals = [x[2] for x in data]
 
-    x = list(range(len(labels)))
+    # логарифм не принимает 0: поднимем нули до eps только для отрисовки
+    eps = 1e-6
+    direct_plot = [v if v > 0 else eps for v in direct_vals]
+    env_plot = [v if v > 0 else eps for v in env_vals]
 
-    plt.figure(figsize=(12, 6))
+    n = len(labels)
+    # высота фигуры масштабируется от числа строк
+    fig_h = max(4.5, 0.55 * n)
+    plt.figure(figsize=(14, fig_h))
+
+    # Две полосы на категорию (рядом)
+    y = list(range(n))
+    h = 0.35
+    y_direct = [yy - h/2 for yy in y]
+    y_env = [yy + h/2 for yy in y]
+
+    plt.barh(y_direct, direct_plot, height=h, label="Прямой")
+    plt.barh(y_env, env_plot, height=h, label="Экологический")
+
     ax = plt.gca()
+    ax.set_xscale("log")
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels)
 
-    # stacked bar: нижний сегмент Прямой, сверху Экологический
-    ax.bar(x, direct, label="Прямой")
-    ax.bar(x, env, bottom=direct, label="Экологический")
+    ax.set_xlabel("Ущерб, тыс. руб. (логарифмическая шкала)")
+    ax.set_ylabel("Составляющая ОПО")
+    ax.set_title("Распределение ущерба по составляющим ОПО")
 
-    ax.set_title(title)
-    ax.set_xlabel("Составляющая ОПО")
-    ax.set_ylabel("Ущерб, тыс. руб")
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels)
-    ax.tick_params(axis="x", labelrotation=90, labelsize=8)
-
-    ax.grid(True, axis="y")
+    ax.grid(True, axis="x", which="both")
     ax.legend()
 
     plt.tight_layout()
-    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.savefig(path, dpi=300, bbox_inches="tight")
     plt.close()
 
 

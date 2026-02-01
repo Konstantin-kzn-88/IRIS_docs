@@ -262,7 +262,7 @@ def get_max_damage_by_hazard_component(conn) -> list[dict]:
     FROM calculations c
     JOIN equipment e ON e.id = c.equipment_id
     GROUP BY e.hazard_component
-    ORDER BY e.hazard_component
+    ORDER BY MIN(e.id)
     """
     cur = conn.cursor()
     cur.execute(sql)
@@ -372,7 +372,7 @@ def get_max_losses_by_hazard_component(conn) -> list[dict]:
     FROM calculations c
     JOIN equipment e ON e.id = c.equipment_id
     GROUP BY e.hazard_component
-    ORDER BY e.hazard_component
+    ORDER BY MIN(e.id)
     """
     cur = conn.cursor()
     cur.execute(sql)

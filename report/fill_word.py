@@ -84,6 +84,16 @@ from report.reportgen.charts import (
 )
 
 
+def set_repeat_table_header(row):
+    """Делает строку таблицы повторяемой шапкой на каждой странице."""
+    tr = row._tr
+    trPr = tr.get_or_add_trPr()
+    tblHeader = trPr.find(qn("w:tblHeader"))
+    if tblHeader is None:
+        tblHeader = OxmlElement("w:tblHeader")
+        trPr.append(tblHeader)
+    tblHeader.set(qn("w:val"), "1")
+
 def load_project_common() -> dict:
     """Читает data/project_common.json или возвращает {}."""
     p = PROJECT_COMMON_PATH
@@ -119,15 +129,39 @@ def delete_paragraph(paragraph):
 
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Length
+
+def set_table_autofit_to_contents(table):
+    """
+    Включает автоподбор ширины колонок по содержимому.
+    Важно: снимает наши принудительные tblLayout=fixed и tblW=100% (pct),
+    иначе Word часто игнорирует autofit.
+    """
+    tbl = table._tbl
+    tblPr = tbl.tblPr
+
+    # убрать fixed layout
+    tblLayout = tblPr.find(qn("w:tblLayout"))
+    if tblLayout is not None:
+        tblPr.remove(tblLayout)
+
+    # убрать принудительную ширину таблицы (pct 100%)
+    tblW = tblPr.find(qn("w:tblW"))
+    if tblW is not None:
+        tblPr.remove(tblW)
+
+    # включить autofit
+    table.autofit = True
 
 
 def set_table_full_width(doc: Document, table, cols: int = 2, left_ratio: float = 0.5):
     """
-    Растягивает таблицу по ширине рабочей области страницы и фиксирует layout,
+    Растягивает таблицу на ширину рабочей области страницы и фиксирует layout,
     чтобы Word реально применил ширину (аналог "Автоподбор по ширине окна").
 
-    left_ratio: доля ширины для левого столбца (0..1). Например 0.35 => 35/65.
+    - Для cols==2: деление по left_ratio (например 0.35 => 35/65).
+    - Для cols>2: равномерное деление ширины по всем колонкам.
+
+    Важно: функция задаёт tblW=100% и tblLayout=fixed на уровне XML.
     """
     # 1) фиксированный layout (иначе Word может игнорировать widths)
     tbl = table._tbl
@@ -147,29 +181,34 @@ def set_table_full_width(doc: Document, table, cols: int = 2, left_ratio: float 
     tblW.set(qn("w:type"), "pct")
     tblW.set(qn("w:w"), "5000")
 
-    # 3) дополнительно выставим ширины колонок в twips по рабочей области страницы
+    # 3) ширина рабочей области страницы (page_width - margins)
     section = doc.sections[0]
     total_width = section.page_width - section.left_margin - section.right_margin
 
-    # защита
-    left_ratio = max(0.05, min(0.95, float(left_ratio)))
+    table.autofit = False
 
-    left_w = int(total_width * left_ratio)
-    right_w = int(total_width - left_w)
+    # 4) распределение ширины по колонкам
+    if cols <= 2:
+        left_ratio = max(0.05, min(0.95, float(left_ratio)))
+        w0 = int(total_width * left_ratio)
+        w1 = int(total_width - w0)
+        widths = [w0, w1]
+    else:
+        w = int(total_width / cols)
+        widths = [w] * cols
 
-    table.autofit = False  # важно
-    if cols >= 1:
-        table.columns[0].width = left_w
-    if cols >= 2:
-        table.columns[1].width = right_w
+    # 5) применяем ширины к колонкам и существующим ячейкам
+    for i in range(min(cols, len(table.columns))):
+        table.columns[i].width = widths[i]
 
-    # (опционально) пробежимся по уже созданным ячейкам, чтобы Word не "плавал"
     for row in table.rows:
-        if cols >= 1:
-            row.cells[0].width = left_w
-        if cols >= 2:
-            row.cells[1].width = right_w
+        for i in range(min(cols, len(row.cells))):
+            row.cells[i].width = widths[i]
 
+def strip_parentheses(text: str | None) -> str:
+    if not text:
+        return "-"
+    return text.split("(", 1)[0].strip()
 
 def set_cell_text(cell, text, bold: bool = False):
     cell.text = ""
@@ -332,7 +371,7 @@ def render_equipment_one_table_at_marker(
     delete_paragraph(p_marker)
 
     # растянуть таблицу по ширине
-    set_table_full_width(doc, table, cols=2)
+    set_table_autofit_to_contents(table)
 
     # шапка
     hdr = table.rows[0].cells
@@ -366,28 +405,29 @@ def render_equipment_one_table_at_marker(
 
 
 def render_distribution_table_at_marker(
-        doc: Document,
-        marker: str,
-        title: str,
-        rows: list[dict],
-        *,
-        equipment_items: list[dict] | None = None,):
+    doc: Document,
+    marker: str,
+    title: str,
+    rows: list[dict],
+    *,
+    equipment_items: list[dict] | None = None,
+):
     """
-    Горизонтальная таблица (одна):
-    1) Наименование оборудования
-    2) Наименование вещества
-    3) Количество опасного вещества, т
-    4) Агрегатное состояние
-    5) Давление, МПа
-    6) Температура, °C
+    DISTRIBUTION_SECTION (многоуровневая шапка):
+    1) "Технологический блок, оборудование" -> 4 подколонки:
+       - Наименование составляющей (hazard_component из equipment)
+       - Оборудование (equipment_name)
+       - Вещество (substance_name)
+       - Кол-во, ед (quantity_equipment из equipment)
+    2) "Количество опасного вещества, т" -> 2:
+       - В единице оборудования (amount_t)
+       - В блоке (amount_t * quantity_equipment)
+    3) "Физические условия содержания опасного вещества" -> 3:
+       - Агр. состояние (phase_state)
+       - Давление, МПа (pressure_mpa)
+       - Температура, °C (substance_temperature_c)
 
-    Требование: округление чисел до 3 знаков после запятой.
-
-    ВАЖНО (как для SUBSTANCES/EQUIPMENT):
-    - НЕ вставляем title отдельным абзацем (если подпись "Таблица ..." есть в шаблоне)
-    - удаляем параграф с маркером, чтобы не было пустой строки
-    - растягиваем таблицу по ширине страницы ("по ширине окна")
-    - не добавляем пустой абзац после таблицы
+    Шапка 2 строки, обе повторяемые.
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -395,54 +435,103 @@ def render_distribution_table_at_marker(
 
     clear_paragraph(p_marker)
 
-    table = insert_table_after(doc, p_marker, rows=1, cols=7, style="Table Grid")
+    # 9 колонок: 4 + 2 + 3
+    table = insert_table_after(doc, p_marker, rows=2, cols=9, style="Table Grid")
     delete_paragraph(p_marker)
 
-    # (если у тебя уже есть set_table_full_width, можно оставить)
-    set_table_full_width(doc, table, cols=7, left_ratio=1 / 7)
+    # растянуть по ширине (важно: твой set_table_full_width должен уметь cols>2,
+    # иначе колонки не распределятся. Если уже пропатчил — ок.)
+    set_table_full_width(doc, table, cols=9, left_ratio=1/9)
 
-    # Мапа: equipment_name -> hazard_component
-    eq_map = {}
+    # ---- шапка (2 строки) ----
+    r0 = table.rows[0].cells
+    r1 = table.rows[1].cells
+
+    # Верхняя строка: 3 "больших" объединённых заголовка
+    set_cell_text(r0[0], "Технологический блок, оборудование", bold=True)
+    r0[0].merge(r0[3])
+    set_cell_text(r0[4], "Количество опасного вещества, т", bold=True)
+    r0[4].merge(r0[5])
+    set_cell_text(r0[6], "Физические условия содержания опасного вещества", bold=True)
+    r0[6].merge(r0[8])
+
+    # Нижняя строка: подзаголовки
+    headers2 = [
+        "Наименование составляющей",
+        "Оборудование",
+        "Вещество",
+        "Кол-во, ед",
+        "В единице оборудования",
+        "В блоке",
+        "Агр. состояние",
+        "Давление, МПа",
+        "Температура, °C",
+    ]
+    for i, h in enumerate(headers2):
+        set_cell_text(r1[i], h, bold=True)
+
+    # повторяемые строки шапки
+    set_repeat_table_header(table.rows[0])
+    set_repeat_table_header(table.rows[1])
+
+    # ---- мапы из оборудования: component + quantity ----
+    eq_component = {}
+    eq_quantity = {}
     for e in (equipment_items or []):
         name = e.get("equipment_name")
-        comp = e.get("hazard_component")
-        if name and comp is not None:
-            eq_map[str(name)] = str(comp)
+        if not name:
+            continue
+        eq_component[str(name)] = e.get("hazard_component")
+        eq_quantity[str(name)] = e.get("quantity_equipment")
 
-    hdr = table.rows[0].cells
-    set_cell_text(hdr[0], "Составляющая ОПО", bold=True)
-    set_cell_text(hdr[1], "Наименование оборудования", bold=True)
-    set_cell_text(hdr[2], "Наименование вещества", bold=True)
-    set_cell_text(hdr[3], "Количество опасного вещества, т", bold=True)
-    set_cell_text(hdr[4], "Агрегатное состояние", bold=True)
-    set_cell_text(hdr[5], "Давление, МПа", bold=True)
-    set_cell_text(hdr[6], "Температура, °C", bold=True)
-
-    for r in rows:
+    # ---- строки ----
+    for r in rows or []:
         eq_name = r.get("equipment_name") or "-"
-        comp = eq_map.get(str(eq_name), "-")
+        substance = strip_parentheses(r.get("substance_name")) or "-"
+        phase = r.get("phase_state") if r.get("phase_state") is not None else "-"
+
+        comp = eq_component.get(str(eq_name), "-")
+
+        qty = eq_quantity.get(str(eq_name))
+        qty_num = None
+        try:
+            qty_num = float(qty) if qty is not None else None
+        except Exception:
+            qty_num = None
+
+        amount = r.get("amount_t")
+        try:
+            amount_num = float(amount) if amount is not None else None
+        except Exception:
+            amount_num = None
+
+        amount_block = None
+        if amount_num is not None and qty_num is not None:
+            amount_block = amount_num * qty_num
 
         row = table.add_row().cells
-        set_cell_text(row[0], comp)
+        set_cell_text(row[0], comp if comp is not None else "-")
         set_cell_text(row[1], eq_name)
-        set_cell_text(row[2], r.get("substance_name") or "-")
-        set_cell_text(row[3], format_float_3(r.get("amount_t")))
-        set_cell_text(row[4], r.get("phase_state") if r.get("phase_state") is not None else "-")
-        set_cell_text(row[5], format_float_2(r.get("pressure_mpa")))
-        set_cell_text(row[6], format_float_1(r.get("substance_temperature_c")))
+        set_cell_text(row[2], substance)
+        set_cell_text(row[3], int(qty_num) if qty_num is not None and qty_num.is_integer() else (qty_num if qty_num is not None else "-"))
+
+        set_cell_text(row[4], format_float_3(amount_num))
+        set_cell_text(row[5], format_float_3(amount_block))
+
+        set_cell_text(row[6], phase)
+        set_cell_text(row[7], format_float_2(r.get("pressure_mpa")))
+        set_cell_text(row[8], format_float_1(r.get("substance_temperature_c")))
+
 
 
 def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
     """
-    Таблица: Оценка количества опасного вещества в аварии
+    Таблица: Оценка количества опасного вещества в аварии (без лишних абзацев).
     Колонки:
-      1) № п/п
-      2) Наименование оборудования
-      3) Номер сценария (С{scenario_no})
-      4) Количество ОВ участвующего в аварии, т (ov_in_accident_t)
-      5) Количество ОВ в создании поражающего фактора, т (ov_in_hazard_factor_t)
-
-    Требование: округление чисел до 3 знаков после запятой.
+      1) Наименование оборудования
+      2) Номер сценария (С{scenario_no})
+      3) Количество ОВ участвующего в аварии, т (ov_in_accident_t)
+      4) Количество ОВ в создании поражающего фактора, т (ov_in_hazard_factor_t)
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -450,18 +539,17 @@ def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, row
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, title)
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
+    table = insert_table_after(doc, p_marker, rows=1, cols=4, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=4, left_ratio=1/5)
 
     hdr = table.rows[0].cells
-    set_cell_text(hdr[0], "№ п/п", bold=True)
-    set_cell_text(hdr[1], "Наименование оборудования", bold=True)
-    set_cell_text(hdr[2], "Номер сценария", bold=True)
-    set_cell_text(hdr[3], "Количество ОВ участвующего в аварии, т", bold=True)
-    set_cell_text(hdr[4], "Количество ОВ в создании поражающего фактора, т", bold=True)
+    set_cell_text(hdr[0], "Наименование оборудования", bold=True)
+    set_cell_text(hdr[1], "Номер сценария", bold=True)
+    set_cell_text(hdr[2], "Количество ОВ участвующего в аварии, т", bold=True)
+    set_cell_text(hdr[3], "Количество ОВ в создании поражающего фактора, т", bold=True)
 
     # Порядок С1..Сn, внутри номера — по оборудованию
     rows_sorted = sorted(
@@ -477,24 +565,22 @@ def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, row
         set_cell_text(row[0], idx)
         set_cell_text(row[1], r.get("equipment_name") or "-")
         sc_no = r.get("scenario_no")
-        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
-        set_cell_text(row[3], format_float_3(r.get("ov_in_accident_t")))
-        set_cell_text(row[4], format_float_3(r.get("ov_in_hazard_factor_t")))
+        set_cell_text(row[0], r.get("equipment_name") or "-")
+        set_cell_text(row[1], f"С{sc_no}" if sc_no is not None else "-")
+        set_cell_text(row[2], format_float_3(r.get("ov_in_accident_t")))
+        set_cell_text(row[3], format_float_3(r.get("ov_in_hazard_factor_t")))
 
-    insert_paragraph_after_table(doc, table, "")
+    # пустой абзац после таблицы НЕ добавляем
+
 
 
 def render_personnel_casualties_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
-    """Таблица: Оценка количества погибших/пострадавших.
-
-    Колонки из calculations:
-      1) № п/п
-      2) Наименование оборудования (equipment_name)
-      3) Номер сценария (С{scenario_no})
-      4) Количество погибших, чел (fatalities_count)
-      5) Количество пострадавших, чел (injured_count)
-
-    Требование: None заменить на "-".
+    """
+    CASUALTIES_SECTION:
+    - без "№ п/п"
+    - добавлена колонка "Потерпевшие" = fatalities_count + injured_count
+    - без лишних абзацев (удаляем маркерный параграф)
+    - на всю ширину окна/страницы
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -502,20 +588,25 @@ def render_personnel_casualties_table_at_marker(doc: Document, marker: str, titl
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, title)
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
+    # Колонки (примерно как было, но без "№ п/п" + новая "Потерпевшие"):
+    # 0 Оборудование
+    # 1 Номер сценария
+    # 2 Погибшие
+    # 3 Пострадавшие
+    # 4 Потерпевшие (=2+3)
+    table = insert_table_after(doc, p_marker, rows=1, cols=5, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+    set_table_full_width(doc, table, cols=5, left_ratio=1/5)
 
     hdr = table.rows[0].cells
-    set_cell_text(hdr[0], "№ п/п", bold=True)
-    set_cell_text(hdr[1], "Наименование оборудования", bold=True)
-    set_cell_text(hdr[2], "Номер сценария", bold=True)
-    set_cell_text(hdr[3], "Количество погибших, чел", bold=True)
-    set_cell_text(hdr[4], "Количество пострадавших, чел", bold=True)
+    set_cell_text(hdr[0], "Наименование оборудования", bold=True)
+    set_cell_text(hdr[1], "Номер сценария", bold=True)
+    set_cell_text(hdr[2], "Погибшие, чел.", bold=True)
+    set_cell_text(hdr[3], "Раненые, чел.", bold=True)
+    set_cell_text(hdr[4], "Потерпевшие, чел.", bold=True)
 
-    # Порядок С1..Сn, внутри номера — по оборудованию
+    # Порядок: С1..Сn, внутри — по оборудованию (как делали в других таблицах)
     rows_sorted = sorted(
         rows,
         key=lambda r: (
@@ -524,19 +615,32 @@ def render_personnel_casualties_table_at_marker(doc: Document, marker: str, titl
         ),
     )
 
-    for idx, r in enumerate(rows_sorted, start=1):
+    for r in rows_sorted:
+        eq_name = r.get("equipment_name") or "-"
         sc_no = r.get("scenario_no")
-        row = table.add_row().cells
-        set_cell_text(row[0], idx)
-        set_cell_text(row[1], r.get("equipment_name") or "-")
-        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
+        sc_label = f"С{sc_no}" if sc_no is not None else "-"
 
         fat = r.get("fatalities_count")
         inj = r.get("injured_count")
-        set_cell_text(row[3], fat if fat is not None else "-")
-        set_cell_text(row[4], inj if inj is not None else "-")
 
-    insert_paragraph_after_table(doc, table, "")
+        # безопасное суммирование
+        try:
+            fat_n = int(fat) if fat is not None else 0
+        except Exception:
+            fat_n = 0
+        try:
+            inj_n = int(inj) if inj is not None else 0
+        except Exception:
+            inj_n = 0
+
+        victims = fat_n + inj_n
+
+        row = table.add_row().cells
+        set_cell_text(row[0], eq_name)
+        set_cell_text(row[1], sc_label)
+        set_cell_text(row[2], fat_n if fat is not None else "-")
+        set_cell_text(row[3], inj_n if inj is not None else "-")
+        set_cell_text(row[4], victims)
 
 
 def _load_typical_scenarios() -> dict:
@@ -595,14 +699,14 @@ def _build_scenario_index(rows: list[dict]):
 
 def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
     """
-    Таблица сценариев:
-    1) № п/п
-    2) Наименование оборудования
-    3) Номер сценария (С{scenario_no})
-    4) Описание сценария (typical_scenarios.json по (equipment_type, kind) и позиции)
-    5) Базовая частота, 1/год (base_frequency, экспонента)
-    6) Условная вероятность, -
-    7) Частота сценария аварии, 1/год (scenario_frequency, экспонента)
+    Таблица сценариев (без лишних абзацев):
+
+    1) Наименование оборудования
+    2) Номер сценария (С{scenario_no})
+    3) Описание сценария
+    4) Базовая частота, 1/год
+    5) Условная вероятность, -
+    6) Частота сценария аварии, 1/год
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -610,15 +714,15 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, title)
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
+    # Вставляем таблицу сразу после маркера и удаляем маркер, чтобы не было пустой строки
+    table = insert_table_after(doc, p_marker, rows=1, cols=6, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=7, style="Table Grid")
+    # Растянуть по ширине окна/страницы
+    set_table_autofit_to_contents(table)
+
     hdr = table.rows[0].cells
-
     headers = [
-        "№ п/п",
         "Наименование оборудования",
         "Номер сценария",
         "Описание сценария",
@@ -631,7 +735,6 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
 
     typical = _load_typical_scenarios()
     root = _get_scenarios_root(typical)
-    # idx_map = _build_scenario_index(rows)
 
     # Порядок: С1..Сn, внутри — по оборудованию
     rows_sorted = sorted(
@@ -646,7 +749,7 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
         et = r.get("equipment_type")
         kd = r.get("substance_kind")
         sc_no = r.get("scenario_no")
-        # Ключевое: локальный индекс сценария внутри конкретного оборудования (0..N-1)
+
         local_idx = r.get("scenario_idx")
         desc_list = _get_description_list(root, et, kd)
         if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
@@ -655,99 +758,93 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
             desc = "Описание не задано"
 
         row = table.add_row().cells
-        set_cell_text(row[0], i)
-        set_cell_text(row[1], r.get("equipment_name") or "-")
-        set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
-        set_cell_text(row[3], desc)
-        set_cell_text(row[4], format_exp(r.get("base_frequency")))
-        set_cell_text(row[5],
+        set_cell_text(row[0], r.get("equipment_name") or "-")
+        set_cell_text(row[1], f"С{sc_no}" if sc_no is not None else "-")
+        set_cell_text(row[2], desc)
+        set_cell_text(row[3], format_exp(r.get("base_frequency")))
+        set_cell_text(row[4],
                       r.get("accident_event_probability") if r.get("accident_event_probability") is not None else "-")
-        set_cell_text(row[6], format_exp(r.get("scenario_frequency")))
+        set_cell_text(row[5], format_exp(r.get("scenario_frequency")))
+        set_table_full_width(doc, table, cols=6)
 
-    insert_paragraph_after_table(doc, table, "")
 
 
-def render_impact_zones_table(doc, marker: str, rows: list[dict]):
+
+def render_impact_zones_table(doc: Document, marker: str, rows: list[dict]):
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
         return
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Зоны действия поражающих факторов")
-    set_run_font(p.runs[0], bold=True)
+    # Вставляем таблицу сразу после маркера
+    table = insert_table_after(doc, p_marker, rows=1, cols=22, style="Table Grid")
 
-    table = insert_table_after(doc, p, rows=1, cols=23, style="Table Grid")
+    # Удаляем маркерный абзац -> нет лишней строки между "Таблица ..." и таблицей
+    delete_paragraph(p_marker)
+
+    # Растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=22, left_ratio=1/22)
 
     headers = [
-        "№ п/п",
         "Наименование оборудования",
         "Номер сценария",
-
         "q = 10,5",
         "q = 7,0",
         "q = 4,2",
         "q = 1,4",
-
         "ΔР = 70",
         "ΔР = 28",
         "ΔР = 14",
         "ΔР = 5",
         "ΔР = 2",
-
         "Lf",
         "Df",
         "Rнкпр",
         "Rвсп",
         "Rlpt",
         "Rppt",
-
         "Q600",
         "Q320",
         "Q220",
         "Q120",
-
         "St",
     ]
 
-    # шапка
     for i, h in enumerate(headers):
         set_cell_text(table.rows[0].cells[i], h, bold=True)
-
-    # повторяемая шапка (через word_utils, у тебя уже работает)
-    # ничего дописывать не нужно
 
     for idx, r in enumerate(rows, start=1):
         row = table.add_row().cells
 
-        set_cell_text(row[0], idx)
-        set_cell_text(row[1], r["equipment_name"])
-        set_cell_text(row[2], f"С{r['scenario_no']}")
+        set_cell_text(row[0], r.get("equipment_name") or "-")
+        set_cell_text(row[1], f"С{r.get('scenario_no')}" if r.get("scenario_no") is not None else "-")
 
-        set_cell_text(row[3], fmt(r["q_10_5"]))
-        set_cell_text(row[4], fmt(r["q_7_0"]))
-        set_cell_text(row[5], fmt(r["q_4_2"]))
-        set_cell_text(row[6], fmt(r["q_1_4"]))
+        set_cell_text(row[2], fmt(r.get("q_10_5")))
+        set_cell_text(row[3], fmt(r.get("q_7_0")))
+        set_cell_text(row[4], fmt(r.get("q_4_2")))
+        set_cell_text(row[5], fmt(r.get("q_1_4")))
 
-        set_cell_text(row[7], fmt(r["p_70"]))
-        set_cell_text(row[8], fmt(r["p_28"]))
-        set_cell_text(row[9], fmt(r["p_14"]))
-        set_cell_text(row[10], fmt(r["p_5"]))
-        set_cell_text(row[11], fmt(r["p_2"]))
+        set_cell_text(row[6], fmt(r.get("p_70")))
+        set_cell_text(row[7], fmt(r.get("p_28")))
+        set_cell_text(row[8], fmt(r.get("p_14")))
+        set_cell_text(row[9], fmt(r.get("p_5")))
+        set_cell_text(row[10], fmt(r.get("p_2")))
 
-        set_cell_text(row[12], fmt(r["l_f"]))
-        set_cell_text(row[13], fmt(r["d_f"]))
-        set_cell_text(row[14], fmt(r["r_nkpr"]))
-        set_cell_text(row[15], fmt(r["r_vsp"]))
-        set_cell_text(row[16], fmt(r["l_pt"]))
-        set_cell_text(row[17], fmt(r["p_pt"]))
+        set_cell_text(row[11], fmt(r.get("l_f")))
+        set_cell_text(row[12], fmt(r.get("d_f")))
+        set_cell_text(row[13], fmt(r.get("r_nkpr")))
+        set_cell_text(row[14], fmt(r.get("r_vsp")))
+        set_cell_text(row[15], fmt(r.get("l_pt")))
+        set_cell_text(row[16], fmt(r.get("p_pt")))
 
-        set_cell_text(row[18], fmt(r["q_600"]))
-        set_cell_text(row[19], fmt(r["q_320"]))
-        set_cell_text(row[20], fmt(r["q_220"]))
-        set_cell_text(row[21], fmt(r["q_120"]))
+        set_cell_text(row[17], fmt(r.get("q_600")))
+        set_cell_text(row[18], fmt(r.get("q_320")))
+        set_cell_text(row[19], fmt(r.get("q_220")))
+        set_cell_text(row[20], fmt(r.get("q_120")))
 
-        set_cell_text(row[22], fmt(r["s_t"]))
+        set_cell_text(row[21], fmt(r.get("s_t")))
+
 
 
 def render_damage_table_at_marker(doc, marker: str, rows: list[dict]):
@@ -757,13 +854,14 @@ def render_damage_table_at_marker(doc, marker: str, rows: list[dict]):
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Ущерб")
-    set_run_font(p.runs[0], bold=True)
+    # без лишних абзацев: таблица сразу на месте маркера
+    table = insert_table_after(doc, p_marker, rows=1, cols=8, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=9, style="Table Grid")
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=8, left_ratio=1/8)
 
     headers = [
-        "№ п/п",
         "Наименование оборудования",
         "Номер сценария",
         "Прямые потери, тыс.руб",
@@ -773,24 +871,25 @@ def render_damage_table_at_marker(doc, marker: str, rows: list[dict]):
         "Экологический ущерб, тыс.руб",
         "Суммарный ущерб, тыс.руб",
     ]
-
+    hdr = table.rows[0].cells
     for i, h in enumerate(headers):
-        set_cell_text(table.rows[0].cells[i], h, bold=True)
+        set_cell_text(hdr[i], h, bold=True)
 
-    for idx, r in enumerate(rows, start=1):
+    for r in rows:
         row = table.add_row().cells
-        set_cell_text(row[0], idx)
-        set_cell_text(row[1], r.get("equipment_name", "-"))
-        set_cell_text(row[2], f"С{r.get('scenario_no')}" if r.get("scenario_no") is not None else "-")
+        set_cell_text(row[0], r.get("equipment_name", "-"))
+        set_cell_text(row[1], f"С{r.get('scenario_no')}" if r.get("scenario_no") is not None else "-")
 
-        set_cell_text(row[3], format_float_1(r.get("direct_losses")))
-        set_cell_text(row[4], format_float_1(r.get("liquidation_costs")))
-        set_cell_text(row[5], format_float_1(r.get("social_losses")))
-        set_cell_text(row[6], format_float_1(r.get("indirect_damage")))
-        set_cell_text(row[7], format_float_1(r.get("total_environmental_damage")))
-        set_cell_text(row[8], format_float_1(r.get("total_damage")))
+        set_cell_text(row[2], format_float_1(r.get("direct_losses")))
+        set_cell_text(row[3], format_float_1(r.get("liquidation_costs")))
+        set_cell_text(row[4], format_float_1(r.get("social_losses")))
+        set_cell_text(row[5], format_float_1(r.get("indirect_damage")))
+        set_cell_text(row[6], format_float_1(r.get("total_environmental_damage")))
+        set_cell_text(row[7], format_float_1(r.get("total_damage")))
 
-    insert_paragraph_after_table(doc, table, "")
+    # пустой абзац после таблицы НЕ добавляем
+    # insert_paragraph_after_table(doc, table, "")
+
 
 
 def render_collective_risk_table(doc, marker: str, rows: list[dict]):
@@ -800,10 +899,12 @@ def render_collective_risk_table(doc, marker: str, rows: list[dict]):
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Коллективный риск")
-    set_run_font(p.runs[0], bold=True)
+    # таблица сразу на месте маркера
+    table = insert_table_after(doc, p_marker, rows=1, cols=3, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=3, style="Table Grid")
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=3, left_ratio=1/3)
 
     headers = [
         "Составляющая ОПО",
@@ -820,8 +921,6 @@ def render_collective_risk_table(doc, marker: str, rows: list[dict]):
         set_cell_text(row[1], format_exp(r.get("collective_risk_fatalities")))
         set_cell_text(row[2], format_exp(r.get("collective_risk_injured")))
 
-    insert_paragraph_after_table(doc, table, "")
-
 
 def render_individual_risk_table(doc, marker: str, rows: list[dict]):
     p_marker = find_paragraph_with_marker(doc, marker)
@@ -830,10 +929,12 @@ def render_individual_risk_table(doc, marker: str, rows: list[dict]):
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Индивидуальный риск")
-    set_run_font(p.runs[0], bold=True)
+    # таблица сразу на месте маркера
+    table = insert_table_after(doc, p_marker, rows=1, cols=3, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=3, style="Table Grid")
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=3, left_ratio=1/3)
 
     headers = [
         "Составляющая ОПО",
@@ -850,7 +951,8 @@ def render_individual_risk_table(doc, marker: str, rows: list[dict]):
         set_cell_text(row[1], format_exp(r.get("individual_risk_fatalities")))
         set_cell_text(row[2], format_exp(r.get("individual_risk_injured")))
 
-    insert_paragraph_after_table(doc, table, "")
+
+
 
 
 def render_fatal_accident_frequency_text(doc, marker: str, min_freq, max_freq):
@@ -858,22 +960,24 @@ def render_fatal_accident_frequency_text(doc, marker: str, min_freq, max_freq):
     if p_marker is None:
         return
 
-    clear_paragraph(p_marker)
-
     if min_freq is None or max_freq is None:
         text = "Частота аварии с гибелью не менее одного человека равна 0."
-        p = insert_paragraph_after(doc, p_marker, text)
-        set_run_font(p.runs[0], bold=False)
-        return
+    else:
+        text = (
+            "Частота аварии с гибелью не менее одного человека "
+            f"лежит в диапазоне для объекта от {format_exp(min_freq)} "
+            f"и до {format_exp(max_freq)} 1/год."
+        )
 
-    text = (
-        "Частота аварии с гибелью не менее одного человека "
-        f"лежит в диапазоне для объекта от {format_exp(min_freq)} "
-        f"и до {format_exp(max_freq)} 1/год."
-    )
+    # Ничего не вставляем и не очищаем абзац целиком — сохраняем стиль из шаблона
+    # Просто заменяем содержимое в первом run, остальные очищаем.
+    if p_marker.runs:
+        p_marker.runs[0].text = text
+        for run in p_marker.runs[1:]:
+            run.text = ""
+    else:
+        p_marker.add_run(text)
 
-    p = insert_paragraph_after(doc, p_marker, text)
-    set_run_font(p.runs[0], bold=False)
 
 
 def render_max_damage_by_component_table(doc, marker: str, rows: list[dict]):
@@ -883,10 +987,12 @@ def render_max_damage_by_component_table(doc, marker: str, rows: list[dict]):
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Ущерб имуществу и окружающей среде")
-    set_run_font(p.runs[0], bold=True)
+    # Таблица сразу на месте маркера (без лишних абзацев/заголовков)
+    table = insert_table_after(doc, p_marker, rows=1, cols=3, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=3, style="Table Grid")
+    # Растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=3, left_ratio=1/3)
 
     headers = [
         "Составляющая ОПО",
@@ -902,29 +1008,37 @@ def render_max_damage_by_component_table(doc, marker: str, rows: list[dict]):
         set_cell_text(row[1], format_float_1(r.get("max_total_damage")))
         set_cell_text(row[2], format_float_1(r.get("max_total_environmental_damage")))
 
-    insert_paragraph_after_table(doc, table, "")
+    # Пустой абзац после таблицы НЕ добавляем
 
 
-def render_chart_at_marker(doc: Document, marker: str, title: str, image_path: Path | None, width_cm: float = 16.0):
+
+from docx.shared import Cm
+from pathlib import Path
+
+def render_chart_at_marker(
+    doc: Document,
+    marker: str,
+    title: str,
+    image_path: Path | None,
+    *,
+    width_cm: float = 13.0,
+    height_cm: float = 11.0,
+):
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
         return
 
+    # Вставляем "на месте": ничего не добавляем после/до
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, title)
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
-
+    # Если диаграммы нет — пишем текст в этот же абзац
     if image_path is None or not Path(image_path).exists():
-        p2 = insert_paragraph_after(doc, p, "Данные для построения диаграммы отсутствуют.")
-        if p2.runs:
-            set_run_font(p2.runs[0], bold=False)
+        p_marker.add_run("Данные для построения диаграммы отсутствуют.")
         return
 
-    pic_p = insert_paragraph_after(doc, p, "")
-    run = pic_p.add_run()
-    run.add_picture(str(image_path), width=Cm(width_cm))
+    # Картинку вставляем в этот же абзац
+    run = p_marker.add_run()
+    run.add_picture(str(image_path), width=Cm(width_cm), height=Cm(height_cm))
 
 
 def render_fn_chart_at_marker(doc: Document, marker: str, fn_rows: list[dict]):
@@ -942,7 +1056,7 @@ def render_fn_chart_at_marker(doc: Document, marker: str, fn_rows: list[dict]):
         marker=marker,
         title="F/N - диаграмма",
         image_path=image_path,
-        width_cm=16.0,
+        width_cm=13.0,
     )
 
 
@@ -961,7 +1075,7 @@ def render_fg_chart_at_marker(doc: Document, marker: str, fg_rows: list[dict]):
         marker=marker,
         title="F/G - диаграмма",
         image_path=image_path,
-        width_cm=16.0,
+        width_cm=13.0,
     )
 
 
@@ -1031,7 +1145,7 @@ def render_pareto_damage_chart_at_marker(doc: Document, marker: str, rows: list[
         marker=marker,
         title="Pareto сценариев по суммарному ущербу",
         image_path=image_path,
-        width_cm=16.0,
+        width_cm=12.0,
     )
 
 
@@ -1072,7 +1186,7 @@ def render_component_damage_chart_at_marker(doc: Document, marker: str, rows: li
         marker=marker,
         title="Распределение ущерба по составляющим ОПО",
         image_path=image_path,
-        width_cm=16.0,
+        width_cm=12.0,
     )
 
 
@@ -1089,7 +1203,7 @@ def render_risk_matrix_chart_at_marker(doc: Document, marker: str, rows: list[di
         marker=marker,
         title="Матрица риска (частота – последствия)",
         image_path=image_path,
-        width_cm=16.0,
+        width_cm=12.0,
     )
 
 
@@ -1106,7 +1220,7 @@ def render_risk_matrix_damage_chart_at_marker(doc: Document, marker: str, rows: 
         marker=marker,
         title="Матрица риска (частота – ущерб)",
         image_path=image_path,
-        width_cm=16.0,
+        width_cm=12.0,
     )
 
 
@@ -1127,11 +1241,14 @@ def render_top_scenarios_by_component_table(doc, marker: str, rows: list[dict]):
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker,
-                               "Наиболее опасные и наиболее вероятные сценарии аварии по составляющим объекта")
-    set_run_font(p.runs[0], bold=True)
+    # таблица сразу на месте маркера
+    table = insert_table_after(doc, p_marker, rows=1, cols=7, style="Table Grid")
 
-    table = insert_table_after(doc, p, rows=1, cols=7, style="Table Grid")
+    # убрать лишний абзац между "Таблица ..." и таблицей
+    delete_paragraph(p_marker)
+
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=7, left_ratio=1/7)
 
     headers = [
         "Составляющая объекта",
@@ -1163,7 +1280,9 @@ def render_top_scenarios_by_component_table(doc, marker: str, rows: list[dict]):
         set_cell_text(row[5], format_float_1(r.get("total_damage")))
         set_cell_text(row[6], format_exp(r.get("scenario_frequency")))
 
-    insert_paragraph_after_table(doc, table, "")
+    # пустой абзац после таблицы НЕ добавляем
+    # insert_paragraph_after_table(doc, table, "")
+
 
 
 def render_fatality_risk_by_component_table(doc, marker: str, rows: list[dict]):
@@ -1174,10 +1293,12 @@ def render_fatality_risk_by_component_table(doc, marker: str, rows: list[dict]):
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Коллективный и индивидуальный риск гибели по составляющим ОПО")
-    set_run_font(p.runs[0], bold=True)
+    # таблица сразу на месте маркера (без лишних абзацев)
+    table = insert_table_after(doc, p_marker, rows=1, cols=3, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, p, rows=1, cols=3, style="Table Grid")
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=3, left_ratio=1/3)
 
     headers = [
         "Составляющая ОПО",
@@ -1193,7 +1314,8 @@ def render_fatality_risk_by_component_table(doc, marker: str, rows: list[dict]):
         set_cell_text(row[1], format_exp(r.get("individual_risk_fatalities")))
         set_cell_text(row[2], format_exp(r.get("collective_risk_fatalities")))
 
-    insert_paragraph_after_table(doc, table, "")
+    # пустой абзац после таблицы НЕ добавляем
+
 
 
 def render_comparative_fatality_risk_table(doc, marker: str, individual_risk_rows: list[dict]):
@@ -1203,35 +1325,27 @@ def render_comparative_fatality_risk_table(doc, marker: str, individual_risk_row
 
     clear_paragraph(p_marker)
 
-    title_p = insert_paragraph_after(
-        doc, p_marker,
-        "Сравнение риска гибели от различных причин и риска гибели при авариях на ОПО"
-    )
-    if title_p.runs:
-        set_run_font(title_p.runs[0], bold=True)
+    # таблица сразу на месте маркера (без лишних абзацев)
+    table = insert_table_after(doc, p_marker, rows=1, cols=2, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, title_p, rows=1, cols=2, style="Table Grid")
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=2)
 
     # Заголовки
     hdr = table.rows[0].cells
-    hdr[0].text = ""
-    r0 = hdr[0].paragraphs[0].add_run("Вид смертельной опасности")
-    set_run_font(r0, bold=True)
-
-    hdr[1].text = ""
-    r1 = hdr[1].paragraphs[0].add_run("Уровень риска, дБR")
-    set_run_font(r1, bold=True)
+    set_cell_text(hdr[0], "Вид смертельной опасности", bold=True)
+    set_cell_text(hdr[1], "Уровень риска, дБR", bold=True)
 
     # 1) Социальные риски
     for name, dbr in SOCIAL_FATALITY_RISKS_DBR:
         row = table.add_row().cells
-        row[0].paragraphs[0].add_run(str(name))
-        row[1].paragraphs[0].add_run(f"{dbr:+.1f}")
+        set_cell_text(row[0], str(name))
+        set_cell_text(row[1], f"{dbr:+.1f}")
 
     # 2) ОПО по составляющим (берем уже посчитанный индивидуальный риск)
     for r in individual_risk_rows:
         comp = r.get("hazard_component")
-        # поддержка обоих возможных ключей
         risk = (
             r.get("individual_risk_fatalities")
             if r.get("individual_risk_fatalities") is not None
@@ -1242,8 +1356,11 @@ def render_comparative_fatality_risk_table(doc, marker: str, individual_risk_row
         dbr_txt = "—" if dbr is None else f"{dbr:+.1f}"
 
         row = table.add_row().cells
-        row[0].paragraphs[0].add_run(f"Риск гибели при аварии на ОПО ({comp})")
-        row[1].paragraphs[0].add_run(dbr_txt)
+        set_cell_text(row[0], f"Риск гибели при аварии на ОПО ({comp})")
+        set_cell_text(row[1], dbr_txt)
+
+    # пустой абзац после таблицы НЕ добавляем
+
 
 
 def render_ngk_background_comparison_table(doc, marker: str, conn):
@@ -1253,28 +1370,25 @@ def render_ngk_background_comparison_table(doc, marker: str, conn):
 
     clear_paragraph(p)
 
-    title = insert_paragraph_after(
-        doc,
-        p,
-        "Сравнение фоновых показателей риска нефтегазового комплекса и показателей ОПО"
-    )
-    if title.runs:
-        set_run_font(title.runs[0], bold=True)
+    # Таблица сразу на месте маркера (без title-абзаца)
+    table = insert_table_after(doc, p, rows=1, cols=2, style="Table Grid")
 
-    table = insert_table_after(doc, title, rows=1, cols=2, style="Table Grid")
+    # Удаляем маркерный абзац, чтобы не было пустой строки между "Таблица ..." и таблицей
+    delete_paragraph(p)
+
+    # Растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=2, left_ratio=0.55)  # можно 0.5, но 55/45 обычно читабельнее
 
     # Заголовки
     hdr = table.rows[0].cells
-    h0 = hdr[0].paragraphs[0].add_run("Параметр")
-    h1 = hdr[1].paragraphs[0].add_run("Значение")
-    set_run_font(h0, bold=True)
-    set_run_font(h1, bold=True)
+    set_cell_text(hdr[0], "Параметр", bold=True)
+    set_cell_text(hdr[1], "Значение", bold=True)
 
     # --- A. Фон НГК ---
     for name, value in NGK_BACKGROUND_RISK:
         row = table.add_row().cells
-        row[0].paragraphs[0].add_run(name)
-        row[1].paragraphs[0].add_run(value)
+        set_cell_text(row[0], name)
+        set_cell_text(row[1], value)
 
     # --- B. ОПО по составляющим ---
     risks = get_individual_risk(conn)
@@ -1293,26 +1407,19 @@ def render_ngk_background_comparison_table(doc, marker: str, conn):
 
         # Ущерб
         row = table.add_row().cells
-        row[0].paragraphs[0].add_run(
-            f"Ущерб при аварии на ОПО ({comp}), млн руб"
-        )
-        row[1].paragraphs[0].add_run(
-            f"{damage:.1f}" if damage is not None else "—"
-        )
+        set_cell_text(row[0], f"Ущерб при аварии на ОПО ({comp}), тыс. руб")
+        set_cell_text(row[1], f"{damage:.1f}" if damage is not None else "—")
 
         # Риск дБR
         row = table.add_row().cells
-        row[0].paragraphs[0].add_run(
-            f"Риск гибели при аварии на ОПО ({comp}), дБR"
-        )
-        row[1].paragraphs[0].add_run(f"{dbr:+.1f}")
+        set_cell_text(row[0], f"Риск гибели при аварии на ОПО ({comp}), дБR")
+        set_cell_text(row[1], "—" if dbr is None else f"{dbr:+.1f}")
 
         # Риск ppm
         row = table.add_row().cells
-        row[0].paragraphs[0].add_run(
-            f"Риск гибели при аварии на ОПО ({comp}), ppm"
-        )
-        row[1].paragraphs[0].add_run(f"{ppm:.2f}")
+        set_cell_text(row[0], f"Риск гибели при аварии на ОПО ({comp}), ppm")
+        set_cell_text(row[1], f"{ppm:.2f}")
+
 
 
 def render_substances_by_component_table(doc, marker: str, conn):
