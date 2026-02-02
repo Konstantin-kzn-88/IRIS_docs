@@ -1423,50 +1423,42 @@ def render_ngk_background_comparison_table(doc, marker: str, conn):
 
 
 def render_substances_by_component_table(doc, marker: str, conn):
-    from report.reportgen.word_utils import (
-        find_paragraph_with_marker,
-        clear_paragraph,
-        insert_paragraph_after,
-        insert_table_after,
-        set_run_font,
-    )
-
     p = find_paragraph_with_marker(doc, marker)
     if p is None:
         return
 
     clear_paragraph(p)
 
-    title = insert_paragraph_after(
-        doc,
-        p,
-        "Количество веществ по составляющим объекта"
-    )
-    if title.runs:
-        set_run_font(title.runs[0], bold=True)
+    # Таблица сразу на месте маркера (без заголовка-абзаца)
+    table = insert_table_after(doc, p, rows=1, cols=2, style="Table Grid")
 
-    table = insert_table_after(doc, title, rows=1, cols=2, style="Table Grid")
+    # Убираем маркерный абзац -> нет пустой строки между "Таблица ..." и таблицей
+    delete_paragraph(p)
+
+    # Растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=2, left_ratio=0.5)
 
     # Заголовки
     hdr = table.rows[0].cells
-    r0 = hdr[0].paragraphs[0].add_run("Составляющая объекта")
-    r1 = hdr[1].paragraphs[0].add_run("Количество вещества, т")
-    set_run_font(r0, bold=True)
-    set_run_font(r1, bold=True)
+    set_cell_text(hdr[0], "Составляющая объекта", bold=True)
+    set_cell_text(hdr[1], "Количество вещества, т", bold=True)
 
     data = get_substances_by_component(conn)
 
     for comp, items in data.items():
         row = table.add_row().cells
-        row[0].paragraphs[0].add_run(str(comp))
+        set_cell_text(row[0], str(comp))
 
-        p_cell = row[1].paragraphs[0]
-        p_cell.text = ""
+        # во второй ячейке — список веществ построчно
+        cell = row[1]
+        cell.text = ""
+        p_cell = cell.paragraphs[0]
 
         for i, (name, mass) in enumerate(items):
             if i > 0:
                 p_cell.add_run("\n")
             p_cell.add_run(f"{name} — {mass:.3f} т")
+
 
 
 def render_top_scenarios_description_by_component_table(doc: Document, marker: str, conn):
@@ -1853,6 +1845,83 @@ def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn
     insert_paragraph_after_table(doc, table, "")
 
 
+def _safe_json(v):
+    if isinstance(v, dict):
+        return v
+    if isinstance(v, str):
+        v = v.strip()
+        if v.startswith("{") and v.endswith("}"):
+            try:
+                return json.loads(v)
+            except Exception:
+                return None
+    return None
+
+def render_substances_info_table_at_marker(doc: Document, marker: str, conn):
+    """
+    Таблица "Сведения об опасных веществах"
+    Колонки:
+      1) Наименование опасного вещества (без скобок)
+      2) Степень опасности и характер воздействия (класс опасности, reactivity, impact, first_aid)
+
+    Вещества: только реально используемые в расчётах (db.get_used_substances).
+    """
+    p_marker = find_paragraph_with_marker(doc, marker)
+    if p_marker is None:
+        return
+
+    clear_paragraph(p_marker)
+
+    # Заголовок (и сразу после него вставляем таблицу — без пустого абзаца)
+    p = insert_paragraph_after(doc, p_marker, "Сведения об опасных веществах")
+    if p.runs:
+        set_run_font(p.runs[0], bold=True)
+
+    table = insert_table_after(doc, p, rows=1, cols=2, style="Table Grid")
+    hdr = table.rows[0].cells
+    set_cell_text(hdr[0], "Наименование опасного вещества", bold=True)
+    set_cell_text(
+        hdr[1],
+        "Степень опасности и характер воздействия вещества на организм человека и характер воздействия веществ на окружающую среду",
+        bold=True,
+    )
+
+    used = get_used_substances(conn) or []
+
+    for s in used:
+        # 1) имя без скобок — используем вашу функцию
+        name = strip_parentheses(s.get("name"))
+
+        # 2) класс опасности может быть как в отдельном поле, так и в toxicity (json)
+        # 1) Распакованное поле из БД (основной источник)
+        hazard_class = s.get("toxicity_hazard_class")
+
+        # 2) Если вдруг не заполнено — пробуем из toxicity_json
+        if hazard_class is None:
+            tox = _safe_json(s.get("toxicity_json"))
+            if isinstance(tox, dict):
+                hazard_class = tox.get("hazard_class")
+        tox = _safe_json(s.get("toxicity"))
+        if hazard_class is None and isinstance(tox, dict):
+            hazard_class = tox.get("hazard_class")
+
+        reactivity = s.get("reactivity")
+        impact = s.get("impact")
+        first_aid = s.get("first_aid")
+
+        parts = [
+            f"Класс опасности: {hazard_class if hazard_class is not None else '—'}",
+            f"Реакционная способность: {reactivity if reactivity else '—'}",
+            f"Воздействие: {impact if impact else '—'}",
+            f"Первая помощь: {first_aid if first_aid else '—'}",
+        ]
+
+        row = table.add_row().cells
+        set_cell_text(row[0], name)
+        set_cell_text(row[1], "\n".join(parts))
+
+    insert_paragraph_after_table(doc, table, "")
+
 def load_organization_root() -> dict:
     """Возвращает первый элемент массива из organization.json или {}."""
     p = ORGANIZATION_PATH
@@ -1867,34 +1936,38 @@ def load_organization_root() -> dict:
     return {}
 
 
+def _norm_ws(s: str) -> str:
+    # NBSP (U+00A0) и узкий NBSP (U+202F) -> обычный пробел
+    return s.replace("\u00A0", " ").replace("\u202F", " ")
+
 def _replace_in_paragraph_runs(paragraph, replacements: dict) -> bool:
-    """
-    Пытаемся заменить в runs (сохраняет форматирование run'ов).
-    Возвращает True если хотя бы одна замена прошла по runs.
-    """
     changed = False
     for run in paragraph.runs:
         txt = run.text
         if not txt:
             continue
-        new_txt = txt
+
+        # Нормализация пробелов для корректного матчинга плейсхолдеров
+        txt_norm = _norm_ws(txt)
+        new_txt = txt_norm
+
         for k, v in replacements.items():
-            if k in new_txt:
-                new_txt = new_txt.replace(k, v)
-        if new_txt != txt:
+            k_norm = _norm_ws(k)
+            if k_norm in new_txt:
+                new_txt = new_txt.replace(k_norm, v)
+
+        if new_txt != txt_norm:
             run.text = new_txt
             changed = True
+        elif txt_norm != txt:
+            # если замен не было, но были NBSP — всё равно обновим run
+            run.text = txt_norm
+
     return changed
 
 
-def _replace_in_paragraph_joined_runs(paragraph, replacements: dict) -> bool:
-    """
-    Замена плейсхолдеров, если они разбиты на несколько runs.
-    Сохраняем форматирование первого run: результат кладём в первый run,
-    остальные runs очищаем.
 
-    Возвращает True, если были изменения.
-    """
+def _replace_in_paragraph_joined_runs(paragraph, replacements: dict) -> bool:
     if not paragraph.runs:
         return False
 
@@ -1902,20 +1975,30 @@ def _replace_in_paragraph_joined_runs(paragraph, replacements: dict) -> bool:
     if not full:
         return False
 
+    full = _norm_ws(full)
     new_full = full
+
     for k, v in replacements.items():
-        if k in new_full:
-            new_full = new_full.replace(k, v)
+        k_norm = _norm_ws(k)
+        if k_norm in new_full:
+            new_full = new_full.replace(k_norm, v)
 
     if new_full == full:
         return False
 
-    # Важно: сохраняем стиль/форматирование первого run
     paragraph.runs[0].text = new_full
     for run in paragraph.runs[1:]:
         run.text = ""
-
     return True
+
+
+
+def _paragraph_has_any_placeholder(paragraph, replacements: dict) -> bool:
+    full = "".join(run.text or "" for run in paragraph.runs)
+    if not full:
+        return False
+    # Если остался любой ключ — значит надо делать joined_runs
+    return any(k in full for k in replacements.keys())
 
 
 def replace_placeholders_in_doc(doc: Document, replacements: dict):
@@ -1924,18 +2007,19 @@ def replace_placeholders_in_doc(doc: Document, replacements: dict):
     """
     # 1) обычные абзацы
     for p in doc.paragraphs:
-        changed = _replace_in_paragraph_runs(p, replacements)
-        if not changed:
+        _replace_in_paragraph_runs(p, replacements)
+        if _paragraph_has_any_placeholder(p, replacements):
             _replace_in_paragraph_joined_runs(p, replacements)
 
-    # 2) таблицы (ячейки содержат свои paragraphs)
+    # 2) таблицы
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    changed = _replace_in_paragraph_runs(p, replacements)
-                    if not changed:
+                    _replace_in_paragraph_runs(p, replacements)
+                    if _paragraph_has_any_placeholder(p, replacements):
                         _replace_in_paragraph_joined_runs(p, replacements)
+
 
 
 def select_site_by_id(sites: list[dict], site_id: str) -> dict:
@@ -2100,6 +2184,12 @@ def fill_doc(
         item_title_field="name",
         sections=SUBSTANCE_SECTIONS,
         json_formatter=pretty_json_substance,
+    )
+
+    render_substances_info_table_at_marker(
+        doc=doc,
+        marker="{{SUBSTANCES_INFO_SECTION}}",
+        conn=conn,
     )
 
     render_equipment_one_table_at_marker(

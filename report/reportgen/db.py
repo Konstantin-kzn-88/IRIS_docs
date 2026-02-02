@@ -534,16 +534,24 @@ def get_substances_by_component(conn):
                 MAX(amount_t) AS amount_t
             FROM calculations
             GROUP BY hazard_component, equipment_id
+        ),
+        comp_order AS (
+            SELECT
+                hazard_component,
+                MIN(equipment_id) AS min_equipment_id
+            FROM eq_amount
+            GROUP BY hazard_component
         )
         SELECT
             ea.hazard_component,
             s.name AS substance_name,
             SUM(ea.amount_t) AS mass_t
         FROM eq_amount ea
+        JOIN comp_order co ON co.hazard_component = ea.hazard_component
         JOIN equipment e ON e.id = ea.equipment_id
         JOIN substances s ON s.id = e.substance_id
         GROUP BY ea.hazard_component, s.name
-        ORDER BY ea.hazard_component, s.name
+        ORDER BY co.min_equipment_id, s.name
     """)
 
     result = {}
