@@ -517,6 +517,17 @@ def get_damage_by_component(conn):
     return {row[0]: row[1] for row in cur.fetchall()}
 
 
+def get_all_substances(conn) -> list[dict]:
+    """
+    Возвращает все вещества из таблицы substances.
+    Формат как в остальных функциях: dict(zip(cols, row)).
+    """
+    sql = "SELECT * FROM substances ORDER BY name"
+    cur = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
 def get_substances_by_component(conn):
     """
     Количество веществ по составляющим объекта.

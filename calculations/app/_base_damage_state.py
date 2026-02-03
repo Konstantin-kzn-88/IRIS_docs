@@ -1,24 +1,9 @@
-import math
-
-
-def __calculate_direct_losses_log(mass: float) -> float:
-    if mass <= 0:
-        return 0
-
-    # Настраиваемые параметры
-    scale = 18000  # общий масштаб ущерба
-    log_base = 1.8  # чем больше — тем быстрее насыщение
-
-    if mass < 1:
-        return mass * 120  # очень маленькие разливы — почти линейно и дорого
-
-    return scale * math.log(1 + mass) ** log_base
-
+from ._base_cost_for_damage import approx_equipment_cost
 
 def damage(mass, count_dead_personal, count_injured_personal):
     result = {}
 
-    result["direct_losses"] =__calculate_direct_losses_log(mass)
+    result["direct_losses"] = approx_equipment_cost(mass)
 
     result["liquidation_costs"] = result["direct_losses"] * 0.1
     result["social_losses"] = count_dead_personal * 3000 + count_injured_personal * 250

@@ -25,6 +25,7 @@ OUT_PATH = REPORT_OUTPUT_DIR / "template_report_out.docx"
 from report.reportgen.db import (
     open_db,
     get_used_substances,
+    get_all_substances,
     get_used_equipment,
     get_hazard_distribution,
     get_scenarios,
@@ -94,6 +95,7 @@ def set_repeat_table_header(row):
         trPr.append(tblHeader)
     tblHeader.set(qn("w:val"), "1")
 
+
 def load_project_common() -> dict:
     """Читает data/project_common.json или возвращает {}."""
     p = PROJECT_COMMON_PATH
@@ -129,6 +131,7 @@ def delete_paragraph(paragraph):
 
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+
 
 def set_table_autofit_to_contents(table):
     """
@@ -205,10 +208,12 @@ def set_table_full_width(doc: Document, table, cols: int = 2, left_ratio: float 
         for i in range(min(cols, len(row.cells))):
             row.cells[i].width = widths[i]
 
+
 def strip_parentheses(text: str | None) -> str:
     if not text:
         return "-"
     return text.split("(", 1)[0].strip()
+
 
 def set_cell_text(cell, text, bold: bool = False):
     cell.text = ""
@@ -405,12 +410,12 @@ def render_equipment_one_table_at_marker(
 
 
 def render_distribution_table_at_marker(
-    doc: Document,
-    marker: str,
-    title: str,
-    rows: list[dict],
-    *,
-    equipment_items: list[dict] | None = None,
+        doc: Document,
+        marker: str,
+        title: str,
+        rows: list[dict],
+        *,
+        equipment_items: list[dict] | None = None,
 ):
     """
     DISTRIBUTION_SECTION (многоуровневая шапка):
@@ -418,10 +423,12 @@ def render_distribution_table_at_marker(
        - Наименование составляющей (hazard_component из equipment)
        - Оборудование (equipment_name)
        - Вещество (substance_name)
-       - Кол-во, ед (quantity_equipment из equipment)
+       - Кол-во, ед (quantity_equipment из equipment; для трубопроводов всегда 1)
     2) "Количество опасного вещества, т" -> 2:
        - В единице оборудования (amount_t)
-       - В блоке (amount_t * quantity_equipment)
+       - В блоке:
+           * equipment_type != 0: amount_t * quantity_equipment
+           * equipment_type == 0: amount_t
     3) "Физические условия содержания опасного вещества" -> 3:
        - Агр. состояние (phase_state)
        - Давление, МПа (pressure_mpa)
@@ -439,9 +446,8 @@ def render_distribution_table_at_marker(
     table = insert_table_after(doc, p_marker, rows=2, cols=9, style="Table Grid")
     delete_paragraph(p_marker)
 
-    # растянуть по ширине (важно: твой set_table_full_width должен уметь cols>2,
-    # иначе колонки не распределятся. Если уже пропатчил — ок.)
-    set_table_full_width(doc, table, cols=9, left_ratio=1/9)
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=9, left_ratio=1 / 9)
 
     # ---- шапка (2 строки) ----
     r0 = table.rows[0].cells
@@ -474,54 +480,76 @@ def render_distribution_table_at_marker(
     set_repeat_table_header(table.rows[0])
     set_repeat_table_header(table.rows[1])
 
-    # ---- мапы из оборудования: component + quantity ----
-    eq_component = {}
-    eq_quantity = {}
+    # ---- мапы из оборудования: component + quantity + type ----
+    eq_component: dict[str, object] = {}
+    eq_quantity: dict[str, object] = {}
+    eq_type: dict[str, object] = {}
+
     for e in (equipment_items or []):
         name = e.get("equipment_name")
         if not name:
             continue
-        eq_component[str(name)] = e.get("hazard_component")
-        eq_quantity[str(name)] = e.get("quantity_equipment")
+        name = str(name)
+        eq_component[name] = e.get("hazard_component")
+        eq_quantity[name] = e.get("quantity_equipment")
+        eq_type[name] = e.get("equipment_type")
 
     # ---- строки ----
     for r in rows or []:
         eq_name = r.get("equipment_name") or "-"
+        eq_key = str(eq_name)
+
         substance = strip_parentheses(r.get("substance_name")) or "-"
         phase = r.get("phase_state") if r.get("phase_state") is not None else "-"
 
-        comp = eq_component.get(str(eq_name), "-")
+        comp = eq_component.get(eq_key, "-")
+        equipment_type = eq_type.get(eq_key)
 
-        qty = eq_quantity.get(str(eq_name))
-        qty_num = None
-        try:
-            qty_num = float(qty) if qty is not None else None
-        except Exception:
-            qty_num = None
-
+        # amount_t
         amount = r.get("amount_t")
         try:
             amount_num = float(amount) if amount is not None else None
         except Exception:
             amount_num = None
 
-        amount_block = None
-        if amount_num is not None and qty_num is not None:
-            amount_block = amount_num * qty_num
+        # qty + amount_block (по ТЗ)
+        if equipment_type == 0:
+            # трубопровод
+            qty_num = 1
+            amount_block = amount_num
+        else:
+            qty = eq_quantity.get(eq_key)
+            try:
+                qty_num = float(qty) if qty is not None else None
+            except Exception:
+                qty_num = None
+
+            amount_block = (
+                amount_num * qty_num
+                if amount_num is not None and qty_num is not None
+                else None
+            )
 
         row = table.add_row().cells
         set_cell_text(row[0], comp if comp is not None else "-")
         set_cell_text(row[1], eq_name)
         set_cell_text(row[2], substance)
-        set_cell_text(row[3], int(qty_num) if qty_num is not None and qty_num.is_integer() else (qty_num if qty_num is not None else "-"))
 
+        # Кол-во, ед
+        if isinstance(qty_num, (int, float)) and float(qty_num).is_integer():
+            qty_out = int(qty_num)
+        else:
+            qty_out = qty_num if qty_num is not None else "-"
+        set_cell_text(row[3], qty_out)
+
+        # Количество ОВ
         set_cell_text(row[4], format_float_3(amount_num))
         set_cell_text(row[5], format_float_3(amount_block))
 
+        # Физические условия
         set_cell_text(row[6], phase)
         set_cell_text(row[7], format_float_2(r.get("pressure_mpa")))
         set_cell_text(row[8], format_float_1(r.get("substance_temperature_c")))
-
 
 
 def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
@@ -543,7 +571,7 @@ def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, row
     delete_paragraph(p_marker)
 
     # растянуть по ширине окна/страницы
-    set_table_full_width(doc, table, cols=4, left_ratio=1/5)
+    set_table_full_width(doc, table, cols=4, left_ratio=1 / 5)
 
     hdr = table.rows[0].cells
     set_cell_text(hdr[0], "Наименование оборудования", bold=True)
@@ -573,7 +601,6 @@ def render_ov_amount_table_at_marker(doc: Document, marker: str, title: str, row
     # пустой абзац после таблицы НЕ добавляем
 
 
-
 def render_personnel_casualties_table_at_marker(doc: Document, marker: str, title: str, rows: list[dict]):
     """
     CASUALTIES_SECTION:
@@ -597,7 +624,7 @@ def render_personnel_casualties_table_at_marker(doc: Document, marker: str, titl
     table = insert_table_after(doc, p_marker, rows=1, cols=5, style="Table Grid")
     delete_paragraph(p_marker)
 
-    set_table_full_width(doc, table, cols=5, left_ratio=1/5)
+    set_table_full_width(doc, table, cols=5, left_ratio=1 / 5)
 
     hdr = table.rows[0].cells
     set_cell_text(hdr[0], "Наименование оборудования", bold=True)
@@ -768,8 +795,6 @@ def render_scenarios_table_at_marker(doc: Document, marker: str, title: str, row
         set_table_full_width(doc, table, cols=6)
 
 
-
-
 def render_impact_zones_table(doc: Document, marker: str, rows: list[dict]):
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -784,7 +809,7 @@ def render_impact_zones_table(doc: Document, marker: str, rows: list[dict]):
     delete_paragraph(p_marker)
 
     # Растянуть по ширине окна/страницы
-    set_table_full_width(doc, table, cols=22, left_ratio=1/22)
+    set_table_full_width(doc, table, cols=22, left_ratio=1 / 22)
 
     headers = [
         "Наименование оборудования",
@@ -846,7 +871,6 @@ def render_impact_zones_table(doc: Document, marker: str, rows: list[dict]):
         set_cell_text(row[21], fmt(r.get("s_t")))
 
 
-
 def render_damage_table_at_marker(doc, marker: str, rows: list[dict]):
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -859,7 +883,7 @@ def render_damage_table_at_marker(doc, marker: str, rows: list[dict]):
     delete_paragraph(p_marker)
 
     # растянуть по ширине окна/страницы
-    set_table_full_width(doc, table, cols=8, left_ratio=1/8)
+    set_table_full_width(doc, table, cols=8, left_ratio=1 / 8)
 
     headers = [
         "Наименование оборудования",
@@ -891,7 +915,6 @@ def render_damage_table_at_marker(doc, marker: str, rows: list[dict]):
     # insert_paragraph_after_table(doc, table, "")
 
 
-
 def render_collective_risk_table(doc, marker: str, rows: list[dict]):
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -904,7 +927,7 @@ def render_collective_risk_table(doc, marker: str, rows: list[dict]):
     delete_paragraph(p_marker)
 
     # растянуть по ширине окна/страницы
-    set_table_full_width(doc, table, cols=3, left_ratio=1/3)
+    set_table_full_width(doc, table, cols=3, left_ratio=1 / 3)
 
     headers = [
         "Составляющая ОПО",
@@ -934,7 +957,7 @@ def render_individual_risk_table(doc, marker: str, rows: list[dict]):
     delete_paragraph(p_marker)
 
     # растянуть по ширине окна/страницы
-    set_table_full_width(doc, table, cols=3, left_ratio=1/3)
+    set_table_full_width(doc, table, cols=3, left_ratio=1 / 3)
 
     headers = [
         "Составляющая ОПО",
@@ -950,9 +973,6 @@ def render_individual_risk_table(doc, marker: str, rows: list[dict]):
         set_cell_text(row[0], r.get("hazard_component", "-"))
         set_cell_text(row[1], format_exp(r.get("individual_risk_fatalities")))
         set_cell_text(row[2], format_exp(r.get("individual_risk_injured")))
-
-
-
 
 
 def render_fatal_accident_frequency_text(doc, marker: str, min_freq, max_freq):
@@ -979,7 +999,6 @@ def render_fatal_accident_frequency_text(doc, marker: str, min_freq, max_freq):
         p_marker.add_run(text)
 
 
-
 def render_max_damage_by_component_table(doc, marker: str, rows: list[dict]):
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -992,7 +1011,7 @@ def render_max_damage_by_component_table(doc, marker: str, rows: list[dict]):
     delete_paragraph(p_marker)
 
     # Растянуть по ширине окна/страницы
-    set_table_full_width(doc, table, cols=3, left_ratio=1/3)
+    set_table_full_width(doc, table, cols=3, left_ratio=1 / 3)
 
     headers = [
         "Составляющая ОПО",
@@ -1011,18 +1030,18 @@ def render_max_damage_by_component_table(doc, marker: str, rows: list[dict]):
     # Пустой абзац после таблицы НЕ добавляем
 
 
-
 from docx.shared import Cm
 from pathlib import Path
 
+
 def render_chart_at_marker(
-    doc: Document,
-    marker: str,
-    title: str,
-    image_path: Path | None,
-    *,
-    width_cm: float = 13.0,
-    height_cm: float = 11.0,
+        doc: Document,
+        marker: str,
+        title: str,
+        image_path: Path | None,
+        *,
+        width_cm: float = 13.0,
+        height_cm: float = 11.0,
 ):
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -1248,7 +1267,7 @@ def render_top_scenarios_by_component_table(doc, marker: str, rows: list[dict]):
     delete_paragraph(p_marker)
 
     # растянуть по ширине окна/страницы
-    set_table_full_width(doc, table, cols=7, left_ratio=1/7)
+    set_table_full_width(doc, table, cols=7, left_ratio=1 / 7)
 
     headers = [
         "Составляющая объекта",
@@ -1284,7 +1303,6 @@ def render_top_scenarios_by_component_table(doc, marker: str, rows: list[dict]):
     # insert_paragraph_after_table(doc, table, "")
 
 
-
 def render_fatality_risk_by_component_table(doc, marker: str, rows: list[dict]):
     """Сводная таблица: индивидуальный и коллективный риск гибели по составляющим ОПО."""
     p_marker = find_paragraph_with_marker(doc, marker)
@@ -1298,7 +1316,7 @@ def render_fatality_risk_by_component_table(doc, marker: str, rows: list[dict]):
     delete_paragraph(p_marker)
 
     # растянуть по ширине окна/страницы
-    set_table_full_width(doc, table, cols=3, left_ratio=1/3)
+    set_table_full_width(doc, table, cols=3, left_ratio=1 / 3)
 
     headers = [
         "Составляющая ОПО",
@@ -1315,7 +1333,6 @@ def render_fatality_risk_by_component_table(doc, marker: str, rows: list[dict]):
         set_cell_text(row[2], format_exp(r.get("collective_risk_fatalities")))
 
     # пустой абзац после таблицы НЕ добавляем
-
 
 
 def render_comparative_fatality_risk_table(doc, marker: str, individual_risk_rows: list[dict]):
@@ -1360,7 +1377,6 @@ def render_comparative_fatality_risk_table(doc, marker: str, individual_risk_row
         set_cell_text(row[1], dbr_txt)
 
     # пустой абзац после таблицы НЕ добавляем
-
 
 
 def render_ngk_background_comparison_table(doc, marker: str, conn):
@@ -1421,8 +1437,18 @@ def render_ngk_background_comparison_table(doc, marker: str, conn):
         set_cell_text(row[1], f"{ppm:.2f}")
 
 
-
 def render_substances_by_component_table(doc, marker: str, conn):
+    """
+    Таблица: "Составляющая объекта" / "Количество вещества, т"
+
+    Расчет количества вещества должен соответствовать колонке "В блоке" из DISTRIBUTION:
+      - equipment_type == 0 (трубопровод): amount_t (Кол-во, ед = 1)
+      - equipment_type != 0: amount_t * quantity_equipment
+
+    Источники:
+      - get_used_equipment(conn) -> hazard_component, equipment_type, quantity_equipment
+      - get_hazard_distribution(conn) -> equipment_name, substance_name, amount_t
+    """
     p = find_paragraph_with_marker(doc, marker)
     if p is None:
         return
@@ -1431,8 +1457,6 @@ def render_substances_by_component_table(doc, marker: str, conn):
 
     # Таблица сразу на месте маркера (без заголовка-абзаца)
     table = insert_table_after(doc, p, rows=1, cols=2, style="Table Grid")
-
-    # Убираем маркерный абзац -> нет пустой строки между "Таблица ..." и таблицей
     delete_paragraph(p)
 
     # Растянуть по ширине окна/страницы
@@ -1443,9 +1467,79 @@ def render_substances_by_component_table(doc, marker: str, conn):
     set_cell_text(hdr[0], "Составляющая объекта", bold=True)
     set_cell_text(hdr[1], "Количество вещества, т", bold=True)
 
-    data = get_substances_by_component(conn)
+    # --- Подтягиваем оборудование для мапов ---
+    equipment = get_used_equipment(conn) or []
 
-    for comp, items in data.items():
+    eq_component: dict[str, str] = {}
+    eq_quantity: dict[str, float] = {}
+    eq_type: dict[str, int] = {}
+
+    for e in equipment:
+        name = e.get("equipment_name")
+        if not name:
+            continue
+        key = str(name)
+
+        eq_component[key] = e.get("hazard_component") or "-"
+        eq_type[key] = e.get("equipment_type")
+
+        q = e.get("quantity_equipment")
+        try:
+            eq_quantity[key] = float(q) if q is not None else 1.0
+        except Exception:
+            eq_quantity[key] = 1.0
+
+    # --- Берем распределение (как в DISTRIBUTION_SECTION) ---
+    dist_rows = get_hazard_distribution(conn) or []
+
+    # Агрегация: comp -> substance -> mass
+    agg: dict[str, dict[str, float]] = {}
+    comp_order: list[str] = []
+    sub_order: dict[str, list[str]] = {}
+
+    for r in dist_rows:
+        eq_name = r.get("equipment_name") or "-"
+        eq_key = str(eq_name)
+
+        comp = eq_component.get(eq_key, "-")
+        et = eq_type.get(eq_key)  # может быть None
+        qty = eq_quantity.get(eq_key, 1.0)
+
+        # amount_t
+        amount = r.get("amount_t")
+        try:
+            amount_num = float(amount) if amount is not None else None
+        except Exception:
+            amount_num = None
+        if amount_num is None:
+            continue
+
+        # substance name (без скобок, как в других местах)
+        substance = strip_parentheses(r.get("substance_name")) or "-"
+        if substance == "-":
+            continue
+
+        # расчет "В блоке"
+        if et == 0:
+            amount_block = amount_num
+        else:
+            amount_block = amount_num * qty
+
+        if comp not in agg:
+            agg[comp] = {}
+            comp_order.append(comp)
+            sub_order[comp] = []
+
+        if substance not in agg[comp]:
+            agg[comp][substance] = 0.0
+            sub_order[comp].append(substance)
+
+        agg[comp][substance] += amount_block
+
+    # --- Вывод таблицы ---
+    for comp in comp_order:
+        items = agg.get(comp) or {}
+
         row = table.add_row().cells
         set_cell_text(row[0], str(comp))
 
@@ -1454,11 +1548,13 @@ def render_substances_by_component_table(doc, marker: str, conn):
         cell.text = ""
         p_cell = cell.paragraphs[0]
 
-        for i, (name, mass) in enumerate(items):
+        for i, name in enumerate(sub_order.get(comp, [])):
+            mass = items.get(name)
+            if mass is None:
+                continue
             if i > 0:
                 p_cell.add_run("\n")
             p_cell.add_run(f"{name} — {mass:.3f} т")
-
 
 
 def render_top_scenarios_description_by_component_table(doc: Document, marker: str, conn):
@@ -1470,6 +1566,9 @@ def render_top_scenarios_description_by_component_table(doc: Document, marker: s
     - Наименование оборудования
     - Краткое описание сценария
     - Частота, 1/год
+
+    ВАЖНО: Описание берём НЕ из top_rows (там часто нет scenario_idx),
+    а из get_scenarios(conn) по ключу (equipment_name, scenario_no).
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -1477,55 +1576,51 @@ def render_top_scenarios_description_by_component_table(doc: Document, marker: s
 
     clear_paragraph(p_marker)
 
-    title_p = insert_paragraph_after(
-        doc,
-        p_marker,
-        "Описание наиболее опасного и наиболее вероятного сценария аварии по составляющим объекта"
-    )
-    if title_p.runs:
-        set_run_font(title_p.runs[0], bold=True)
+    # таблица сразу на месте маркера
+    table = insert_table_after(doc, p_marker, rows=1, cols=6, style="Table Grid")
+    delete_paragraph(p_marker)
 
-    table = insert_table_after(doc, title_p, rows=1, cols=6, style="Table Grid")
+    # растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=6, left_ratio=1 / 6)
 
     headers = [
         "Составляющая объекта",
         "Тип сценария",
         "Номер сценария",
-        "Наименование оборудования",
+        "Оборудование",
         "Краткое описание сценария",
         "Частота, 1/год",
     ]
-    for j, h in enumerate(headers):
-        cell = table.rows[0].cells[j]
-        clear_paragraph(cell.paragraphs[0])
-        run = cell.paragraphs[0].add_run(h)
-        set_run_font(run, bold=True)
+    for i, h in enumerate(headers):
+        set_cell_text(table.rows[0].cells[i], h, bold=True)
 
-    # 1) Берем топ-сценарии по составляющим
-    top_rows = get_top_scenarios_by_hazard_component(conn)
-
-    # 2) Берем "строки сценариев" для построения описания как в render_scenarios_table_at_marker
-    scenario_rows = get_scenarios(conn)
-
-    # 4) Загружаем типовые сценарии
-    typical = _load_typical_scenarios()
-    root = _get_scenarios_root(typical)
-
-    # Мапа по КОНКРЕТНОМУ оборудованию: (equipment_name, scenario_no) -> row
-    sc_map = {}
-    for rr in scenario_rows:
-        key = (rr.get("equipment_name"), rr.get("scenario_no"))
-        if key[0] is None or key[1] is None:
-            continue
-        # если дубликаты — оставляем первое попадание, но уже в рамках оборудования
-        sc_map.setdefault(key, rr)
-
-    def _scenario_type_label(st: str) -> str:
+    def _scenario_type_label(st: str | None) -> str:
         if st == "dangerous":
             return "Наиболее опасный"
         if st == "probable":
             return "Наиболее вероятный"
-        return st or "-"
+        return str(st or "-")
+
+    # 1) Топ-сценарии
+    top_rows = get_top_scenarios_by_hazard_component(conn) or []
+
+    # 2) Карта сценариев (equipment_name, scenario_no) -> {equipment_type, substance_kind, scenario_idx}
+    scenario_rows = get_scenarios(conn) or []
+    sc_map: dict[tuple[str, int], dict] = {}
+    for rr in scenario_rows:
+        eqn = rr.get("equipment_name")
+        scn = rr.get("scenario_no")
+        if eqn is None or scn is None:
+            continue
+        try:
+            scn_i = int(scn)
+        except Exception:
+            continue
+        sc_map[(str(eqn), scn_i)] = rr
+
+    # 3) Типовые описания
+    typical = _load_typical_scenarios()
+    root = _get_scenarios_root(typical)
 
     for r in top_rows:
         comp = r.get("hazard_component")
@@ -1534,19 +1629,29 @@ def render_top_scenarios_description_by_component_table(doc: Document, marker: s
         eq_name = r.get("equipment_name")
         freq = r.get("scenario_frequency")
 
-        # описание
+        # --- Описание сценария ---
         desc = "Описание не задано"
-        base = sc_map.get((eq_name, sc_no))
+
+        eq_key = str(eq_name) if eq_name is not None else None
+        try:
+            sc_i = int(sc_no) if sc_no is not None else None
+        except Exception:
+            sc_i = None
+
+        base = sc_map.get((eq_key, sc_i)) if (eq_key is not None and sc_i is not None) else None
         if base:
             et = base.get("equipment_type")
             kd = base.get("substance_kind")
-
-            # локальный индекс сценария внутри оборудования (0..N-1)
-            local_idx = base.get("scenario_idx")
+            local_idx = base.get("scenario_idx")  # 0..N-1
 
             desc_list = _get_description_list(root, et, kd)
-            if isinstance(desc_list, list) and local_idx is not None and 0 <= local_idx < len(desc_list):
-                desc = _scenario_item_to_text(desc_list[local_idx])
+            if isinstance(desc_list, list) and local_idx is not None:
+                try:
+                    li = int(local_idx)
+                except Exception:
+                    li = None
+                if li is not None and 0 <= li < len(desc_list):
+                    desc = _scenario_item_to_text(desc_list[li])
 
         row = table.add_row().cells
         set_cell_text(row[0], comp if comp is not None else "-")
@@ -1556,7 +1661,7 @@ def render_top_scenarios_description_by_component_table(doc: Document, marker: s
         set_cell_text(row[4], desc)
         set_cell_text(row[5], format_exp(freq))
 
-    insert_paragraph_after_table(doc, table, "")
+    # пустой абзац после таблицы не добавляем
 
 
 def render_top_scenarios_pf_by_component_table(doc: Document, marker: str, conn):
@@ -1574,13 +1679,16 @@ def render_top_scenarios_pf_by_component_table(doc: Document, marker: str, conn)
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Поражающие факторы по наиболее опасному и наиболее вероятному сценарию")
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
+    # ✅ таблица сразу на месте маркера (без заголовка-абзаца)
+    table = insert_table_after(doc, p_marker, rows=1, cols=5, style="Table Grid")
 
-    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+    # ✅ убрать пустую строку между "Таблица ..." и таблицей
+    delete_paragraph(p_marker)
+
+    # ✅ растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=5, left_ratio=1 / 5)
+
     hdr = table.rows[0].cells
-
     headers = [
         "Составляющая объекта",
         "Тип сценария",
@@ -1612,7 +1720,8 @@ def render_top_scenarios_pf_by_component_table(doc: Document, marker: str, conn)
         set_cell_text(row[3], eq_name or "Поражающие факторы отсуствуют")
         set_cell_text(row[4], zones_txt)
 
-    insert_paragraph_after_table(doc, table, "")
+    # ❌ пустой абзац после таблицы НЕ добавляем
+    # insert_paragraph_after_table(doc, table, "")
 
 
 def render_top_scenarios_fatalities_injured_by_component_table(doc: Document, marker: str, conn):
@@ -1630,11 +1739,8 @@ def render_top_scenarios_fatalities_injured_by_component_table(doc: Document, ma
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Количество погибших и пострадавших")
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
-
-    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+    table = insert_table_after(doc, p_marker, rows=1, cols=5, style="Table Grid")
+    delete_paragraph(p_marker)
     hdr = table.rows[0].cells
 
     headers = [
@@ -1642,7 +1748,7 @@ def render_top_scenarios_fatalities_injured_by_component_table(doc: Document, ma
         "Тип сценария",
         "Номер сценария",
         "Наименование оборудования",
-        "Количество погибших и пострадавших",
+        "Количество погибших, раненых и пострадавших",
     ]
     for i, h in enumerate(headers):
         set_cell_text(hdr[i], h, bold=True)
@@ -1660,12 +1766,12 @@ def render_top_scenarios_fatalities_injured_by_component_table(doc: Document, ma
 
         fi = get_fatalities_injured_for_top_scenario(conn, comp, sc_no, eq_name)
         if fi is None:
-            text = "Погибшие: —; Пострадавшие: —"
+            text = "Погибшие: 0; Пострадавшие: 0"
         else:
             fat, inj = fi
-            fat_txt = str(int(fat)) if fat is not None else "—"
-            inj_txt = str(int(inj)) if inj is not None else "—"
-            text = f"Погибшие: {fat_txt}; Пострадавшие: {inj_txt}"
+            fat_txt = str(int(fat)) if fat is not None else "0"
+            inj_txt = str(int(inj)) if inj is not None else "0"
+            text = f"Погибшие: {fat_txt}; Раненые: {inj_txt}; Пострадавшие: {str(int(inj_txt) + int(fat_txt))}"
 
         row = table.add_row().cells
         set_cell_text(row[0], comp if comp is not None else "-")
@@ -1673,8 +1779,6 @@ def render_top_scenarios_fatalities_injured_by_component_table(doc: Document, ma
         set_cell_text(row[2], f"С{sc_no}" if sc_no is not None else "-")
         set_cell_text(row[3], eq_name or "-")
         set_cell_text(row[4], text)
-
-    insert_paragraph_after_table(doc, table, "")
 
 
 def render_top_scenarios_damage_by_component_table(doc: Document, marker: str, conn):
@@ -1685,6 +1789,11 @@ def render_top_scenarios_damage_by_component_table(doc: Document, marker: str, c
     - Номер сценария (Сn)
     - Наименование оборудования
     - Ущерб, тыс.руб
+
+    Формат:
+    - без лишнего абзаца между "Таблица X" и таблицей (таблица на месте маркера)
+    - растягивание таблицы по ширине окна/страницы
+    - без пустого абзаца после таблицы
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -1692,13 +1801,16 @@ def render_top_scenarios_damage_by_component_table(doc: Document, marker: str, c
 
     clear_paragraph(p_marker)
 
-    p = insert_paragraph_after(doc, p_marker, "Ущерб, тыс.руб")
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
+    # Таблица сразу на месте маркера
+    table = insert_table_after(doc, p_marker, rows=1, cols=5, style="Table Grid")
 
-    table = insert_table_after(doc, p, rows=1, cols=5, style="Table Grid")
+    # Удаляем маркерный абзац, чтобы не было пустой строки перед таблицей
+    delete_paragraph(p_marker)
+
+    # Растянуть по ширине окна/страницы
+    set_table_full_width(doc, table, cols=5, left_ratio=0.22)
+
     hdr = table.rows[0].cells
-
     headers = [
         "Составляющая объекта",
         "Тип сценария",
@@ -1730,7 +1842,8 @@ def render_top_scenarios_damage_by_component_table(doc: Document, marker: str, c
         set_cell_text(row[3], eq_name or "-")
         set_cell_text(row[4], dmg_txt)
 
-    insert_paragraph_after_table(doc, table, "")
+    # пустой абзац после таблицы НЕ добавляем
+    # insert_paragraph_after_table(doc, table, "")
 
 
 def render_top_scenarios_final_conclusion_table(doc: Document, marker: str, conn):
@@ -1857,6 +1970,7 @@ def _safe_json(v):
                 return None
     return None
 
+
 def render_substances_info_table_at_marker(doc: Document, marker: str, conn):
     """
     Таблица "Сведения об опасных веществах"
@@ -1864,7 +1978,7 @@ def render_substances_info_table_at_marker(doc: Document, marker: str, conn):
       1) Наименование опасного вещества (без скобок)
       2) Степень опасности и характер воздействия (класс опасности, reactivity, impact, first_aid)
 
-    Вещества: только реально используемые в расчётах (db.get_used_substances).
+    Вещества: ВСЕ вещества из БД (не только используемые в расчётах).
     """
     p_marker = find_paragraph_with_marker(doc, marker)
     if p_marker is None:
@@ -1886,24 +2000,32 @@ def render_substances_info_table_at_marker(doc: Document, marker: str, conn):
         bold=True,
     )
 
-    used = get_used_substances(conn) or []
+    # --- ВСЕ вещества из БД ---
+    try:
+        from report.reportgen.db import get_all_substances  # надо добавить/иметь в db.py
+    except Exception as e:
+        raise RuntimeError(
+            "Нужна функция get_all_substances(conn) в report.reportgen.db, "
+            "чтобы вывести все вещества из БД (не только используемые)."
+        ) from e
 
-    for s in used:
-        # 1) имя без скобок — используем вашу функцию
+    all_substances = get_all_substances(conn) or []
+
+    for s in all_substances:
+        # 1) имя без скобок
         name = strip_parentheses(s.get("name"))
 
-        # 2) класс опасности может быть как в отдельном поле, так и в toxicity (json)
-        # 1) Распакованное поле из БД (основной источник)
+        # 2) класс опасности: поле или из toxicity_json/toxicity
         hazard_class = s.get("toxicity_hazard_class")
 
-        # 2) Если вдруг не заполнено — пробуем из toxicity_json
         if hazard_class is None:
             tox = _safe_json(s.get("toxicity_json"))
             if isinstance(tox, dict):
                 hazard_class = tox.get("hazard_class")
-        tox = _safe_json(s.get("toxicity"))
-        if hazard_class is None and isinstance(tox, dict):
-            hazard_class = tox.get("hazard_class")
+
+        tox2 = _safe_json(s.get("toxicity"))
+        if hazard_class is None and isinstance(tox2, dict):
+            hazard_class = tox2.get("hazard_class")
 
         reactivity = s.get("reactivity")
         impact = s.get("impact")
@@ -1921,6 +2043,7 @@ def render_substances_info_table_at_marker(doc: Document, marker: str, conn):
         set_cell_text(row[1], "\n".join(parts))
 
     insert_paragraph_after_table(doc, table, "")
+
 
 def load_organization_root() -> dict:
     """Возвращает первый элемент массива из organization.json или {}."""
@@ -1940,27 +2063,51 @@ def _norm_ws(s: str) -> str:
     # NBSP (U+00A0) и узкий NBSP (U+202F) -> обычный пробел
     return s.replace("\u00A0", " ").replace("\u202F", " ")
 
+
+def _clear_run_direct_formatting(run):
+    """
+    Убирает прямое форматирование run (w:rPr), чтобы текст наследовал стиль абзаца/документа.
+    """
+    r = run._r
+    rPr = r.find(qn("w:rPr"))
+    if rPr is not None:
+        r.remove(rPr)
+
 def _replace_in_paragraph_runs(paragraph, replacements: dict) -> bool:
     changed = False
+
+    # Для каких плейсхолдеров нужно сбрасывать прямой шрифт/размер
+    RESET_KEYS = {"{{ NASF_INFORMATION }}", "{{ PASF_INFORMATION }}"}
+
     for run in paragraph.runs:
         txt = run.text
         if not txt:
             continue
 
-        # Нормализация пробелов для корректного матчинга плейсхолдеров
         txt_norm = _norm_ws(txt)
         new_txt = txt_norm
+
+        replaced_any = False
+        replaced_reset_key = False
 
         for k, v in replacements.items():
             k_norm = _norm_ws(k)
             if k_norm in new_txt:
                 new_txt = new_txt.replace(k_norm, v)
+                replaced_any = True
+                if k in RESET_KEYS:
+                    replaced_reset_key = True
 
-        if new_txt != txt_norm:
+        if replaced_any:
             run.text = new_txt
             changed = True
+
+            # ✅ сбросить прямое форматирование только для NASF/PASF
+            if replaced_reset_key:
+                _clear_run_direct_formatting(run)
+
         elif txt_norm != txt:
-            # если замен не было, но были NBSP — всё равно обновим run
+            # NBSP -> space
             run.text = txt_norm
 
     return changed
@@ -1978,10 +2125,15 @@ def _replace_in_paragraph_joined_runs(paragraph, replacements: dict) -> bool:
     full = _norm_ws(full)
     new_full = full
 
+    RESET_KEYS = {"{{ NASF_INFORMATION }}", "{{ PASF_INFORMATION }}"}
+    saw_reset_key = False
+
     for k, v in replacements.items():
         k_norm = _norm_ws(k)
         if k_norm in new_full:
             new_full = new_full.replace(k_norm, v)
+            if k in RESET_KEYS:
+                saw_reset_key = True
 
     if new_full == full:
         return False
@@ -1989,6 +2141,11 @@ def _replace_in_paragraph_joined_runs(paragraph, replacements: dict) -> bool:
     paragraph.runs[0].text = new_full
     for run in paragraph.runs[1:]:
         run.text = ""
+
+    # ✅ сбросить прямое форматирование, чтобы не “летел” шрифт
+    if saw_reset_key:
+        _clear_run_direct_formatting(paragraph.runs[0])
+
     return True
 
 
@@ -2019,7 +2176,6 @@ def replace_placeholders_in_doc(doc: Document, replacements: dict):
                     _replace_in_paragraph_runs(p, replacements)
                     if _paragraph_has_any_placeholder(p, replacements):
                         _replace_in_paragraph_joined_runs(p, replacements)
-
 
 
 def select_site_by_id(sites: list[dict], site_id: str) -> dict:
@@ -2303,7 +2459,7 @@ def main():
 
     with open_db(DB_PATH) as conn:
         # 3) собираем данные ОДИН РАЗ
-        substances = get_used_substances(conn)
+        substances = get_all_substances(conn)
         equipment = get_used_equipment(conn)
         distribution = get_hazard_distribution(conn)
         scenarios = get_scenarios(conn)
