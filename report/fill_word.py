@@ -1986,12 +1986,8 @@ def render_substances_info_table_at_marker(doc: Document, marker: str, conn):
 
     clear_paragraph(p_marker)
 
-    # Заголовок (и сразу после него вставляем таблицу — без пустого абзаца)
-    p = insert_paragraph_after(doc, p_marker, "Сведения об опасных веществах")
-    if p.runs:
-        set_run_font(p.runs[0], bold=True)
-
-    table = insert_table_after(doc, p, rows=1, cols=2, style="Table Grid")
+    # Вставляем таблицу прямо после маркера (без дополнительного заголовка/абзаца)
+    table = insert_table_after(doc, p_marker, rows=1, cols=2, style="Table Grid")
     hdr = table.rows[0].cells
     set_cell_text(hdr[0], "Наименование опасного вещества", bold=True)
     set_cell_text(
@@ -2042,7 +2038,7 @@ def render_substances_info_table_at_marker(doc: Document, marker: str, conn):
         set_cell_text(row[0], name)
         set_cell_text(row[1], "\n".join(parts))
 
-    insert_paragraph_after_table(doc, table, "")
+
 
 
 def load_organization_root() -> dict:
@@ -2148,6 +2144,30 @@ def _replace_in_paragraph_joined_runs(paragraph, replacements: dict) -> bool:
 
     return True
 
+def calc_max_people_victims(casualties_rows: list[dict]) -> int:
+    """
+    MAX_PEOPLE_VICTIMS = max(fatalities_count + injured_count) по всем сценариям.
+    None трактуем как 0.
+    """
+    max_v = 0
+    for r in (casualties_rows or []):
+        fat = r.get("fatalities_count")
+        inj = r.get("injured_count")
+
+        try:
+            fat_n = int(fat) if fat is not None else 0
+        except Exception:
+            fat_n = 0
+
+        try:
+            inj_n = int(inj) if inj is not None else 0
+        except Exception:
+            inj_n = 0
+
+        v = fat_n + inj_n
+        if v > max_v:
+            max_v = v
+    return max_v
 
 
 def _paragraph_has_any_placeholder(paragraph, replacements: dict) -> bool:
@@ -2330,6 +2350,10 @@ def fill_doc(
     proj_common = load_project_common()
     repl = build_org_replacements(org_root)
     repl.update(build_project_common_replacements(proj_common))
+    # {{ MAX_PEOPLE_VICTIMS }} — максимальное число потерпевших (fatalities + injured)
+    max_victims = calc_max_people_victims(casualties)
+    repl["{{ MAX_PEOPLE_VICTIMS }}"] = str(max_victims)
+
     replace_placeholders_in_doc(doc, repl)
 
     # Таблицы
