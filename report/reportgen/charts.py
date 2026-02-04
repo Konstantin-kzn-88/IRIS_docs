@@ -22,6 +22,7 @@ matplotlib.use("Agg")  # ВАЖНО: без GUI/backends
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import MultipleLocator, MaxNLocator
 
 Point = Tuple[float, float]
 
@@ -78,53 +79,52 @@ def build_fn_points(rows: List[Dict[str, Any]]) -> List[Point]:
 
 
 def save_fn_chart(points: List[Point], path: Path) -> None:
-    """
-    Строит и сохраняет F/N диаграмму.
-
-    :param points: список точек [(N1, F1), (N2, F2), ...]
-    :param path: путь для сохранения PNG
-    """
     if not points:
         return
 
-    # Преобразуем точки в формат для отрисовки в стиле get_chart.py
-    # Убираем точку с N=0 для построения, но используем её значение
     plot_points = [(x, y) for x, y in points if x > 0]
-
     if len(plot_points) < 1:
         return
 
     people = [int(p[0]) for p in plot_points]
     probability = [p[1] for p in plot_points]
 
-    # для сплошных линий (горизонтальные участки)
     chart_line_x = []
     chart_line_y = []
     for idx, n in enumerate(people):
         chart_line_x.extend([n - 1, n, n, n])
         chart_line_y.extend([probability[idx], probability[idx], None, None])
 
-    # для пунктирных линий (вертикальные переходы)
     chart_dot_line_x = []
     chart_dot_line_y = []
     for idx, n in enumerate(people):
         if idx == len(people) - 1:
-            # Последняя вертикаль вниз
             chart_dot_line_x.extend([n, n])
             chart_dot_line_y.extend([probability[idx], 0])
             break
         chart_dot_line_x.extend([n, n])
         chart_dot_line_y.extend([probability[idx], probability[idx + 1]])
 
-    # Отрисовка графика
-    fig = plt.figure()
-    plt.semilogy(chart_line_x, chart_line_y, color='b', linestyle='-', marker='.')
-    plt.semilogy(chart_dot_line_x, chart_dot_line_y, color='b', linestyle='--', marker='.')
-    plt.xticks(ticks=people)
-    plt.title('F/N - диаграмма')
-    plt.xlabel('Количество погибших, чел')
-    plt.ylabel('Вероятность, 1/год')
-    plt.grid(True)
+    # --- Отрисовка графика ---
+    fig, ax = plt.subplots()
+
+    ax.semilogy(chart_line_x, chart_line_y, color='b', linestyle='-', marker='.')
+    ax.semilogy(chart_dot_line_x, chart_dot_line_y, color='b', linestyle='--', marker='.')
+
+    ax.set_title('F/N - диаграмма')
+    ax.set_xlabel('Количество погибших, чел')
+    ax.set_ylabel('Вероятность, 1/год')
+    ax.grid(True)
+
+    # ✅ 1) Гарантируем только целые значения по оси X
+    ax.xaxis.set_major_locator(MultipleLocator(1))          # шаг 1
+    ax.xaxis.set_minor_locator(MaxNLocator(integer=True))   # на всякий случай
+    ax.set_xticks(sorted(set(people)))                      # подписи только на N из данных
+
+    # ✅ 2) Ограничим X так, чтобы не появлялись дробные границы
+    xmin = max(0, min(people) - 1)
+    xmax = max(people)
+    ax.set_xlim(xmin, xmax)
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -306,13 +306,27 @@ def save_pareto_chart(series, path: Path, title: str, ylabel: str):
     if not series:
         return
 
-    # --- ограничиваем Top-20 ---
-    series = limit_pareto_series(series, top_n=20)
+    # series уже отсортирован по убыванию (build_pareto_series)
+    series_full = list(series)  # ВСЕ сценарии (для корректного total)
 
-    labels = [s[0] for s in series]
-    values = [s[1] for s in series]
+    # --- ограничиваем Top-20 + ("Прочие", сумма хвоста) ---
+    series_top = limit_pareto_series(series_full, top_n=20)
 
-    total = sum(values)
+    # --- "Прочие" НЕ рисуем столбцом, но учитываем в total ---
+    other_value = 0.0
+    if series_top and str(series_top[-1][0]).strip().lower() in ("прочие", "прочее"):
+        other_value = float(series_top[-1][1])
+        series_draw = series_top[:-1]
+    else:
+        series_draw = series_top
+
+    labels = [s[0] for s in series_draw]
+    values = [float(s[1]) for s in series_draw]
+
+    # total должен быть по всем сценариям, включая "прочие"
+    total = sum(float(v) for _, v in series_full)
+
+    # накопленная доля считаем по показанным столбцам, но делим на общий total
     cum_values = []
     s = 0.0
     for v in values:
@@ -326,13 +340,13 @@ def save_pareto_chart(series, path: Path, title: str, ylabel: str):
     ax.set_ylabel(ylabel)
     ax.set_title(title)
 
-    ax.set_xticks(x)
+    ax.set_xticks(list(x))
     ax.set_xticklabels(labels)
     ax.tick_params(axis="x", labelrotation=90, labelsize=7)
 
     ax2 = ax.twinx()
     ax2.plot(
-        x,
+        list(x),
         cum_values,
         color="orange",
         marker="o",
@@ -351,7 +365,7 @@ def save_pareto_chart(series, path: Path, title: str, ylabel: str):
 
     ax.grid(True, axis="y")
 
-    plt.tight_layout()
+
     plt.savefig(path, dpi=200, bbox_inches="tight")
     plt.close()
 
@@ -461,10 +475,11 @@ def save_component_damage_chart(rows: list[dict], path: Path):
 def save_risk_matrix_chart(rows, path: Path, title: str = "Матрица риска (частота – последствия)"):
     """
     Специализированная матрица:
-      X = fatalities_count (>=1)
+      X = fatalities_count (строго целое, без jitter)
       Y = scenario_frequency (лог)
       Размер точки ~ частоте
-      Подписи крупнее
+      Подписи: 5 наиболее вероятных + 5 наиболее опасных
+      Подписи чередуются фиксированными смещениями (без collision-логики)
     """
     if not rows:
         return
@@ -494,50 +509,66 @@ def save_risk_matrix_chart(rows, path: Path, title: str = "Матрица рис
     for y in ys:
         t = (math.log10(y) - math.log10(y_min)) / (denom + 1e-12)
         t = max(0.0, min(1.0, t))
-        sizes.append(25 + 60 * t)  # диапазон размеров
+        sizes.append(25 + 60 * t)
 
     # линии матрицы (дефолтные пороги)
     freq_levels = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]
     cons_levels = [1, 3, 10]
 
-    plt.figure(figsize=(12, 6))
-    ax = plt.gca()
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.set_yscale("log")
 
     # горизонтальные линии по частоте
     for f in freq_levels:
         if abs(f - 1e-6) < 1e-12:
-            ax.axhline(
-                f,
-                color="green",
-                linestyle="--",
-                linewidth=1.5,
-            )
+            ax.axhline(f, color="green", linestyle="--", linewidth=1.5)
         elif abs(f - 1e-4) < 1e-12:
-            ax.axhline(
-                f,
-                color="red",
-                linestyle="--",
-                linewidth=1.5,
-            )
+            ax.axhline(f, color="red", linestyle="--", linewidth=1.5)
         else:
-            ax.axhline(
-                f,
-                linewidth=1,
-            )
+            ax.axhline(f, linewidth=1)
+
+    # вертикальные линии по последствиям
     for n in cons_levels:
         ax.axvline(n, linewidth=1)
 
+    # ✅ точки строго на целых X (без jitter)
     ax.scatter(xs, ys, s=sizes)
 
+    # -----------------------------
+    # Подписи: 5 наиболее вероятных + 5 наиболее опасных
+    # -----------------------------
+    # наиболее вероятные: max frequency
+    top_prob = sorted(pts, key=lambda t: t[1], reverse=True)[:5]
+
+    # наиболее опасные: max fatalities, при равенстве — max frequency
+    top_dang = sorted(pts, key=lambda t: (t[0], t[1]), reverse=True)[:5]
+
+    label_ids = set()
+    for _, _, sc_no in top_prob + top_dang:
+        if sc_no is not None:
+            label_ids.add(sc_no)
+
+    # фиксированные смещения (чередуются)
+    offsets = [
+        (4, 3),
+        (4, -10),
+        (12, 6),
+        (12, -14),
+    ]
+
+    k = 0
     for x, y, sc_no in pts:
-        if sc_no is None:
+        if sc_no is None or sc_no not in label_ids:
             continue
+
+        dx, dy = offsets[k % len(offsets)]
+        k += 1
+
         ax.annotate(
             f"С{sc_no}",
             (x, y),
             textcoords="offset points",
-            xytext=(4, 3),
+            xytext=(dx, dy),
             fontsize=11,
         )
 
@@ -548,19 +579,25 @@ def save_risk_matrix_chart(rows, path: Path, title: str = "Матрица рис
     ax.set_xlim(left=0, right=max(xs) + 1)
     ax.set_ylim(bottom=min(ys) / 2, top=max(ys) * 2)
 
+    # только целые по оси X
+    ax.xaxis.set_major_locator(MultipleLocator(1))
+
     ax.grid(True, which="both")
 
     plt.tight_layout()
     plt.savefig(path, dpi=200, bbox_inches="tight")
-    plt.close()
+    plt.close(fig)
+
+
 
 
 def save_risk_matrix_chart_damage(rows, path: Path, title: str = "Матрица риска (частота – ущерб)"):
     """
-    X = total_damage (млн руб)
+    X = total_damage (млн руб), без jitter
     Y = scenario_frequency (1/год), лог шкала
     Размер точки ~ частоте
-    Пороговых линий нет
+    Подписи: 5 наиболее вероятных + 5 наиболее опасных
+    Подписи чередуются с отступами (без collision-логики)
     """
     if not rows:
         return
@@ -592,21 +629,44 @@ def save_risk_matrix_chart_damage(rows, path: Path, title: str = "Матрица
         t = max(0.0, min(1.0, t))
         sizes.append(25 + 60 * t)
 
-    plt.figure(figsize=(12, 6))
-    ax = plt.gca()
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.set_yscale("log")
 
+    # точки строго на своих X
     ax.scatter(xs, ys, s=sizes)
 
-    # подписи крупнее
+    # -----------------------------
+    # Подписи: 5 наиболее вероятных + 5 наиболее опасных
+    # -----------------------------
+    top_prob = sorted(pts, key=lambda t: t[1], reverse=True)[:5]
+    top_dang = sorted(pts, key=lambda t: (t[0], t[1]), reverse=True)[:5]
+
+    label_ids = set()
+    for _, _, sc_no in top_prob + top_dang:
+        if sc_no is not None:
+            label_ids.add(sc_no)
+
+    # фиксированные смещения (чередуются)
+    offsets = [
+        (4, 3),
+        (4, -10),
+        (12, 6),
+        (12, -14),
+    ]
+
+    k = 0
     for x, y, sc_no in pts:
-        if sc_no is None:
+        if sc_no is None or sc_no not in label_ids:
             continue
+
+        dx, dy = offsets[k % len(offsets)]
+        k += 1
+
         ax.annotate(
             f"С{sc_no}",
             (x, y),
             textcoords="offset points",
-            xytext=(4, 3),
+            xytext=(dx, dy),
             fontsize=11,
         )
 
@@ -621,4 +681,6 @@ def save_risk_matrix_chart_damage(rows, path: Path, title: str = "Матрица
 
     plt.tight_layout()
     plt.savefig(path, dpi=200, bbox_inches="tight")
-    plt.close()
+    plt.close(fig)
+
+

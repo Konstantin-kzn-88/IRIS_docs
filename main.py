@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-CREATE_DB = True # нужно ли создавать базу данных
-CREATE_CALC = True # нужно ли проводить расчеты по новой
+CREATE_DB = False # нужно ли создавать базу данных
+CREATE_CALC = False # нужно ли проводить расчеты по новой
 
 
 def main() -> None:

@@ -81,7 +81,7 @@
     "hazard_component": "Пункт подготовки и сбора нефти ЦПС Барсуковского месторождения",
     "clutter_degree": 2,
     "possible_dead": 2,
-    "possible_injured": 5
+    "possible_injured": 4
   },
   {
     "id": 4,
@@ -136,8 +136,8 @@
     "evaporation_time_s": 3600,
     "hazard_component": "Пункт подготовки и сбора нефти ЦПС Барсуковского месторождения",
     "clutter_degree": 2,
-    "possible_dead": 4,
-    "possible_injured": 5
+    "possible_dead": 3,
+    "possible_injured": 6
   },
   {
     "id": 6,
@@ -752,8 +752,8 @@
     "evaporation_time_s": 3600,
     "hazard_component": "Пункт подготовки и сбора нефти ЦПС Барсуковского месторождения",
     "clutter_degree": 2,
-    "possible_dead": 1,
-    "possible_injured": 2
+    "possible_dead": 2,
+    "possible_injured": 3
   },
   {
     "id": 28,
@@ -780,7 +780,7 @@
     "evaporation_time_s": 3600,
     "hazard_component": "Площадка компрессорной станции КС-2",
     "clutter_degree": 2,
-    "possible_dead": 2,
+    "possible_dead": 1,
     "possible_injured": 3
   },
   {
@@ -808,8 +808,8 @@
     "evaporation_time_s": 3600,
     "hazard_component": "Площадка компрессорной станции КС-2",
     "clutter_degree": 2,
-    "possible_dead": 3,
-    "possible_injured": 5
+    "possible_dead": 2,
+    "possible_injured": 4
   },
   {
     "id": 30,
@@ -836,8 +836,8 @@
     "evaporation_time_s": 3600,
     "hazard_component": "Площадка компрессорной станции КС-2",
     "clutter_degree": 2,
-    "possible_dead": 2,
-    "possible_injured": 4
+    "possible_dead": 1,
+    "possible_injured": 3
   },
   {
     "id": 31,
@@ -864,7 +864,7 @@
     "evaporation_time_s": 3600,
     "hazard_component": "Площадка компрессорной станции КС-2",
     "clutter_degree": 2,
-    "possible_dead": 2,
+    "possible_dead": 1,
     "possible_injured": 3
   },
   {

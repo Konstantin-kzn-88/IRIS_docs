@@ -18,7 +18,7 @@ SCHEMA_PATH = DB_DIR / "schema.sql"
 
 # --- REPORT ---
 # Какой шаблон использовать
-VARIANT_TEMPLATE = "ДПБ_(экспл_СПТ)"
+VARIANT_TEMPLATE = "RN_Purneftegaz/ДПБ_(экспл_стац)"
 # для какой организации
 VARIANT_ORG = "RN_Purneftegaz"
 # какого ОПО

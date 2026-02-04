@@ -1057,7 +1057,7 @@ def render_chart_at_marker(
 
     # Картинку вставляем в этот же абзац
     run = p_marker.add_run()
-    run.add_picture(str(image_path), width=Cm(width_cm), height=Cm(height_cm))
+    run.add_picture(str(image_path), width=Cm(width_cm))
 
 
 def render_fn_chart_at_marker(doc: Document, marker: str, fn_rows: list[dict]):
