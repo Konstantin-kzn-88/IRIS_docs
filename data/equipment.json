@@ -755,8 +755,36 @@
     "possible_dead": 2,
     "possible_injured": 3
   },
-  {
+    {
     "id": 28,
+    "substance_id": 1,
+    "equipment_name": "Автоцистерна",
+    "quantity_equipment": 1,
+    "phase_state": "ж.ф.",
+    "coord_type": 1,
+    "equipment_type": 1,
+    "coordinates": [
+      0,
+      0
+    ],
+    "length_m": 0,
+    "diameter_mm": 0,
+    "wall_thickness_mm": 0,
+    "volume_m3": 20,
+    "fill_fraction": 0.8,
+    "pressure_mpa": 0.01,
+    "spill_coefficient": 0,
+    "spill_area_m2": 100,
+    "substance_temperature_c": 30,
+    "shutdown_time_s": 10,
+    "evaporation_time_s": 3600,
+    "hazard_component": "Пункт подготовки и сбора нефти ЦПС Барсуковского месторождения",
+    "clutter_degree": 2,
+    "possible_dead": 1,
+    "possible_injured": 2
+  },
+  {
+    "id": 29,
     "substance_id": 1,
     "equipment_name": "Емкость дренажная ЕК-1",
     "quantity_equipment": 1,
@@ -784,7 +812,7 @@
     "possible_injured": 3
   },
   {
-    "id": 29,
+    "id": 30,
     "substance_id": 5,
     "equipment_name": "Компрессорный агрегат КМ101 ТАКАТ",
     "quantity_equipment": 1,
@@ -812,7 +840,7 @@
     "possible_injured": 4
   },
   {
-    "id": 30,
+    "id": 31,
     "substance_id": 5,
     "equipment_name": "Технологические трубопроводы (газ)",
     "quantity_equipment": 560,
@@ -840,7 +868,7 @@
     "possible_injured": 3
   },
   {
-    "id": 31,
+    "id": 32,
     "substance_id": 1,
     "equipment_name": "Технологические трубопроводы (газовый конденсат)",
     "quantity_equipment": 360,
@@ -868,7 +896,7 @@
     "possible_injured": 3
   },
   {
-    "id": 32,
+    "id": 33,
     "substance_id": 5,
     "equipment_name": "Надземный наружный газопровод",
     "quantity_equipment": 90,
@@ -896,7 +924,7 @@
     "possible_injured": 2
   },
   {
-    "id": 33,
+    "id": 34,
     "substance_id": 5,
     "equipment_name": "Надземный внутренний газопровод",
     "quantity_equipment": 48,
@@ -924,7 +952,7 @@
     "possible_injured": 3
   },
   {
-    "id": 34,
+    "id": 35,
     "substance_id": 1,
     "equipment_name": "Резервуар нефти РВС-10000",
     "quantity_equipment": 6,
