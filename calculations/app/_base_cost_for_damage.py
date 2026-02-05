@@ -1,5 +1,3 @@
-
-
 def approx_equipment_cost(V: float) -> float:
     if V <= 0:
         return 0.0

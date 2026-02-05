@@ -1,9 +1,11 @@
 from ._base_cost_for_damage import approx_equipment_cost
+from core.config import DAMAGE_SCALE
+
 
 def damage(mass, count_dead_personal, count_injured_personal):
     result = {}
 
-    result["direct_losses"] = approx_equipment_cost(mass)
+    result["direct_losses"] = approx_equipment_cost(mass) * DAMAGE_SCALE
 
     result["liquidation_costs"] = result["direct_losses"] * 0.1
     result["social_losses"] = count_dead_personal * 3000 + count_injured_personal * 250

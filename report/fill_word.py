@@ -1040,7 +1040,7 @@ def render_chart_at_marker(
         title: str,
         image_path: Path | None,
         *,
-        width_cm: float = 13.0,
+        width_cm: float = 16.0,
         height_cm: float = 11.0,
 ):
     p_marker = find_paragraph_with_marker(doc, marker)
