@@ -1075,7 +1075,7 @@ def render_fn_chart_at_marker(doc: Document, marker: str, fn_rows: list[dict]):
         marker=marker,
         title="F/N - диаграмма",
         image_path=image_path,
-        width_cm=13.0,
+        width_cm=16.0,
     )
 
 
@@ -1094,7 +1094,7 @@ def render_fg_chart_at_marker(doc: Document, marker: str, fg_rows: list[dict]):
         marker=marker,
         title="F/G - диаграмма",
         image_path=image_path,
-        width_cm=13.0,
+        width_cm=16.0,
     )
 
 
@@ -1164,7 +1164,7 @@ def render_pareto_damage_chart_at_marker(doc: Document, marker: str, rows: list[
         marker=marker,
         title="Pareto сценариев по суммарному ущербу",
         image_path=image_path,
-        width_cm=12.0,
+        width_cm=16.0,
     )
 
 
@@ -1205,7 +1205,7 @@ def render_component_damage_chart_at_marker(doc: Document, marker: str, rows: li
         marker=marker,
         title="Распределение ущерба по составляющим ОПО",
         image_path=image_path,
-        width_cm=12.0,
+        width_cm=16.0,
     )
 
 
@@ -1222,7 +1222,7 @@ def render_risk_matrix_chart_at_marker(doc: Document, marker: str, rows: list[di
         marker=marker,
         title="Матрица риска (частота – последствия)",
         image_path=image_path,
-        width_cm=12.0,
+        width_cm=16.0,
     )
 
 
@@ -1239,7 +1239,7 @@ def render_risk_matrix_damage_chart_at_marker(doc: Document, marker: str, rows: 
         marker=marker,
         title="Матрица риска (частота – ущерб)",
         image_path=image_path,
-        width_cm=12.0,
+        width_cm=16.0,
     )
 
 
