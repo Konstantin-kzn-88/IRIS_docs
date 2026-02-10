@@ -22,7 +22,7 @@ VARIANT_TEMPLATE = "Tatneft/ДПБ_(экспл_СПТ)"
 # для какой организации
 VARIANT_ORG = "tatneft"
 # какого ОПО
-ORGANIZATION_SITE_ID = "opo_0783"
+ORGANIZATION_SITE_ID = "opo_0776"
 # ------
 
 # --- INFO ---
