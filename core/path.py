@@ -19,7 +19,7 @@ SCHEMA_PATH = DB_DIR / "schema.sql"
 # --- REPORT ---
 # Какой шаблон использовать
 # VARIANT_TEMPLATE = "Tatneft/ДПБ_(экспл_стац)"
-VARIANT_TEMPLATE = 'default'
+VARIANT_TEMPLATE = 'Проект_МНК'
 # для какой организации
 VARIANT_ORG = "tatneft"
 # какого ОПО
