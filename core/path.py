@@ -7,8 +7,8 @@ PROJECT_DIR = CORE_DIR.parent  # <-- ВАЖНО
 # --- DATA ---
 DATA_DIR = PROJECT_DIR / "data"
 
-SUBSTANCES_JSON = DATA_DIR / "substances.json"
-EQUIPMENT_JSON = DATA_DIR / "equipment.json"
+SUBSTANCES_JSON = DATA_DIR / "substances/substances.json"
+EQUIPMENT_JSON = DATA_DIR / "equipments/equipments.json"
 TYPICAL_SCENARIOS_PATH = DATA_DIR / "typical_scenarios.json"
 
 # --- DATABASE ---
@@ -18,11 +18,11 @@ SCHEMA_PATH = DB_DIR / "schema.sql"
 
 # --- REPORT ---
 # Какой шаблон использовать
-VARIANT_TEMPLATE = "Tatneft/ДПБ_(экспл_СПТ)"
+VARIANT_TEMPLATE = "Tatneft/ДПБ_(экспл_стац)"
 # для какой организации
 VARIANT_ORG = "tatneft"
 # какого ОПО
-ORGANIZATION_SITE_ID = "opo_0776"
+ORGANIZATION_SITE_ID = "opo_1448"
 # ------
 
 # --- INFO ---
