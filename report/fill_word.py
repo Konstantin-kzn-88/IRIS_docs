@@ -2316,6 +2316,44 @@ def build_project_common_replacements(common: dict) -> dict:
         "{{ EXECUTOR_SPECIALIST_INFO }}": s(ex.get("specialist_info")),
     }
 
+def fill_headers_footers(doc: Document, replacements: dict):
+    """
+    Заменяет {{ KEY }} в колонтитулах всех секций.
+    Использует уже существующие в вашем коде _replace_in_paragraph_runs и _replace_in_paragraph_joined_runs.
+    """
+    for section in doc.sections:
+        # Header
+        for paragraph in list(section.header.paragraphs):
+            _replace_in_paragraph_runs(paragraph, replacements)
+            if any(k in "".join(r.text for r in paragraph.runs) for k in replacements):
+                _replace_in_paragraph_joined_runs(paragraph, replacements)
+
+        for table in section.header.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for p in cell.paragraphs:
+                        _replace_in_paragraph_runs(p, replacements)
+                        if any(k in "".join(r.text for r in p.runs) for k in replacements):
+                            _replace_in_paragraph_joined_runs(p, replacements)
+
+        # Footer
+        for paragraph in list(section.footer.paragraphs):
+            _replace_in_paragraph_runs(paragraph, replacements)
+            if any(k in "".join(r.text for r in paragraph.runs) for k in replacements):
+                _replace_in_paragraph_joined_runs(paragraph, replacements)
+
+        for table in section.footer.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for p in cell.paragraphs:
+                        _replace_in_paragraph_runs(p, replacements)
+                        if any(k in "".join(r.text for r in p.runs) for k in replacements):
+                            _replace_in_paragraph_joined_runs(p, replacements)
+
+
+
+
+
 
 def fill_doc(
         doc: Document,
@@ -2355,6 +2393,20 @@ def fill_doc(
     repl["{{ MAX_PEOPLE_VICTIMS }}"] = str(max_victims)
 
     replace_placeholders_in_doc(doc, repl)
+
+    # Внутри fill_doc после replace_placeholders_in_doc(doc, repl):
+    header_footer_repl = {
+        "{{ PROJECT_NAME }}": repl.get("{{ PROJECT_NAME }}", ""),
+        "{{ PROJECT_CODE }}": repl.get("{{ PROJECT_CODE }}", ""),
+        "{{ DPB_CODE }}": repl.get("{{ DPB_CODE }}", ""),
+        "{{ GOCHS_CODE }}": repl.get("{{ GOCHS_CODE }}", ""),
+        "{{ PB_CODE }}": repl.get("{{ PB_CODE }}", ""),
+        "{{ SITE_NAME }}": repl.get("{{ SITE_NAME }}", ""),
+        "{{ SITE_REG_NUMBER }}": repl.get("{{ SITE_REG_NUMBER }}", ""),
+        "{{ SITE_OBJECT_ID }}": repl.get("{{ SITE_OBJECT_ID }}", ""),
+    }
+    fill_headers_footers(doc, header_footer_repl)
+
 
     # Таблицы
     render_substances_one_table_at_marker(
