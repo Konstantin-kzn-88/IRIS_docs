@@ -20,7 +20,7 @@ DAMAGE_NINE_SC = [0.8, 1.3, 0.5, 0.3, 0.1, 0.2, 0.15, 0.1, 0.6]
 DAMAGE_EIGHT_SC = [0.8, 1.3, 0.6, 0.3, 0.25, 0.2, 0.15, 0.1]
 
 PEOPLE_COUNT = 59  # при расчете индивидуального риска
-DAMAGE_SCALE = 50  # увеличение/усменьшение базового ущерба
+DAMAGE_SCALE = 20  # увеличение/усменьшение базового ущерба
 
 WITHOUT_ACTIVITES_COMPENSATOIRES = 1.25
 WITH_ACTIVITES_COMPENSATOIRES = 0.6
