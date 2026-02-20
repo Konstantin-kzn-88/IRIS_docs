@@ -2174,8 +2174,33 @@ def _paragraph_has_any_placeholder(paragraph, replacements: dict) -> bool:
     full = "".join(run.text or "" for run in paragraph.runs)
     if not full:
         return False
-    # Если остался любой ключ — значит надо делать joined_runs
-    return any(k in full for k in replacements.keys())
+    return any(k in full for k in replacements)  # тут можно передавать и dict, и dict_keys
+
+# def replace_placeholders_in_paragraph(p, replacements):
+#     # Получаем единый текст
+#     text = p.text
+#
+#     # Делаем замены
+#     for key, value in replacements.items():
+#         variants = [
+#             f"{{{{ {key} }}}}",
+#             f"{{{{{key}}}}}",
+#             f"{{{{ {key}}}}}",
+#             f"{{{{{key} }}}}",
+#         ]
+#         for ph in variants:
+#             text = text.replace(ph, str(value))
+#
+#     if text == p.text:
+#         return  # ничего не изменилось
+#
+#     # Удаляем run’ы
+#     for r in p.runs:
+#         r._r.getparent().remove(r._r)
+#
+#     # Создаём один run
+#     p.add_run(text)
+
 
 
 def replace_placeholders_in_doc(doc: Document, replacements: dict):
@@ -2316,41 +2341,32 @@ def build_project_common_replacements(common: dict) -> dict:
         "{{ EXECUTOR_SPECIALIST_INFO }}": s(ex.get("specialist_info")),
     }
 
-def fill_headers_footers(doc: Document, replacements: dict):
-    """
-    Заменяет {{ KEY }} в колонтитулах всех секций, включая:
-      - обычный header/footer
-      - first_page_header/footer
-      - even_page_header/footer
-    И внутри таблиц в колонтитулах тоже.
-    """
-    def _process_paragraph(p):
-        _replace_in_paragraph_runs(p, replacements)
-        if _paragraph_has_any_placeholder(p, replacements):
-            _replace_in_paragraph_joined_runs(p, replacements)
-
-    def _process_hf(hf):
-        if hf is None:
+def fill_headers_footers(doc, replacements):
+    def process_hf(hf):
+        if not hf:
             return
+        # абзацы колонтитула
         for p in hf.paragraphs:
-            _process_paragraph(p)
-        for table in hf.tables:
-            for row in table.rows:
+            _replace_in_paragraph_runs(p, replacements)
+            if _paragraph_has_any_placeholder(p, replacements):
+                _replace_in_paragraph_joined_runs(p, replacements)
+
+        # таблицы внутри колонтитула
+        for tbl in hf.tables:
+            for row in tbl.rows:
                 for cell in row.cells:
                     for p in cell.paragraphs:
-                        _process_paragraph(p)
+                        _replace_in_paragraph_runs(p, replacements)
+                        if _paragraph_has_any_placeholder(p, replacements):
+                            _replace_in_paragraph_joined_runs(p, replacements)
 
     for section in doc.sections:
-        # headers
-        _process_hf(section.header)
-        _process_hf(section.first_page_header)
-        _process_hf(section.even_page_header)
-
-        # footers
-        _process_hf(section.footer)
-        _process_hf(section.first_page_footer)
-        _process_hf(section.even_page_footer)
-
+        process_hf(section.header)
+        process_hf(section.first_page_header)   # первая страница
+        process_hf(section.even_page_header)
+        process_hf(section.footer)
+        process_hf(section.first_page_footer)   # первая страница футер
+        process_hf(section.even_page_footer)
 
 
 def fill_doc(
