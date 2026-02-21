@@ -1,4 +1,3 @@
-import json
 import sqlite3
 
 from calculations.app._jet_fire import Torch
@@ -7,11 +6,21 @@ from calculations.app._lower_concentration import LCLP
 from calculations.app._base_damage_line import damage
 from calculations.app._pipeline_volume_m3 import pipeline_internal_volume_m3
 from calculations.app._tvs_explosion import Explosion
+
+from calculations.app._scenario_common import (
+    init_result_base,
+    parse_substance_props,
+    apply_damage_block,
+    apply_risk_block,
+)
+
 from core.config import (
     KG_TO_T,
     MASS_IN_CLOUDE,
-    PEOPLE_COUNT,
-    D_MM_JET_GAS, MASS_TO_PART, T_TO_KG, DAMAGE_EIGHT_SC,
+    D_MM_JET_GAS,
+    MASS_TO_PART,
+    T_TO_KG,
+    DAMAGE_EIGHT_SC,
 )
 
 # Включение/отключение отладочного вывода
@@ -19,10 +28,10 @@ DEBUG = False  # True -> печатаем отладку, False -> молчим
 
 
 def calc_for_scenario(
-        equipment: sqlite3.Row,
-        substance: sqlite3.Row,
-        scenario: dict,
-        scenario_no: int,
+    equipment: sqlite3.Row,
+    substance: sqlite3.Row,
+    scenario: dict,
+    scenario_no: int,
 ) -> dict:
     """
     Заглушка расчёта.
@@ -32,36 +41,21 @@ def calc_for_scenario(
     if DEBUG:
         print("Считаем сценарий:", scenario_no, equipment["equipment_name"])
 
-    result = {}
+    # -------------------------------------------------------------------------
+    # Обязательные поля + частоты
+    # -------------------------------------------------------------------------
+    result = init_result_base(equipment, scenario, scenario_no)
 
     # -------------------------------------------------------------------------
-    # Обязательные поля
+    # Физические свойства / взрывопожарные свойства
     # -------------------------------------------------------------------------
-    result["equipment_id"] = equipment["equipment_id"]
-    result["equipment_name"] = equipment["equipment_name"]
-    result["hazard_component"] = equipment["hazard_component"]
-    result["scenario_no"] = scenario_no
+    props = parse_substance_props(substance)
+    physical = props.physical
+    explosion = props.explosion
 
-    # -------------------------------------------------------------------------
-    # Частоты (из json, если есть)
-    # -------------------------------------------------------------------------
-    result["base_frequency"] = scenario.get("base_frequency", 1)
-    result["accident_event_probability"] = scenario.get("accident_event_probability", 1)
-
-    # Надо умножить частоту на количество оборудования
-    result["scenario_frequency"] = scenario.get("scenario_frequency", 1) * equipment["quantity_equipment"]
-
-    # -------------------------------------------------------------------------
-    # Физические свойства / взрывопожарные свойства (из substances.json)
-    # -------------------------------------------------------------------------
-    physical = json.loads(substance["physical_json"])
-    explosion = json.loads(substance["explosion_json"])
-
-    density_gas = float(physical["density_gas_kg_per_m3"])
-    mol_mass = float(physical["molar_mass_kg_per_mol"])
-    if physical["boiling_point_C"] != None:
-        t_boiling = float(physical["boiling_point_C"])
-    else: t_boiling = 0 # случай газа
+    density_gas = props.density_gas
+    mol_mass = props.mol_mass
+    t_boiling = props.t_boiling
     substance_temperature_c = float(equipment["substance_temperature_c"])
 
     # -------------------------------------------------------------------------
@@ -72,7 +66,6 @@ def calc_for_scenario(
         equipment["diameter_mm"],
         equipment["wall_thickness_mm"],
     )
-
     result["amount_t"] = pipeline_volume * density_gas * KG_TO_T
 
     if DEBUG:
@@ -82,31 +75,26 @@ def calc_for_scenario(
         equipment["pressure_mpa"],
         D_MM_JET_GAS,
         substance_temperature_c,
-        mol_mass
+        mol_mass,
     )
-
     flow_part = flow * MASS_TO_PART
 
-    if scenario["scenario_line"] in (1, 2, 3, 4):  # полная
+    sc_line = int(scenario.get("scenario_line", 0))
+
+    if sc_line in (1, 2, 3, 4):  # полная
         result["ov_in_accident_t"] = result["amount_t"] + flow * equipment["shutdown_time_s"] * KG_TO_T
 
-    if scenario["scenario_line"] in (5, 6, 7, 8):  # частичная
-        result["ov_in_accident_t"] = result["amount_t"] + flow_part * equipment[
-            "shutdown_time_s"] * KG_TO_T
+    if sc_line in (5, 6, 7, 8):  # частичная
+        result["ov_in_accident_t"] = result["amount_t"] + flow_part * equipment["shutdown_time_s"] * KG_TO_T
 
     # -------------------------------------------------------------------------
-    # Параметры испарения вещества
+    # Масса, участвующая в ПФ
     # -------------------------------------------------------------------------
-    if scenario["scenario_line"] in (1, 3, 5, 7):  # факел и вспышка
+    if sc_line in (1, 3, 5, 7):          # факел и вспышка
         result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
-
-    if scenario["scenario_line"] in (5, 7):  # факел и вспышка
-        result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
-
-    elif scenario["scenario_line"] in (2, 6):  # взрыв
+    elif sc_line in (2, 6):              # взрыв
         result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"] * MASS_IN_CLOUDE
-
-    elif scenario["scenario_line"] in (4, 8):  # ликвидация
+    elif sc_line in (4, 8):              # ликвидация
         result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"] * MASS_IN_CLOUDE
 
     if DEBUG:
@@ -130,7 +118,7 @@ def calc_for_scenario(
     result["p_5"] = None
     result["p_2"] = None
 
-    if scenario["scenario_line"] in (2, 6):
+    if sc_line in (2, 6):
         zone = Explosion().explosion_class_zone(
             int(explosion["explosion_hazard_class"]),
             equipment["clutter_degree"],
@@ -151,10 +139,10 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     result["l_f"] = None
     result["d_f"] = None
-    if scenario["scenario_line"] in (1,):  # факел газ
+
+    if sc_line in (1,):  # факел газ (полная)
         type_jet = 0
         zone = Torch().jetfire_size(flow, type_jet)
-
         result["l_f"] = zone[0]
         result["d_f"] = zone[1]
 
@@ -162,10 +150,9 @@ def calc_for_scenario(
             print(zone)
             print(20 * "-")
 
-    elif scenario["scenario_line"] in (5,):  # факел газ
+    elif sc_line in (5,):  # факел газ (частичная)
         type_jet = 0
         zone = Torch().jetfire_size(flow_part, type_jet)
-
         result["l_f"] = zone[0]
         result["d_f"] = zone[1]
 
@@ -176,7 +163,7 @@ def calc_for_scenario(
     result["r_nkpr"] = None
     result["r_vsp"] = None
 
-    if scenario["scenario_line"] in (3, 7):  # вспышка
+    if sc_line in (3, 7):  # вспышка
         mass = result["ov_in_hazard_factor_t"]
         lower_concentration = float(explosion["lel_percent"])
 
@@ -199,7 +186,6 @@ def calc_for_scenario(
     result["q_320"] = None
     result["q_220"] = None
     result["q_120"] = None
-
     result["s_t"] = None
 
     # -------------------------------------------------------------------------
@@ -208,16 +194,16 @@ def calc_for_scenario(
     result["fatalities_count"] = None
     result["injured_count"] = None
 
-    if scenario["scenario_line"] in (1,):  # с ПФ
+    if sc_line in (1,):  # с ПФ
         result["fatalities_count"] = max(0, equipment["possible_dead"] - 1)
         result["injured_count"] = max(0, equipment["possible_injured"] - 1)
-    elif scenario["scenario_line"] in (2,):  # с ПФ
+    elif sc_line in (2,):  # с ПФ
         result["fatalities_count"] = max(0, equipment["possible_dead"])
         result["injured_count"] = max(0, equipment["possible_injured"])
-    elif scenario["scenario_line"] in (3, 5, 6, 7):  # с ПФ
+    elif sc_line in (3, 5, 6, 7):  # с ПФ
         result["fatalities_count"] = 1
         result["injured_count"] = 1
-    elif scenario["scenario_line"] in (4, 8):
+    elif sc_line in (4, 8):
         result["fatalities_count"] = 0
         result["injured_count"] = 0
 
@@ -228,45 +214,16 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     # Ущерб
     # -------------------------------------------------------------------------
-    result["direct_losses"] = None
-    result["liquidation_costs"] = None
-    result["social_losses"] = None
-    result["indirect_damage"] = None
-    result["total_environmental_damage"] = None
-    result["total_damage"] = None
-
-    sc_line = int(scenario.get("scenario_line", 0))
-
-    if 1 <= sc_line <= 8:
-        k = DAMAGE_EIGHT_SC[sc_line - 1]
-    else:
-        # если прилетело неизвестное значение, безопасно считаем 0 ущерба по массе
-        k = 0.0
-
-    amount_t = float(result.get("amount_t", 0.0))
-    mass_for_damage = k * amount_t
-
-    base_damage = damage(
-        mass_for_damage,
-        int(result.get("fatalities_count", 0)),
-        int(result.get("injured_count", 0)),
+    apply_damage_block(
+        result,
+        scenario,
+        damage_coeffs=DAMAGE_EIGHT_SC,
+        damage_func=damage,
     )
-
-    result["direct_losses"] = base_damage["direct_losses"]
-    result["liquidation_costs"] = base_damage["liquidation_costs"]
-    result["social_losses"] = base_damage["social_losses"]
-    result["indirect_damage"] = base_damage["indirect_damage"]
-    result["total_environmental_damage"] = base_damage["total_environmental_damage"]
-    result["total_damage"] = base_damage["total_damage"]
 
     # -------------------------------------------------------------------------
     # Риски
     # -------------------------------------------------------------------------
-    result["collective_risk_fatalities"] = result["fatalities_count"] * result["scenario_frequency"]
-    result["collective_risk_injured"] = result["injured_count"] * result["scenario_frequency"]
-    result["expected_value"] = result["total_damage"] * result["scenario_frequency"]
-
-    result["individual_risk_fatalities"] = result["collective_risk_fatalities"] / PEOPLE_COUNT
-    result["individual_risk_injured"] = result["collective_risk_injured"] / PEOPLE_COUNT
+    apply_risk_block(result)
 
     return result

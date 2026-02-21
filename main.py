@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-CREATE_DB = True # нужно ли создавать базу данных
-CREATE_CALC = True # нужно ли проводить расчеты по новой
+# True/False
+CREATE_DB = True  # нужно ли создавать базу данных
+CREATE_CALC = True  # нужно ли проводить расчеты по новой
 CREATE_BACKUP = True  # нужно ли создавать архив исходных данных
 
-def main() -> None:
 
+def main() -> None:
     if CREATE_DB:
         # 1) Создание/пересоздание БД
         from db.create_sqlite_db import main as create_db

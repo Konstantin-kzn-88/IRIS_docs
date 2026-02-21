@@ -1,4 +1,3 @@
-import json
 import sqlite3
 
 from calculations.app._liguid_evaporation import evaporation_intensity_kg_m2_s, saturated_vapor_pressure_pa
@@ -6,6 +5,15 @@ from calculations.app._lower_concentration import LCLP
 from calculations.app._strait_fire import Strait_fire
 from calculations.app._tvs_explosion import Explosion
 from calculations.app._base_damage_state import damage
+
+from calculations.app._scenario_common import (
+    init_result_base,
+    parse_substance_props,
+    calc_spill_area_m2,
+    apply_damage_block,
+    apply_risk_block,
+)
+
 from core.config import (
     KG_TO_T,
     MASS_IN_CLOUDE,
@@ -16,7 +24,7 @@ from core.config import (
     T_TO_KG,
     Pa_TO_kPa,
     P0,
-    PEOPLE_COUNT, DAMAGE_SIX_SC,
+    DAMAGE_SIX_SC,
 )
 
 # Включение/отключение отладочного вывода
@@ -24,10 +32,10 @@ DEBUG = False  # True -> печатаем отладку, False -> молчим
 
 
 def calc_for_scenario(
-        equipment: sqlite3.Row,
-        substance: sqlite3.Row,
-        scenario: dict,
-        scenario_no: int,
+    equipment: sqlite3.Row,
+    substance: sqlite3.Row,
+    scenario: dict,
+    scenario_no: int,
 ) -> dict:
     """
     Заглушка расчёта.
@@ -37,35 +45,23 @@ def calc_for_scenario(
     if DEBUG:
         print("Считаем сценарий:", scenario_no, equipment["equipment_name"])
 
-    result = {}
-
     # -------------------------------------------------------------------------
-    # Обязательные поля
+    # Обязательные поля + частоты
     # -------------------------------------------------------------------------
-    result["equipment_id"] = equipment["equipment_id"]
-    result["equipment_name"] = equipment["equipment_name"]
-    result["hazard_component"] = equipment["hazard_component"]
-    result["scenario_no"] = scenario_no
-
-    # -------------------------------------------------------------------------
-    # Частоты
-    # -------------------------------------------------------------------------
-    result["base_frequency"] = scenario.get("base_frequency", 1)
-    result["accident_event_probability"] = scenario.get("accident_event_probability", 1)
-    # Надо умножить частоту на количество оборудования
-    result["scenario_frequency"] = scenario.get("scenario_frequency", 1) * equipment["quantity_equipment"]
+    result = init_result_base(equipment, scenario, scenario_no)
 
     # -------------------------------------------------------------------------
     # Свойства вещества
     # -------------------------------------------------------------------------
-    physical = json.loads(substance["physical_json"])
-    explosion = json.loads(substance["explosion_json"])
+    props = parse_substance_props(substance)
+    physical = props.physical
+    explosion = props.explosion
 
-    density_liquid = float(physical["density_liquid_kg_per_m3"])
-    density_gas = float(physical["density_gas_kg_per_m3"])
-    mol_mass = float(physical["molar_mass_kg_per_mol"])
-    t_boiling = float(physical["boiling_point_C"])
-    evaporation_heat_J_per_kg = float(physical["evaporation_heat_J_per_kg"])
+    density_liquid = props.density_liquid
+    density_gas = props.density_gas
+    mol_mass = props.mol_mass
+    t_boiling = props.t_boiling
+    evaporation_heat_J_per_kg = props.evaporation_heat_J_per_kg
 
     # -------------------------------------------------------------------------
     # Количество ОВ
@@ -74,45 +70,41 @@ def calc_for_scenario(
     fill_fraction = equipment["fill_fraction"]
 
     result["amount_t"] = (
-            volume * density_liquid * fill_fraction * KG_TO_T
-            + volume * density_gas * (1 - fill_fraction) * KG_TO_T
+        volume * density_liquid * fill_fraction * KG_TO_T
+        + volume * density_gas * (1 - fill_fraction) * KG_TO_T
     )
 
     if DEBUG:
         print(f'result["amount_t"] = {result["amount_t"]}')
 
-    if scenario["scenario_line"] in (1, 2, 3):
+    sc_line = int(scenario.get("scenario_line", 0))
+
+    if sc_line in (1, 2, 3):
         result["ov_in_accident_t"] = result["amount_t"]
 
-    if scenario["scenario_line"] in (4, 5, 6):
+    if sc_line in (4, 5, 6):
         result["ov_in_accident_t"] = result["amount_t"] * MASS_TO_PART
 
     if DEBUG:
         print(f'result["ov_in_accident_t"] = {result["ov_in_accident_t"]}')
 
-    if scenario["scenario_line"] in (1, 4):
+    if sc_line in (1, 4):
         result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
 
     # -------------------------------------------------------------------------
     # Пролив и испарение
     # -------------------------------------------------------------------------
-    if scenario["scenario_line"] in (1, 2, 3):
-        spill = (
-            result["ov_in_accident_t"] * equipment["spill_coefficient"]
-            if equipment["spill_area_m2"] == 0
-            else equipment["spill_area_m2"]
-        )
-    else:
-        spill = (
-            result["ov_in_accident_t"] * equipment["spill_coefficient"]
-            if equipment["spill_area_m2"] == 0
-            else equipment["spill_area_m2"] * SPILL_TO_PART
-        )
+    spill = calc_spill_area_m2(
+        float(result["ov_in_accident_t"]),
+        equipment,
+        is_full_spill=(sc_line in (1, 2, 3)),
+        spill_to_part=SPILL_TO_PART,
+    )
 
     if DEBUG:
         print(f"spill={spill} м2")
 
-    if scenario["scenario_line"] in (2, 5):
+    if sc_line in (2, 5):
         Pn = saturated_vapor_pressure_pa(
             equipment["substance_temperature_c"],
             t_boiling,
@@ -128,19 +120,16 @@ def calc_for_scenario(
 
         if DEBUG:
             print(f"m_dot = {m_dot} кг/с")
-            print(
-                m_dot * equipment["evaporation_time_s"] * KG_TO_T,
-                "т испарилось",
-            )
+            print(m_dot * equipment["evaporation_time_s"] * KG_TO_T, "т испарилось")
 
         if m_dot * equipment["evaporation_time_s"] * KG_TO_T > result["ov_in_accident_t"]:
             result["ov_in_hazard_factor_t"] = result["ov_in_accident_t"]
         else:
             result["ov_in_hazard_factor_t"] = (
-                    m_dot * equipment["evaporation_time_s"] * MASS_IN_CLOUDE * KG_TO_T
+                m_dot * equipment["evaporation_time_s"] * MASS_IN_CLOUDE * KG_TO_T
             )
 
-    if scenario["scenario_line"] in (3, 6):
+    if sc_line in (3, 6):
         result["ov_in_hazard_factor_t"] = 0
 
     if DEBUG:
@@ -155,7 +144,7 @@ def calc_for_scenario(
     result["q_4_2"] = None
     result["q_1_4"] = None
 
-    if scenario["scenario_line"] in (1, 4):
+    if sc_line in (1, 4):
         zone = Strait_fire().termal_class_zone(
             S_spill=spill,
             m_sg=MSG,
@@ -163,7 +152,6 @@ def calc_for_scenario(
             t_boiling=t_boiling,
             wind_velocity=WIND,
         )
-
         result["q_10_5"], result["q_7_0"], result["q_4_2"], result["q_1_4"] = map(int, zone)
 
         if DEBUG:
@@ -179,7 +167,7 @@ def calc_for_scenario(
     result["p_5"] = None
     result["p_2"] = None
 
-    if scenario["scenario_line"] in (2,):
+    if sc_line in (2,):
         zone = Explosion().explosion_class_zone(
             int(explosion["explosion_hazard_class"]),
             equipment["clutter_degree"],
@@ -188,7 +176,6 @@ def calc_for_scenario(
             int(explosion["expansion_degree"]),
             int(explosion["energy_reserve_factor"]),
         )
-
         result["p_70"], result["p_28"], result["p_14"], result["p_5"], result["p_2"] = map(int, zone[1:6])
 
         if DEBUG:
@@ -201,14 +188,13 @@ def calc_for_scenario(
     result["r_nkpr"] = None
     result["r_vsp"] = None
 
-    if scenario["scenario_line"] in (5,):
+    if sc_line in (5,):
         zone = LCLP().lower_concentration_limit(
             result["ov_in_hazard_factor_t"],
             mol_mass,
             t_boiling,
             float(explosion["lel_percent"]),
         )
-
         result["r_nkpr"], result["r_vsp"] = map(int, zone)
 
         if DEBUG:
@@ -221,16 +207,16 @@ def calc_for_scenario(
     result["fatalities_count"] = None
     result["injured_count"] = None
 
-    if scenario["scenario_line"] in (1,):
+    if sc_line in (1,):
         result["fatalities_count"] = max(0, equipment["possible_dead"] - 1)
         result["injured_count"] = max(0, equipment["possible_injured"] - 1)
-    elif scenario["scenario_line"] in (2,):
+    elif sc_line in (2,):
         result["fatalities_count"] = equipment["possible_dead"]
         result["injured_count"] = equipment["possible_injured"]
-    elif scenario["scenario_line"] in (3, 6):
+    elif sc_line in (3, 6):
         result["fatalities_count"] = 0
         result["injured_count"] = 0
-    elif scenario["scenario_line"] in (4, 5):  # вспышка и пожар частичный
+    elif sc_line in (4, 5):  # вспышка и пожар частичный
         result["fatalities_count"] = 0
         result["injured_count"] = 1
 
@@ -241,51 +227,26 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     # Ущерб
     # -------------------------------------------------------------------------
-    result["direct_losses"] = None
-    result["liquidation_costs"] = None
-    result["social_losses"] = None
-    result["indirect_damage"] = None
-    result["total_environmental_damage"] = None
-    result["total_damage"] = None
-
-    sc_line = int(scenario.get("scenario_line", 0))
-
-    if 1 <= sc_line <= 6:
-        k = DAMAGE_SIX_SC[sc_line - 1]
-    else:
-        # если прилетело неизвестное значение, безопасно считаем 0 ущерба по массе
-        k = 0.0
-
-    amount_t = float(result.get("amount_t", 0.0))
-    mass_for_damage = k * amount_t
-
-    base_damage = damage(
-        mass_for_damage,
-        int(result.get("fatalities_count", 0)),
-        int(result.get("injured_count", 0)),
+    apply_damage_block(
+        result,
+        scenario,
+        damage_coeffs=DAMAGE_SIX_SC,
+        damage_func=damage,
     )
 
-    result["direct_losses"] = base_damage["direct_losses"]
-    result["liquidation_costs"] = base_damage["liquidation_costs"]
-    result["social_losses"] = base_damage["social_losses"]
-    result["indirect_damage"] = base_damage["indirect_damage"]
-    result["total_environmental_damage"] = base_damage["total_environmental_damage"]
-    result["total_damage"] = base_damage["total_damage"]
-
     if DEBUG:
-        print('Ущерб, тыс.руб', result["direct_losses"], result["social_losses"], result["total_environmental_damage"],
-              result["total_damage"])
+        print(
+            "Ущерб, тыс.руб",
+            result["direct_losses"],
+            result["social_losses"],
+            result["total_environmental_damage"],
+            result["total_damage"],
+        )
         print(20 * "-")
 
     # -------------------------------------------------------------------------
-    # Ущерб и риски
+    # Риски
     # -------------------------------------------------------------------------
-
-    result["collective_risk_fatalities"] = result["fatalities_count"] * result["scenario_frequency"]
-    result["collective_risk_injured"] = result["injured_count"] * result["scenario_frequency"]
-    result["expected_value"] = result["total_damage"] * result["scenario_frequency"]
-
-    result["individual_risk_fatalities"] = result["collective_risk_fatalities"] / PEOPLE_COUNT
-    result["individual_risk_injured"] = result["collective_risk_injured"] / PEOPLE_COUNT
+    apply_risk_block(result)
 
     return result
