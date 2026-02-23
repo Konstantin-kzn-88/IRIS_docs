@@ -122,13 +122,14 @@ def apply_damage_block(
         k = 0.0
 
     amount_t = float(result.get("amount_t", 0.0))
-    mass_for_damage = k * amount_t
 
     base_damage = damage_func(
-        mass_for_damage,
+        amount_t,
         int(result.get("fatalities_count", 0) or 0),
         int(result.get("injured_count", 0) or 0),
+        k=k,
     )
+
 
     result["direct_losses"] = base_damage["direct_losses"]
     result["liquidation_costs"] = base_damage["liquidation_costs"]

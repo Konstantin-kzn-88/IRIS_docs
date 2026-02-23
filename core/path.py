@@ -9,7 +9,7 @@ DATA_DIR = PROJECT_DIR / "data"
 
 SUBSTANCES_JSON = DATA_DIR / "substances/substances.json"
 EQUIPMENT_JSON = DATA_DIR / "equipments/equipments.json"
-TYPICAL_SCENARIOS_PATH = DATA_DIR / "typical_scenarios.json"
+TYPICAL_SCENARIOS_PATH = PROJECT_DIR / "calculations" / "app" / "scenario" / "typical_scenarios.json"
 
 # --- DATABASE ---
 DB_DIR = PROJECT_DIR / "db"

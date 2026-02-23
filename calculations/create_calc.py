@@ -108,44 +108,36 @@ def main(db_path: Path = DB_PATH, typical_scenarios_path: Path = TYPICAL_SCENARI
             if not scenarios_list:
                 continue
 
+            cur.execute("SELECT COALESCE(MAX(scenario_no), 0) FROM calculations;")
+            scenario_no_global = cur.fetchone()[0]
+
             # 3.5. Записываем в calculations (пока заглушим pass)
             for sc in scenarios_list:
                 # следующий свободный scenario_no в таблице
-                scenario_no_global = cur.execute(
-                    "SELECT COALESCE(MAX(scenario_no), 0) + 1 FROM calculations;"
-                ).fetchone()[0]
+                scenario_no_global += 1
                 # Проверяем есть ли компенсирующие мероприятия
                 sc = apply_ac_multiplier(sc, hazard_component)
                 # если вам нужно сохранять исходные частоты из json — можно собирать payload уже тут
                 # а расчёт потом расширить
-                if equipment["equipment_type"] == 0 and substance["kind"] == 0:
-                    payload = equipment_type_0_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                elif equipment["equipment_type"] == 1 and substance["kind"] == 0:
-                    payload = equipment_type_1_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                elif equipment["equipment_type"] == 2 and substance["kind"] == 0:
-                    payload = equipment_type_2_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                elif equipment["equipment_type"] == 3 and substance["kind"] == 0:
-                    payload = equipment_type_3_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                elif equipment["equipment_type"] == 4 and substance["kind"] == 0:
-                    payload = equipment_type_4_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                elif equipment["equipment_type"] == 6 and substance["kind"] == 0:
-                    payload = equipment_type_6_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                elif equipment["equipment_type"] == 7 and substance["kind"] == 0:
-                    payload = equipment_type_7_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                elif equipment["equipment_type"] == 8 and substance["kind"] == 0:
-                    payload = equipment_type_8_kind_0.calc_for_scenario(equipment, substance, sc, scenario_no_global)
+                HANDLERS = {
+                    (0, 0): equipment_type_0_kind_0.calc_for_scenario,
+                    (0, 2): equipment_type_0_kind_2.calc_for_scenario,
+                    (1, 0): equipment_type_1_kind_0.calc_for_scenario,
+                    (2, 0): equipment_type_2_kind_0.calc_for_scenario,
+                    (3, 0): equipment_type_3_kind_0.calc_for_scenario,
+                    (4, 0): equipment_type_4_kind_0.calc_for_scenario,
+                    (4, 4): equipment_type_4_kind_4.calc_for_scenario,
+                    (5, 2): equipment_type_5_kind_2.calc_for_scenario,
+                    (6, 0): equipment_type_6_kind_0.calc_for_scenario,
+                    (7, 0): equipment_type_7_kind_0.calc_for_scenario,
+                    (8, 0): equipment_type_8_kind_0.calc_for_scenario,
+                }
 
-                # насос с СУГ
-                elif equipment["equipment_type"] == 4 and substance["kind"] == 4:
-                    payload = equipment_type_4_kind_4.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                # компрессор с труба и ГГ
-                elif equipment["equipment_type"] == 0 and substance["kind"] == 2:
-                    payload = equipment_type_0_kind_2.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                elif equipment["equipment_type"] == 5 and substance["kind"] == 2:
-                    payload = equipment_type_5_kind_2.calc_for_scenario(equipment, substance, sc, scenario_no_global)
-                else:
+                handler = HANDLERS.get((equipment_type, kind))
+                if handler is None:
                     continue
 
+                payload = handler(equipment, substance, sc, scenario_no_global)
                 write_calculation(cur, payload)
 
         con.commit()

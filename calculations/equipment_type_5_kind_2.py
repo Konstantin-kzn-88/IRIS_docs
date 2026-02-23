@@ -19,11 +19,11 @@ from core.config import (
     D_MM_JET_GAS,
     MASS_TO_PART,
     T_TO_KG,
-    DAMAGE_EIGHT_SC_COMPRESSOR,
+    DAMAGE_EIGHT_SC,
 )
 
 # Включение/отключение отладочного вывода
-DEBUG = True  # True -> печатаем отладку, False -> молчим
+DEBUG = False  # True -> печатаем отладку, False -> молчим
 
 
 def calc_for_scenario(
@@ -206,7 +206,7 @@ def calc_for_scenario(
     apply_damage_block(
         result,
         scenario,
-        damage_coeffs=DAMAGE_EIGHT_SC_COMPRESSOR,
+        damage_coeffs=DAMAGE_EIGHT_SC,
         damage_func=damage,
     )
 
