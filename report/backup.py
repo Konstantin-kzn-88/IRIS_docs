@@ -12,6 +12,7 @@ def create_backup() -> None:
 
     В архив включаются:
         - core/path.py
+        - core/config.py
         - data/equipments/equipment_data.xlsx
         - data/equipments/equipments.json
         - data/substances/info.txt
@@ -32,6 +33,7 @@ def create_backup() -> None:
 
     files_to_copy = [
         project_root / "core" / "path.py",
+        project_root / "core" / "config.py",
         project_root / "data" / "equipments" / "equipment_data.xlsx",
         project_root / "data" / "equipments" / "equipments.json",
         project_root / "data" / "substances" / "info.txt",
