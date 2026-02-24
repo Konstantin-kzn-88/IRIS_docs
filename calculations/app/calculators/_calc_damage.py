@@ -1,11 +1,15 @@
 from typing import Callable
 
+# Включение/отключение отладочного вывода
+DEBUG = False  # True -> печатаем отладку, False -> молчим
+
 
 def calculate_damage(
         scenario: dict,
         *,
         damage_coeffs: list[float],
         damage_func: Callable[[float, int, int], dict],
+        ov_in_accident_t: float,
 ) -> dict:
     """
     Унифицированный блок ущерба:
@@ -14,6 +18,10 @@ def calculate_damage(
     - вызываем damage()
     - раскладываем по полям result
     """
+    if DEBUG:
+        print("scenario:", scenario)
+        print("damage_coeffs:", damage_coeffs)
+
     # дефолты на всякий случай
     result = {}
     result.setdefault("direct_losses", None)
@@ -29,10 +37,9 @@ def calculate_damage(
     else:
         k = 0.0
 
-    amount_t = float(result.get("amount_t", 0.0))
 
     base_damage = damage_func(
-        amount_t,
+        ov_in_accident_t,
         int(result.get("fatalities_count", 0) or 0),
         int(result.get("injured_count", 0) or 0),
         k=k,

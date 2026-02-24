@@ -56,6 +56,9 @@ def calc_for_scenario(
         substance=substance
     )
 
+    if DEBUG:
+        print("amount_info:", amount_info)
+
     # базовая масса в оборудовании
     result["amount_t"] = amount_info["amount_t"]
     # базовая масса, которая «может выйти» (полный пролив)
@@ -134,7 +137,8 @@ def calc_for_scenario(
     # -------------------------------------------------------------------------
     # Ущерб
     # -------------------------------------------------------------------------
-    damage_scenario = calculate_damage(scenario, damage_coeffs=DAMAGE_SIX_SC, damage_func=damage)
+    damage_scenario = calculate_damage(scenario, damage_coeffs=DAMAGE_SIX_SC, damage_func=damage,
+                                       ov_in_accident_t=result["ov_in_accident_t"])
     result.update(damage_scenario)
     if DEBUG:
         print(

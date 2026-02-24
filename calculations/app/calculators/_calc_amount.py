@@ -34,7 +34,6 @@ def calculate_amount(equipment_type: int, kind: int, equipment: sqlite3.Row, sub
     result = {
         "amount_t": 0.0,
         "ov_in_accident_t": 0.0,
-        "ov_in_hazard_factor_t": 0.0,
     }
 
     # ---------------------------------------------------------
