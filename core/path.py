@@ -18,12 +18,12 @@ SCHEMA_PATH = DB_DIR / "schema.sql"
 
 # --- REPORT ---
 # Какой шаблон использовать
-VARIANT_TEMPLATE = "Tatneft/ДПБ_(экспл_стац)"
+VARIANT_TEMPLATE = "TAIF/ДПБ_(экспл_СПТ)"
 # VARIANT_TEMPLATE = 'default'
 # для какой организации
-VARIANT_ORG = "tatneft"
+VARIANT_ORG = "TAIF"
 # какого ОПО
-ORGANIZATION_SITE_ID = "opo_0992"
+ORGANIZATION_SITE_ID = "opo_0010"
 # ------
 
 # --- INFO ---
