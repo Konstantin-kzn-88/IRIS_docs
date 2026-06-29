@@ -40,8 +40,8 @@ def calculate_amount(equipment_type: int, kind: int, equipment: sqlite3.Row, sub
     # 1. ТРУБОПРОВОД
     # ---------------------------------------------------------
     if equipment_type == 0:
-        # Жидкость (пока ЛВЖ)
-        if kind == 0:
+        # Жидкость (пока ЛВЖ и ГЖ неисп.)
+        if kind in (0, 9):
             # 1.1 Полный объем участка трубопровода
             pipeline_volume = pipeline_internal_volume_m3(
                 equipment["length_m"],

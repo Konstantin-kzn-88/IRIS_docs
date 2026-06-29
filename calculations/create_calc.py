@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from pathlib import Path
-from calculations import equipment_type_0_kind_0, equipment_type_0_kind_2,  equipment_type_1_kind_0, equipment_type_2_kind_0, \
+from calculations import equipment_type_0_kind_0, equipment_type_0_kind_2, equipment_type_0_kind_9,  equipment_type_1_kind_0, equipment_type_2_kind_0, \
     equipment_type_3_kind_0, equipment_type_4_kind_0, equipment_type_5_kind_2, equipment_type_6_kind_0, \
     equipment_type_7_kind_0, equipment_type_8_kind_0, equipment_type_4_kind_4
 
@@ -122,6 +122,7 @@ def main(db_path: Path = DB_PATH, typical_scenarios_path: Path = TYPICAL_SCENARI
                 HANDLERS = {
                     (0, 0): equipment_type_0_kind_0.calc_for_scenario,
                     (0, 2): equipment_type_0_kind_2.calc_for_scenario,
+                    (0, 9): equipment_type_0_kind_9.calc_for_scenario,
                     (1, 0): equipment_type_1_kind_0.calc_for_scenario,
                     (2, 0): equipment_type_2_kind_0.calc_for_scenario,
                     (3, 0): equipment_type_3_kind_0.calc_for_scenario,

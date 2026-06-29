@@ -23,7 +23,7 @@ VARIANT_TEMPLATE = "TAIF/ДПБ_(экспл_СПТ)"
 # для какой организации
 VARIANT_ORG = "TAIF"
 # какого ОПО
-ORGANIZATION_SITE_ID = "opo_0010"
+ORGANIZATION_SITE_ID = "opo_0022"
 # ------
 
 # --- INFO ---
